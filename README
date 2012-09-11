@@ -1,0 +1,61 @@
+This is the ARMv5e ArchC 2.1 functional model (system-level).
+
+In order to test system-level, simple test platform is implemented in main.cpp.
+This platform also has a custom Makefile in Makefile.platform. Do not
+make -f Makefile.archc distclean, since it will delete main.cpp and custom
+header files. Also, avoid using the automatically generated Makefile.archc
+Makefile, since it will not compile necessary modules needed by the platform.
+
+The first step is to automatically generate the ARM SystemC processor core
+using ArchC, make the platform and then you're ready to run:
+
+    acsim armv5e.ac                     (use -gdb if you want to debug)
+    make -f Makefile.platform
+		armv5e.x --load=<file-path>
+
+In system level simulation, make sure to put code starting at 0x0 address,
+because this is always the entry point for the reset exception vector entry.
+<file-path> usually indicates an ELF containing the code. Please note that, in
+system level, the entry point for this ELF will be ignored, although the load
+addresses for the segments will be used to determine where to load code in real
+memory.
+
+You may be interested in some
+
+
+:: Multiple processor instances ::
+
+The current model does not support more than one core instantiated in the same
+SystemC simulation. The reason is that armv5e_isa.cpp implements some state 
+variables as global variables to speed up simulation, and instantiated multiple
+cores will cause unwanted sharing of processor state between processor 
+instances. 
+
+:: Binary automatic generation ::
+
+    acbingen.sh -i<abs-install-path> -a<arch-name> armv5e.ac
+
+This will generate the tools source files using the architecture
+name <arch-name> (if omitted, armv5e is used), copy them to the
+binutils source tree, build and install them into the directory
+<abs-install-path> (which -must- be an absolute path).
+Use "acbingen.sh -h" to get information about the command-line
+options available.
+
+
+For more information visit http://www.archc.org
+
+
+CHANGELOG:
+==========
+
+Version 0.8.0:
+
+- System level model implemented
+- Support for automatic compiler generation
+- Model passed selected Mediabench and Mibench applications
+- ArchC 2.1 compliant
+- Support for automatic generation of binary tools
+- Support for dynamic linker and loader when reading ELF files
+- Support for GDB
+- Support for compiled simulator and interpreted simulator
