@@ -157,3 +157,25 @@ ac_modifier_decode(dorlist)
   }
 }
 
+// calculate width for Bit      range manipulation instructions
+//  reloc->input == width
+ac_modifies_encode(bdist)
+{
+  reloc->output = reloc->Type_BTM1->lsb + reloc->input - 1;
+}
+ac_modifies_dencode(bdist)
+{
+  reloc->output = reloc->input - reloc->Type_BTM1->lsb + 1;
+}
+
+ac_modifies_encode(subimm)
+{
+  reloc->output = reloc->input -1;
+}
+
+ac_modifies_decode(subimm){
+        reloc->output = reloc->input + 1;
+}
+
+
+

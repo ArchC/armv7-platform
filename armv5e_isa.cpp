@@ -638,6 +638,11 @@ void ac_behavior( Type_DPI3 ){
     dpi_shiftopcarry = getBit(dpi_shiftop.entire, 31);    
 }
 
+
+void ac_behavior(Type_BTM1 ){
+    // no special actions necessary
+}
+
 void ac_behavior( Type_BBL ) {
   // no special actions necessary
 }
@@ -1100,7 +1105,7 @@ void ac_behavior( Type_LSM ){
   if((p == 0)&&(u == 1)) { // increment after
     lsm_startaddress.entire = RN2.entire;
     lsm_endaddress.entire = RN2.entire + (setbits * 4) - 4;
-    if(w == 1) RN2.entire += (setbits * 4);  
+    if(w == 1) RN2.entire += (setbits * 4);
   }
   else if((p == 1)&&(u == 1)) { // increment before
     lsm_startaddress.entire = RN2.entire + 4; 
@@ -1320,13 +1325,43 @@ inline void BX(int rm,
   if(isBitSet(rm,0)) {
     dprintf("Change to thumb not implemented in this model. PC=%X\n", ac_pc.read());
     return;
-  } 
+  }
 
   flags.T = isBitSet(rm, 0);
   ac_pc = RB_read(rm) & 0xFFFFFFFE;
 
   //dprintf("Pc = 0x%X",ac_pc);
 }
+
+//------------------------------------------------------
+inline void BFI(int rd, int rn, int lsb, int msb,
+                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+/*
+    uint32_t dest = RB_read(rd);
+    uint32_t orig;
+    uint32_t mask = 0;
+
+    //Generate bitmask
+    int  width = (msb - lsb) + 1;
+    for(int i = 0; i < width; i++)
+        mask = (mask << 1) | 0x1;
+
+    mask = mask << lsb;
+
+    if(rn == 0x0F)
+        orig = 0x0;          //BFC: clear bits in range
+    else
+        orig = RB_read(rn);  //BFI: copy bits in range from Rn
+
+    //Writes modified bits to register
+    dest = (dest & ~mask) | (mask & orig);
+    RB_write(rd,dest);
+
+    dprintf("Instruction: BFI\n");
+    dprintf("Operands:\nRn=0x%X, contains 0x%lX\n\nDestination: Rd=0x%X\n", rn,orig,rd);
+*/}
 
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
@@ -2954,7 +2989,7 @@ void ac_behavior( msr1 ){
       res |= (in & 0xFF000000);
     }
     writeCPSR(res);
-    dprintf(" *  CPSR <= 0x%08X\n", res); 
+    dprintf(" *  CPSR <= 0x%08X\n", res);
     dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n     FIQ disable"
             "=0x%X, IRQ disable=0x%X, Thumb=0x%X\n",flags.N,flags.Z,
             flags.C,flags.V, arm_proc_mode.fiq, arm_proc_mode.irq,
@@ -2973,13 +3008,13 @@ void ac_behavior( msr1 ){
     if (fieldmask & (1 << 2)) {
       res &= ~0xFF0000;
       res |= (in & 0xFF0000);
-    }  
+    }
     if (fieldmask & (1 << 3)) {
       res &= ~0xFF000000;
       res |= (in & 0xFF000000);
     }
     writeSPSR(res);
-    dprintf(" *  SPSR <= 0x%08X\n", res); 
+    dprintf(" *  SPSR <= 0x%08X\n", res);
   }
 }
 
@@ -3067,5 +3102,9 @@ void ac_behavior( dsmlaw ){
 void ac_behavior( dsmulw ){
   fprintf(stderr,"Warning: SMULW<y><x> instruction is not implemented in this model. PC=%X\n", ac_pc.read());
 }
+
+//!Instruction bfi/bfc behavior method.
+void ac_behavior( bfi ){ BFI(rd, rn, lsb, msb, RB, ac_pc); }
+
 
 void ac_behavior( end ) { }

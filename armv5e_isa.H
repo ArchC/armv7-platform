@@ -22,6 +22,7 @@
 #include "ac_instr_info.H"
 #include "armv5e_arch.H"
 #include "armv5e_arch_ref.H"
+#include "armv5e_syscall.H"
 
 namespace armv5e_parms
 {
@@ -38,10 +39,11 @@ public:
 
   ac_decoder_full* decoder;
 
+  armv5e_syscall syscall;
   int cur_instr_id;
 
   //!Constructor.
-  armv5e_isa(armv5e_arch& ref) : armv5e_arch_ref(ref)  {
+  armv5e_isa(armv5e_arch& ref) : armv5e_arch_ref(ref) , syscall(ref) {
     //!Building Decoder.
     decoder = ac_decoder_full::CreateDecoder(armv5e_isa::formats, armv5e_isa::instructions, &ref);
   }
@@ -61,6 +63,7 @@ public:
   void _behavior_armv5e_Type_DPI1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
   void _behavior_armv5e_Type_DPI2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int shift, unsigned int subop1, unsigned int rm);
   void _behavior_armv5e_Type_DPI3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
+  void _behavior_armv5e_Type_BTM1(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
   void _behavior_armv5e_Type_BBL(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void _behavior_armv5e_Type_BBLT(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void _behavior_armv5e_Type_MBXBLX(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
@@ -128,6 +131,7 @@ public:
   void behavior_mov3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
   void behavior_bic3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
   void behavior_mvn3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
+  void behavior_bfi(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
   void behavior_blx1(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void behavior_b(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void behavior_bx(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);

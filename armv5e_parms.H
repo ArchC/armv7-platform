@@ -19,10 +19,10 @@
 namespace armv5e_parms {
 
 
-static const unsigned int AC_DEC_FIELD_NUMBER = 205; 	 //!< Number of Fields used by decoder.
-static const unsigned int AC_DEC_INSTR_NUMBER = 100; 	 //!< Number of Instructions declared.
-static const unsigned int AC_DEC_FORMAT_NUMBER = 21; 	 //!< Number of Formats declared.
-static const unsigned int AC_DEC_LIST_NUMBER = 390; 	 //!< Number of decodification lists used by decoder.
+static const unsigned int AC_DEC_FIELD_NUMBER = 212; 	 //!< Number of Fields used by decoder.
+static const unsigned int AC_DEC_INSTR_NUMBER = 101; 	 //!< Number of Instructions declared.
+static const unsigned int AC_DEC_FORMAT_NUMBER = 22; 	 //!< Number of Formats declared.
+static const unsigned int AC_DEC_LIST_NUMBER = 392; 	 //!< Number of decodification lists used by decoder.
 static const unsigned int AC_MAX_BUFFER = 4; 	 //!< This is the size needed by decoder buffer. It is equal to the biggest instruction size.
 static const unsigned int AC_WORDSIZE = 32; 	 //!< Architecture wordsize in bits.
 static const unsigned int AC_FETCHSIZE = 32; 	 //!< Architecture fetchsize in bits.
@@ -30,7 +30,7 @@ static const unsigned int AC_MATCH_ENDIAN = 1; 	 //!< If the simulated arch matc
 static const unsigned int AC_PROC_ENDIAN = 0; 	 //!< The simulated arch is big endian?
 static const unsigned int AC_RAMSIZE = 10485760U; 	 //!< Architecture RAM size in bytes (storage MEM).
 static const unsigned int AC_RAM_END = 10485760U; 	 //!< Architecture end of RAM (storage MEM).
-static unsigned int GDB_PORT_NUM = 5000; 	 //!< GDB port number.
+static const unsigned int GDB_PORT_NUM = 5000; 	 //!< GDB port number.
 
 
 //!Word type definitions.

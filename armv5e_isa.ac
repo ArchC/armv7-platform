@@ -10,7 +10,7 @@
  *            IC-UNICAMP
  *            http://www.lsc.ic.unicamp.br/
  *
- * @version   1.0
+ * @version   1.5
  * @date      Thu, 29 Jun 2006 14:49:08 -0300
  * 
  * @brief     The ArchC ARMv5e functional model.
@@ -26,11 +26,14 @@ AC_ISA(armv5e) {
   ac_format Type_DPI2 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %rs:4 %subop2:1 %shift:2 %subop1:1 %rm:4";
   ac_format Type_DPI3 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %rotate:4 %imm8:8"; 
 
+  /* Instrucoes de manipulacao de bit */
+  ac_format Type_BTM1 = "%cond:4 %op:7  %msb:5 %rd:4 %lsb:5 %func1:3 %rn:4";	//NEW
+
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1*/
   ac_format Type_BBL = "%cond:4 %op:3 %h:1 %offset:24";
   ac_format Type_BBLT = "%cond:4 %op:3 %h:1 %offset:24";
   ac_format Type_MBXBLX = "%cond:4 %op:3 %func1:4 %s:1 %one1:4 %one2:4 %one3:4 %subop2:1 %func2:2 %subop1:1 %rm:4";
-  
+
   /* Instrucoes de swap e multiplicacao */
   ac_format Type_MULT1 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %rs:4 %subop2:1 %func2:2 %subop1:1 %rm:4";
   ac_format Type_MULT2 = "%cond:4 %op:3 %func1:4 %s:1 %rdhi:4 %rdlo:4 %rs:4 %subop2:1 %func2:2 %subop1:1 %rm:4";
@@ -45,7 +48,7 @@ AC_ISA(armv5e) {
   ac_format Type_CDP = "%cond:4 %op:3 %subop3:1 %funcc1:4 %crn:4 %crd:4 %cp_num:4 %funcc3:3 %subop1:1 %crm:4";
   ac_format Type_CRT = "%cond:4 %op:3 %subop3:1 %funcc2:3 %l:1 %crn:4 %rd:4 %cp_num:4 %funcc3:3 %subop1:1 %crm:4";
   ac_format Type_CLS = "%cond:4 %op:3 %p:1 %u:1 %n:1 %w:1 %l:1 %rn:4 %crd:4 %cp_num:4 %imm8:8";
- 
+
   /* Instrucoes especiais */
   ac_format Type_MBKPT = "%cond:4 %op:3 %func1:4 %s:1 %immediate:12 %subop2:1 %func2:2 %subop1:1 %rm:4";
   ac_format Type_MSWI = "%cond:4 %op:3 %subop3:1 %swinumber:24";
@@ -60,6 +63,9 @@ AC_ISA(armv5e) {
   ac_instr<Type_DPI1> and1, eor1, sub1, rsb1, add1, adc1, sbc1, rsc1, tst1, teq1, cmp1, cmn1, orr1, mov1, bic1, mvn1;
   ac_instr<Type_DPI2> and2, eor2, sub2, rsb2, add2, adc2, sbc2, rsc2, tst2, teq2, cmp2, cmn2, orr2, mov2, bic2, mvn2;
   ac_instr<Type_DPI3> and3, eor3, sub3, rsb3, add3, adc3, sbc3, rsc3, tst3, teq3, cmp3, cmn3, orr3, mov3, bic3, mvn3;
+
+  /* Instrucoes de manipulacao de bit */
+  ac_instr<Type_BTM1> bfi;
 
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1 */
   ac_instr<Type_BBLT> blx1;
@@ -372,6 +378,14 @@ AC_ISA(armv5e) {
     mvn3.set_decoder(op=0x01, func1=0x0F);
 
 
+    /**************************************/
+    /*	     Bit Range Manipulation	       */
+    /**************************************/
+
+    bfi.set_asm("bfi%[cond], %reg, %reg, #%imm, #%imm(bdist)", cond, rd, rn, lsb, msb);
+    //bfc is a pseudo-instruction remaps to bfi
+    bfi.set_asm("bfc%[cond], %reg, #%imm, #%imm(bdist)", cond, rd , rn=0x0F, lsb,msb);
+    bfi.set_decoder(op=0x3E, func1=0x01);
     /***********************/
     /* Branch instructions */
     /***********************/

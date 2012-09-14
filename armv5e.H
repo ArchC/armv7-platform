@@ -22,6 +22,7 @@
 #include "armv5e_parms.H"
 #include "armv5e_arch.H"
 #include "armv5e_isa.H"
+#include "armv5e_syscall.H"
 #include "ac_tlm_intr_port.H"
 #include "armv5e_intr_handlers.H"
 #include "ac_gdb_interface.H"
