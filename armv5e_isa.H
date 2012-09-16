@@ -63,6 +63,8 @@ public:
   void _behavior_armv5e_Type_DPI1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
   void _behavior_armv5e_Type_DPI2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int shift, unsigned int subop1, unsigned int rm);
   void _behavior_armv5e_Type_DPI3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
+  void _behavior_armv5e_Type_DPI4(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
+  void _behavior_armv5e_Type_DPI5(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
   void _behavior_armv5e_Type_BTM1(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
   void _behavior_armv5e_Type_BBL(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void _behavior_armv5e_Type_BBLT(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
@@ -131,6 +133,10 @@ public:
   void behavior_mov3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
   void behavior_bic3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
   void behavior_mvn3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
+  void behavior_mov4(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
+  void behavior_movt(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
+  void behavior_nop(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
+  void behavior_pkh(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
   void behavior_bfi(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
   void behavior_blx1(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void behavior_b(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
@@ -140,6 +146,7 @@ public:
   void behavior_swpb(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_mla(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_mul(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void behavior_mls(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_smlal(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rdhi, unsigned int rdlo, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_smull(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rdhi, unsigned int rdlo, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_umlal(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rdhi, unsigned int rdlo, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);

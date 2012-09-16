@@ -20,11 +20,13 @@
  */
  
 AC_ISA(armv5e) {
-  
+
   /* Instrucoes de processamento de dados - ULA */
   ac_format Type_DPI1 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %shiftamount:5 %shift:2 %subop1:1 %rm:4";
   ac_format Type_DPI2 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %rs:4 %subop2:1 %shift:2 %subop1:1 %rm:4";
   ac_format Type_DPI3 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %rotate:4 %imm8:8"; 
+  ac_format Type_DPI4 = "%cond:4 %op:3 %func1:4 %s:1 %imm4:4 %rd:4 %imm12:12";  //NEW
+  ac_format Type_DPI5 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 shiftamount:5 %tb:1 %subop1:2 %rm:4";  //NEW
 
   /* Instrucoes de manipulacao de bit */
   ac_format Type_BTM1 = "%cond:4 %op:7  %msb:5 %rd:4 %lsb:5 %func1:3 %rn:4";	//NEW
@@ -63,6 +65,8 @@ AC_ISA(armv5e) {
   ac_instr<Type_DPI1> and1, eor1, sub1, rsb1, add1, adc1, sbc1, rsc1, tst1, teq1, cmp1, cmn1, orr1, mov1, bic1, mvn1;
   ac_instr<Type_DPI2> and2, eor2, sub2, rsb2, add2, adc2, sbc2, rsc2, tst2, teq2, cmp2, cmn2, orr2, mov2, bic2, mvn2;
   ac_instr<Type_DPI3> and3, eor3, sub3, rsb3, add3, adc3, sbc3, rsc3, tst3, teq3, cmp3, cmn3, orr3, mov3, bic3, mvn3;
+  ac_instr<Type_DPI4> mov4, movt, nop;
+  ac_instr<Type_DPI5> pkh;
 
   /* Instrucoes de manipulacao de bit */
   ac_instr<Type_BTM1> bfi;
@@ -73,7 +77,7 @@ AC_ISA(armv5e) {
   ac_instr<Type_MBXBLX> bx, blx2;
 
   /* Instrucoes de swap e multiplicacao */
-  ac_instr<Type_MULT1> swp, swpb, mla, mul;
+  ac_instr<Type_MULT1> swp, swpb, mla, mul, mls;
   ac_instr<Type_MULT2> smlal, smull, umlal, umull;
 
   /* Instrucoes de load/store */
@@ -226,6 +230,7 @@ AC_ISA(armv5e) {
     rsb2.set_decoder(op=0x00, subop1=0x01, subop2=0x00, func1=0x03);
     
     rsb3.set_asm("rsb%[cond]%sf %reg, %reg, #%imm(aimm)", cond, s, rd, rn, rotate+imm8);
+    rsb3.set_asm("neg%[cond]  %reg, %reg", cond,  rd, rn, rotate=0x0,imm8=0x0, s=1);
     rsb3.set_decoder(op=0x01, func1=0x03);
 
 
@@ -345,6 +350,7 @@ AC_ISA(armv5e) {
     mov1.set_asm("mov r0, r0", cond=0xE, s=0, rd=0x0, rm=0x0, rn=0, shiftamount=0, shift=0);
     mov1.set_asm("mov%[cond]%sf %reg, %reg, %shift #%imm", cond, s, rd, rm, shift, shiftamount, rn=0);
     mov1.set_asm("mov%[cond]%sf %reg, %reg, rrx", cond, s, rd, rm, shift=3, shiftamount=0, rn=0);
+    mov1.set_asm("cpy %reg, %reg", rd, rm, cond=14, s=0, rn=0, shiftamount=0, shift=0);
     mov1.set_decoder(op=0x00, subop1=0x00, func1=0x0D);
 
     mov2.set_asm("mov%[cond]%sf %reg, %reg, %shift %reg", cond, s, rd, rm, shift, rs, rn=0);
@@ -353,6 +359,11 @@ AC_ISA(armv5e) {
     mov3.set_asm("mov%[cond]%sf %reg, #%imm(aimm)", cond, s, rd, rotate+imm8, rn=0);
     mov3.set_decoder(op=0x01, func1=0x0D);
 
+    mov4.set_asm("movw%[cond] %reg, #%imm", cond, rd, imm4+imm12);
+    mov4.set_decoder(op=0x01 , func1=0x08, s=0x00);
+
+    movt.set_asm("movt%[cond] %reg, #%imm", cond, rd, imm4+imm12);
+    movt.set_decoder(op=0x01, func1=0x0A, s=0x00);
 
     bic1.set_asm("bic%[cond]%sf %reg, %reg, %reg", cond, s, rd, rn, rm, shiftamount=0, shift=0); 
     bic1.set_asm("bic%[cond]%sf %reg, %reg, %reg, %shift #%imm", cond, s, rd, rn, rm, shift, shiftamount);
@@ -376,6 +387,15 @@ AC_ISA(armv5e) {
 
     mvn3.set_asm("mvn%[cond]%sf %reg, #%imm(aimm)", cond, s, rd, rotate+imm8, rn=0, rd=0);
     mvn3.set_decoder(op=0x01, func1=0x0F);
+
+    //pkhBT
+    pkh.set_asm("pkhbt%[cond] %reg, %reg, %reg, LSL #%imm", cond, rd,rn, rm, shiftamount, tb=0x00);
+    pkh.set_asm("pkhbt%[cond] %reg, %reg, %reg", cond, rd,rn, rm, tb=0x00, shiftamount=0x00);
+    //pkhTB
+    pkh.set_asm("pkhtb%[cond] %reg, %reg, %reg, ASR #%imm", cond, rd,rn, rm, shiftamount, tb=0x01);
+    //pkhTB with 0 shift is encoded as pkhBT
+    pkh.set_asm("pkhtb%[cond] %reg, %reg, %reg", cond, rd, rm, rn, shiftamount=0x0, tb=0x00); //Intentionally inverted
+    pkh.set_decoder(op=0x03, func1=0x04, s=0x00, subop1=0x01);
 
 
     /**************************************/
@@ -412,7 +432,7 @@ AC_ISA(armv5e) {
 
     swpb.set_asm("swp%[cond]b %reg, %reg, [%reg]", cond, rd, rm, rn, rs=0x00);
     swpb.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x0A, func2=0x00, s=0x00);
-    
+
     mul.set_asm("mul%[cond]%sf %reg, %reg, %reg", cond, s, rn, rm ,rs, rd=0x00);
     mul.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x00, func2=0x00);
 
@@ -421,15 +441,18 @@ AC_ISA(armv5e) {
 
     smlal.set_asm("smlal%[cond]%sf %reg, %reg, %reg, %reg", cond, s, rdlo, rdhi, rm, rs);
     smlal.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x07, func2=0x00);
-    
+
     smull.set_asm("smull%[cond]%sf %reg, %reg, %reg, %reg", cond, s, rdlo, rdhi, rm, rs);
     smull.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x06, func2=0x00);
 
     umlal.set_asm("umlal%[cond]%sf %reg, %reg, %reg, %reg", cond, s, rdlo, rdhi, rm ,rs);
     umlal.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x05, func2=0x00);
-    
+
     umull.set_asm("umull%[cond]%sf %reg, %reg, %reg, %reg", cond, s, rdlo, rdhi, rm, rs);
     umull.set_decoder(op=0x00, subop1=0x01, subop2=0x01, func1=0x04, func2=0x00);
+
+    mls.set_asm("mls%[cond] %reg, %reg, %reg, %reg", cond, rn, rd, rs, rm);
+    mls.set_decoder(op=0x00, func1=0x03, s=0x00, subop2=0x1, func2= 0x00, subop1=0x01);
 
     /****************************/
     /* Load/store instructions  */
@@ -899,13 +922,17 @@ AC_ISA(armv5e) {
     mrs.set_decoder(op=0x00, subop1=0x00, subop2=0x00, func11=0x02, func12=0x00, rm=0x00, fieldmask=0xF);
 
     /* MSR will not be implemented in this model. */
-    
+
 //    msr1.set_asm("");
     msr1.set_decoder(op=0x00, subop1=0x00, subop2=0x00, func11=0x02, func12=0x02, zero3=0x00, func2=0x00);
 
 //    msr2.set_asm("");
     msr2.set_decoder(op=0x01, func11=0x02, func12=0x02, one2=0x0f);
-    
+
+    //Now NOP has an opcode.
+    nop.set_asm("nop%[cond]", cond);
+    nop.set_decoder(op=0x01, func1=0x09, s=0x0, imm4=0x0, rd=0x0F, imm12=0x0);
+
 
     /************************/
     /* DSP instructions     */

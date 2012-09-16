@@ -638,6 +638,27 @@ void ac_behavior( Type_DPI3 ){
     dpi_shiftopcarry = getBit(dpi_shiftop.entire, 31);    
 }
 
+//DPI4 behavior
+void ac_behavior( Type_DPI4 ) {
+    dprintf("Instruction type: DPI4\n");
+    // Concatenate immediate
+    long tmp = (unsigned long) imm4;
+    tmp = (tmp << 12) | imm12;
+    dpi_shiftop.entire = (unsigned long) tmp;
+}
+
+
+//DPI5 behavior
+void ac_behavior( Type_DPI5 ) {
+    dprintf("Instruction type: DPI5\n");
+    // Apply Shift to Rm
+    if(tb == 1) {
+        dpi_shiftop.entire  =  RB.read(rm);
+        dpi_shiftop = ArithmeticShiftRight(shiftamount, dpi_shiftop);
+    }
+    else
+        dpi_shiftop.entire  =  RB.read(rm) << shiftamount;
+}
 
 void ac_behavior(Type_BTM1 ){
     // no special actions necessary
@@ -1338,7 +1359,6 @@ inline void BFI(int rd, int rn, int lsb, int msb,
                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
-/*
     uint32_t dest = RB_read(rd);
     uint32_t orig;
     uint32_t mask = 0;
@@ -1361,7 +1381,7 @@ inline void BFI(int rd, int rn, int lsb, int msb,
 
     dprintf("Instruction: BFI\n");
     dprintf("Operands:\nRn=0x%X, contains 0x%lX\n\nDestination: Rd=0x%X\n", rn,orig,rd);
-*/}
+}
 
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
@@ -1885,7 +1905,19 @@ inline void MOV(int rd, bool s,
   ac_pc = RB_read(PC);
 }
 
+
 //------------------------------------------------------
+inline void MOVT(int rd, bool s,
+                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+    //Concatenate imm16 with current low part of Rd
+    uint32_t tmp = (unsigned) RB.read(rd) & 0xFFFF;
+    dpi_shiftop.entire = (dpi_shiftop.entire << 16) | (unsigned) tmp;
+    MOV(rd,s,RB,ac_pc);
+}
+//------------------------------------------------------
+
 inline void MRC(){
   dprintf("Instruction: MRC\n");
   fprintf(stderr, "Warning: MRC instruction is not implemented in this model.\n");
@@ -1922,7 +1954,7 @@ inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, in
 
   RB_write(rd,res);
 
-  dprintf(" *  R%d <= 0x%08X\n", rd, res); 
+  dprintf(" *  R%d <= 0x%08X\n", rd, res);
 
   ac_pc = RB_read(PC);
 }
@@ -1942,7 +1974,7 @@ inline void MUL(int rd, int rm, int rs, bool s,
   // Special cases
   if((rd == PC)||(rm == PC)||(rs == PC)||(rd == rm)) {
     fprintf(stderr, "Unpredictable MUL instruction result\n");
-//    return;    
+//    return;
   }
 
   RD2.entire = RM2.entire * RS2.entire;
@@ -1956,6 +1988,21 @@ inline void MUL(int rd, int rm, int rs, bool s,
   dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
+}
+
+//------------------------------------------------------
+inline void MLS(int rd, int ra, int rm, int rn,
+                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+    //Special cases
+    if( rd == PC || ra == PC || rm == PC || rn == PC) {
+        printf("Unpredictable MLS instruction result\n");
+        return;
+    }
+
+    uint32_t aux = (unsigned) ( RB.read(ra) - (RB.read(rm) * RB.read(rn)) );
+    RB_write(rd, aux);
 }
 
 //------------------------------------------------------
@@ -1985,6 +2032,31 @@ inline void MVN(int rd, bool s,
   dprintf(" *  R%d <= 0x%08X (%d)\n", rd, ~dpi_shiftop.entire, ~dpi_shiftop.entire); 
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
+}
+
+//------------------------------------------------------
+inline void PKH(int rd, int rn, int rm, bool tb,
+                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+    uint32_t dest = 0;
+    //Special case.
+    if(rd == PC || rn == PC || rm == PC){
+        printf("Unpredictable PKH instruction result\n");
+        return;
+    }
+
+    //Write to register
+    if(tb == true){
+        dest |= (dpi_shiftop.entire & 0xFFFF); // High
+        dest |= (RB.read(rn) & 0xFFFF0000);    // Low
+    }
+    else {
+        dest |= (RB.read(rn) & 0xFFFF);            // High
+        dest |= (dpi_shiftop.entire & 0xFFFF0000);  //Low
+    }
+
+    RB_write(rd, dest);
 }
 
 //------------------------------------------------------
@@ -2780,6 +2852,12 @@ void ac_behavior( orr3 ){ ORR(rd, rn, s, RB, ac_pc);}
 //!Instruction mov3 behavior method.
 void ac_behavior( mov3 ){ MOV(rd, s, RB, ac_pc);}
 
+//Instruction mov4 behavior method.
+void ac_behavior( mov4 ){ MOV(rd, s, RB, ac_pc);}
+
+//Instruction movt behaviour method.
+void ac_behavior( movt ) { MOVT(rd,s,RB,ac_pc);}
+
 //!Instruction bic3 behavior method.
 void ac_behavior( bic3 ){ BIC(rd, rn, s, RB, ac_pc);}
 
@@ -2832,6 +2910,9 @@ void ac_behavior( mla ){ MLA(rn, rd, rm, rs, s, RB, ac_pc);}
 
 //!Instruction mul behavior method.
 void ac_behavior( mul ){ MUL(rn, rm, rs, s, RB, ac_pc);}
+// OBS: inversao dos parametros proposital ("fields with the same name...")
+
+void ac_behavior ( mls ) { MLS(rn, rd, rs,rm, RB,ac_pc); }
 // OBS: inversao dos parametros proposital ("fields with the same name...")
 
 //!Instruction smlal behavior method.
@@ -3066,13 +3147,13 @@ void ac_behavior( msr2 ){
     if (fieldmask & (1 << 2)) {
       res &= ~0xFF0000;
       res |= (in & 0xFF0000);
-    }  
+    }
     if (fieldmask & (1 << 3)) {
       res &= ~0xFF000000;
       res |= (in & 0xFF000000);
     }
     writeSPSR(res);
-    dprintf(" *  SPSR <= 0x%08X\n", res); 
+    dprintf(" *  SPSR <= 0x%08X\n", res);
   }
 }
 
@@ -3100,11 +3181,18 @@ void ac_behavior( dsmlaw ){
 
 //!Instruction dsmulw behavior method.
 void ac_behavior( dsmulw ){
-  fprintf(stderr,"Warning: SMULW<y><x> instruction is not implemented in this model. PC=%X\n", ac_pc.read());
+    fprintf(stderr,"Warning: SMULW<y><x> instruction is not implemented in this model. PC=%X\n", ac_pc.read());
 }
 
 //!Instruction bfi/bfc behavior method.
 void ac_behavior( bfi ){ BFI(rd, rn, lsb, msb, RB, ac_pc); }
+
+//! Instruction nop behavior method
+void ac_behavior( nop){/*Nothing to do here.*/}
+
+
+//! instruction PKH
+void ac_behavior( pkh ) { PKH(rd, rn, rm, tb, RB, ac_pc ); }
 
 
 void ac_behavior( end ) { }
