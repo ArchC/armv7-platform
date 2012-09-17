@@ -7,14 +7,15 @@
 #ifndef TZIC_H
 #define TZIC_H
 
+#include "peripheral.h"
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
 
-// In this model, we mimic the behavior of the TZIC IP for controlling 
+// In this model, we mimic the behavior of the TZIC IP for controlling
 // interrupts in the freescale iMX53 SoC. A SystemC thread provides a loop,
 // executed once per clock cycle, to update the status of the module.
-// In this platform design, the ARM core runs one instruction, possibly 
-// interacting with external modules via the bus functional model. Then, 
+// In this platform design, the ARM core runs one instruction, possibly
+// interacting with external modules via the bus functional model. Then,
 // SystemC kernel executes other modules threads (including this one), and it
 // must prepare information so the next instruction of the ARM core may
 // observe external modules responses.
@@ -25,7 +26,7 @@
 // CHDFACIE.html
 // (AMBA 3 TrustZone Interrupt Controller (SP890) Technical Overview)
 //
-class tzic_module : public sc_module {
+class tzic_module : public sc_module, public peripheral {
  private:
   static const unsigned TZIC_INTCTRL = 0x0;  // Control register
   static const unsigned TZIC_INTTYPE = 0x4;// Interrupt controller type register
@@ -33,7 +34,7 @@ class tzic_module : public sc_module {
   static const unsigned TZIC_SYNCCTRL = 0x10; // Synchronizer control
   static const unsigned TZIC_DSMINT = 0x14;   // DSM interrupt holdoff
   static const unsigned TZIC_INTSEC0 = 0x80;  // Interrupt security registers
-  static const unsigned TZIC_INTSEC1 = 0x84;  
+  static const unsigned TZIC_INTSEC1 = 0x84;
   static const unsigned TZIC_INTSEC2 = 0x88;
   static const unsigned TZIC_INTSEC3 = 0x8C;
   static const unsigned TZIC_ENSET0 = 0x100; // Enable set registers
@@ -41,9 +42,9 @@ class tzic_module : public sc_module {
   static const unsigned TZIC_ENSET2 = 0x108;
   static const unsigned TZIC_ENSET3 = 0x10C;
   static const unsigned TZIC_ENCLEAR0 = 0x180; // Enable clear registers
-  static const unsigned TZIC_ENCLEAR1 = 0x184; 
-  static const unsigned TZIC_ENCLEAR2 = 0x188; 
-  static const unsigned TZIC_ENCLEAR3 = 0x18C; 
+  static const unsigned TZIC_ENCLEAR1 = 0x184;
+  static const unsigned TZIC_ENCLEAR2 = 0x188;
+  static const unsigned TZIC_ENCLEAR3 = 0x18C;
   static const unsigned TZIC_SRCSET0 = 0x200;  // Source set registers
   static const unsigned TZIC_SRCSET1 = 0x204;
   static const unsigned TZIC_SRCSET2 = 0x208;
@@ -126,10 +127,11 @@ class tzic_module : public sc_module {
 
   // Interrupt input. intnumber goes from 0 to 127
   void interrupt(unsigned intnumber, bool deassert=false);
-  
+
   SC_HAS_PROCESS( tzic_module );
 
-  tzic_module (sc_module_name name_): sc_module(name_) {
+  tzic_module (sc_module_name name_, uint32_t start_add,uint32_t end_add)
+      :  sc_module(name_),peripheral(start_add, end_add) {
     // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls.
     SC_THREAD(prc_tzic);
@@ -146,9 +148,6 @@ class tzic_module : public sc_module {
     int_in[2] = 0;
     int_in[3] = 0;
   }
-
-
 };
-
 
 #endif

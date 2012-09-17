@@ -7,7 +7,9 @@
 #ifndef GPT_H
 #define GPT_H
 
+#include "peripheral.h"
 #include "tzic.h"
+
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
 
@@ -21,7 +23,7 @@
 // More info about this module:
 // Please refer to iMX53 Reference Manual page 1735
 //
-class gpt_module : public sc_module {
+class gpt_module : public sc_module, public peripheral {
  private:
 
   static const unsigned GPT_CR = 0x0;    // GPT control register
@@ -34,7 +36,7 @@ class gpt_module : public sc_module {
   static const unsigned GPT_ICR1 = 0x1C; // GPT input capture register 1
   static const unsigned GPT_ICR2 = 0x20; // GPT input capture register 2
   static const unsigned GPT_CNT = 0x24;  // GPT counter register
-  static const unsigned GPT_LASTADDR = 0x28; 
+  static const unsigned GPT_LASTADDR = 0x28;
 
   // According to iMX53 SoC
   static const unsigned GPT_IRQNUM = 39;
@@ -69,7 +71,7 @@ class gpt_module : public sc_module {
   bool enabled; // freezes counters if false
 
   void do_reset(bool hard_reset=true) {
-    // Initial values 
+    // Initial values
     counter = 0;
     prescaler = 0;
     prescaler_counter = 0;
@@ -127,15 +129,17 @@ class gpt_module : public sc_module {
   bool do_cmpout1;
   bool do_cmpout2;
   bool do_cmpout3;
-  
+
   SC_HAS_PROCESS( gpt_module );
-  
-  gpt_module (sc_module_name name_, tzic_module &tzic_): sc_module(name_),
-    tzic(tzic_) {
+
+  gpt_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
+              uint32_t end_add): sc_module(name_),
+      peripheral(start_add, end_add), tzic(tzic_) {
+
       // A SystemC thread never finishes execution, but transfers control back
       // to SystemC kernel via wait() calls.
       SC_THREAD(prc_gpt);
-      
+
       do_reset();
     }
 

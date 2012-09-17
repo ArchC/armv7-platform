@@ -37,7 +37,7 @@ void gpt_module::set_output_pin(bool &output, oc_operation_mode_t mode) {
 }
 
 void gpt_module::prc_gpt() {
-  do {    
+  do {
     wait(1, SC_NS);
 
     if (!enabled)

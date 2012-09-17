@@ -22,8 +22,8 @@
 AC_ARCH(armv5e){
 
 	ac_tlm_intr_port inta;
-  ac_tlm_port MEM:10M;
-  ac_regbank RB:31;
+        ac_tlm_port MEM:10M;
+        ac_regbank RB:31;
 
 	ac_reg R14_irq, R14_fiq, R14_svc, R14_abt, R14_und, R13_irq, R13_svc;
 	ac_reg R13_abt, R13_und, R13_fiq;

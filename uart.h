@@ -6,6 +6,7 @@
 #ifndef UART_H
 #define UART_H
 
+#include "peripheral.h"
 #include "tzic.h"
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
@@ -21,7 +22,7 @@
 // More info about this module:
 // Please refer to iMX53 Reference Manual page 4403
 //
-class uart_module : public sc_module {
+class uart_module : public sc_module, public peripheral {
  private:
 
   static const unsigned UART_URXD = 0x0;  // UART receiver register    (read)
@@ -284,10 +285,11 @@ class uart_module : public sc_module {
   void fast_write(unsigned address, unsigned datum);
 
   // -- External signals
-  
+
   SC_HAS_PROCESS( uart_module );
-  
-  uart_module(sc_module_name name_, tzic_module &tzic_);
+
+  uart_module(sc_module_name name_, tzic_module &tzic_,
+              uint32_t start_add, uint32_t end_add);
   ~uart_module();
 };
 
