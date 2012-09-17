@@ -24,14 +24,14 @@ ram_module::~ram_module()
 unsigned ram_module::fast_read(unsigned address)
 {
     unsigned data = *(memory + (address/4) );
-    dprintf(" || Read from %s ||local address %X || Content %X\n",
+    dprintf("READ from %s local address: 0x%X Content: 0x%X\n",
             this->name(), GetMemoryBegin(),address, data);
     return data;
 
 }
 void ram_module::fast_write(unsigned address, unsigned datum, unsigned offset)
 {
-    dprintf(" || Write to %s || local address %X (offset: %X) || Content %X\n",
+    dprintf("WRITE to %s local address: 0x%X (offset: 0x%X) Content: 0x%X\n",
             this->name(), address, offset, datum);
 
     unsigned old_data = 0;
