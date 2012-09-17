@@ -107,17 +107,22 @@ class gpt_module : public sc_module, public peripheral {
 
   void set_output_pin(bool &output, oc_operation_mode_t mode);
 
- public:
-
-  // This is the main process to simulate the IP behavior
-  void prc_gpt();
-
-  // Fast read/write don't implement error checking. The bus (or other caller)
+   // Fast read/write don't implement error checking. The bus (or other caller)
   // must ensure the address is valid.
   // Invalid read/writes are treated as no-ops.
   // Unaligned addresses have undefined behavior
   unsigned fast_read(unsigned address);
   void fast_write(unsigned address, unsigned datum);
+
+
+ public:
+
+  //Wrappers to call fast_read/write with correct parameters
+  unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
+  void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
+
+  // This is the main process to simulate the IP behavior
+  void prc_gpt();
 
   // -- External signals
   // Two input capture with programmable edge trigger

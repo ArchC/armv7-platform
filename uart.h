@@ -272,17 +272,21 @@ class uart_module : public sc_module, public peripheral {
   // This port is used to send interrupts to the processor
   tzic_module &tzic;
 
- public:
-
-  // This is the main process to simulate the IP behavior
-  void prc_uart();
-
   // Fast read/write don't implement error checking. The bus (or other caller)
   // must ensure the address is valid.
   // Invalid read/writes are treated as no-ops.
   // Unaligned addresses have undefined behavior
   unsigned fast_read(unsigned address);
   void fast_write(unsigned address, unsigned datum);
+
+public:
+
+  //Wrappers to call fast_read/write with correct parameters
+  unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
+  void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
+
+  // This is the main process to simulate the IP behavior
+  void prc_uart();
 
   // -- External signals
 

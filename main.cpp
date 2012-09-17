@@ -75,12 +75,8 @@ class imx53_bus : public sc_module, public ac_tlm_transport_if {
     tzic_module &tzic;
     gpt_module &gpt;
     uart_module &uart;
-    // ram_module *mem;
-
-    //ram_module *bootmem;
-    unsigned *memo;
-    unsigned *bootmem;
-
+    ram_module *bootmem;
+    ram_module *mem;
 
 public:
     // signal data_abort/fetch_abort directly to the processor core
@@ -91,23 +87,19 @@ public:
     imx53_bus (sc_module_name name_, tzic_module &tzic_, gpt_module &gpt_,
                uart_module &uart_) :
         sc_module(name_), tzic(tzic_), gpt(gpt_), uart(uart_) {
-        bootmem = new unsigned[0x100000/4]; // 1MB from 0000 to fffff - real platform has only 128k
-        memo =     new unsigned[0x1000000/4]; // 16MB of real memory (starting at
+
+        bootmem = new ram_module("bootmem", tzic, (uint32_t)0x0, (uint32_t)0xFFFFF, (uint32_t)0xFFFFF);
+        mem = new ram_module("mem", tzic, (uint32_t)0x70000000,(uint32_t)0x71000000, (uint32_t)0x1000000);
+                                                     
+//bootmem = new unsigned[0x100000/4]; // 1MB from 0000 to fffff - real platform has only 128k
+        //memo =     new unsigned[0x1000000/4]; // 16MB of real memory (starting at
                                          //  7000-0000h)
     }
 
-//        bootmem = new ram_module("bootmem", tzic, (unsigned) 0x0, 0x100000, 0x100000/4);
-            //unsigned[0x100000/4]; // 1MB from 0000 to fffff - real platform has only 128k
-        //      mem = new ram_module("ram_module", tzic,(unsigned) 0x70000000,
-        //               (unsigned)  0x0000000,0x100000/4);
-
-
-//new unsigned[0x1000000/4]; // 16MB of real memory (starting at
-        //  7000-0000h)
 
     ~imx53_bus() {
-        delete [] bootmem;
-        delete [] memo;
+        delete  bootmem;
+        delete mem;
     }
 
     // Main handling method
@@ -122,18 +114,18 @@ public:
         }
         if (req.type == READ) {
             // Priority comparisons - mem first
-            if (addr <= 0x100000) {
+//            if (addr <= 0x100000) {
+            if(addr <= 0xFFFFF) {
                 dprintf(" <--> BUS TRANSACTION: READ 0x%X (bootmem)\n", addr);
-                ans.data = *(bootmem + addr/4);
-                //ans.data = bootmem->fast_read(addr -0x0);
+
+                ans.data = bootmem->read_signal((addr -0x0), offset);
                 if (offset)
                     ans.data = ans.data >> offset;
                 return ans;
             }
             if (addr >= 0x70000000) {
                 dprintf(" <--> BUS TRANSACTION: READ 0x%X (memo)\n", addr);
-                ans.data = *(memo + (addr - 0x70000000)/4);
-                //ans.data = mem->fast_read(addr - 0x70000000);
+                ans.data = mem->read_signal(addr - 0x70000000, offset);
                 if (offset)
                     ans.data = ans.data >> offset;
                 return ans;
@@ -142,7 +134,7 @@ public:
             // TZIC
             if (addr >= tzic.GetMemoryBegin() && addr <= tzic.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: READ 0x%X (TZIC)\n", addr);
-                ans.data = tzic.fast_read(addr - 0xFFFC000);
+                ans.data = tzic.read_signal(addr - 0xFFFC000, offset);
                 if (offset)
                     ans.data = ans.data >> offset;
                 return ans;
@@ -150,7 +142,7 @@ public:
             // GPT
             if (addr >= gpt.GetMemoryBegin() && addr <= gpt.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: READ 0x%X (GPT)\n", addr);
-                ans.data = gpt.fast_read(addr - 0x53FA0000);
+                ans.data = gpt.read_signal((addr - 0x53FA0000),offset);
                 if (offset)
                     ans.data = ans.data >> offset;
                 return ans;
@@ -158,7 +150,7 @@ public:
             // UART
             if (addr >= uart.GetMemoryBegin() && addr <= uart.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: READ 0x%X (UART)\n", addr);
-                ans.data = uart.fast_read(addr - 0x53FBC000);
+                ans.data = uart.read_signal((addr - 0x53FBC000), offset);
                 if (offset)
                     ans.data = ans.data >> offset;
                 return ans;
@@ -167,34 +159,16 @@ public:
 
         } else if (req.type == WRITE) {
             // Priority comparisons - mem first
-            if (addr <= 0x100000) {
+            if (addr <= 0xFFFFF) {
                 dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (bootmem)\n",
                         req.data, addr);
-                if (offset) {
-                    unsigned old_data = *(bootmem + addr/4);
-                    unsigned data = req.data;
-                    old_data &= (0xFFFFFFFF << (32 - offset)) >> (32 - offset);
-                    old_data |= ((data << offset) >> offset) << offset;
-                    *(bootmem + addr/4) = old_data;
-                    return ans;
-                }
-                *(bootmem + addr/4) = req.data;
-//                bootmem->fast_write(addr - 0x0, req.data);
+                bootmem->write_signal(addr - 0x0, req.data, offset);
                 return ans;
             }
             if (addr >= 0x70000000) {
                 dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (mem)\n", req.data,
                         addr);
-                if (offset) {
-                    unsigned old_data = *(memo + addr/4);
-                    unsigned data = req.data;
-                    old_data &= (0xFFFFFFFF << (32 - offset)) >> (32 - offset);
-                    old_data |= ((data << offset) >> offset) << offset;
-                    *(memo + (addr - 0x70000000)/4) = old_data;
-                    return ans;
-                }
-                *(mem + (addr - 0x70000000)/4) = req.data;
-                //mem->fast_write(addr - 0x70000000, req.data);
+                mem->write_signal(addr - 0x70000000, req.data, offset);
                 return ans;
             }
             // Other devices
@@ -202,21 +176,21 @@ public:
             if (addr >= tzic.GetMemoryBegin() && addr <= tzic.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (TZIC)\n", req.data,
                         addr);
-                tzic.fast_write((addr - 0xFFFC000), req.data);
+                tzic.write_signal((addr - 0xFFFC000), req.data, offset);
                 return ans;
             }
             // GPT
             if (addr >= gpt.GetMemoryBegin() && addr <= gpt.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (GPT)\n", req.data,
                         addr);
-                gpt.fast_write((addr - 0x53FA0000), req.data);
+                gpt.write_signal((addr - 0x53FA0000), req.data, offset);
                 return ans;
             }
             // UART
             if (addr >= uart.GetMemoryBegin() && addr <= uart.GetMemoryEnd()) {
                 dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (UART)\n", req.data,
                         addr);
-                uart.fast_write((addr - 0x53FBC000),req.data);
+                uart.write_signal((addr - 0x53FBC000),req.data,offset);
                 return ans;
             }
             dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (*NOT MAPPED*)\n",
@@ -255,7 +229,7 @@ void process_params(int ac, char *av[]) {
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
             const char *src = cur + 8;
-            strncpy(buf, src, 20); 
+            strncpy(buf, src, 20);
             sscanf(buf, "%d", &CYCLES);
         } else if (strncmp(cur, "-batch-size=", 12) == 0) {
             char buf[20];

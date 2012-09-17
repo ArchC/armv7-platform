@@ -26,18 +26,22 @@ class ram_module : public sc_module,  public peripheral {
 private:
     tzic_module &tzic;
     unsigned *memory;
-    int blockNumber; //In Bytes
+    uint32_t blockNumber; //In Bytes
 
-public:
   // Fast read/write don't implement error checking. The bus (or other caller)
   // must ensure the address is valid.
   // Invalid read/writes are treated as no-ops.
   // Unaligned addresses have undefined behavior
-  unsigned fast_read(unsigned address);
-  void fast_write(unsigned address, unsigned datum);
+    unsigned fast_read(unsigned address);
+  void fast_write(unsigned address, unsigned datum, unsigned offset);
+
+ public:
+  //Wrappers to call fast_read/write with correct parameters
+  unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
+  void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum, offset); }
 
   ram_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
-              uint32_t end_add, int blockSize_, int blockNumber_):
+              uint32_t end_add, uint32_t blockNumber_):
   sc_module(name_), peripheral(start_add, end_add),tzic(tzic_),
       blockNumber(blockNumber_) {
           //Initialize memory

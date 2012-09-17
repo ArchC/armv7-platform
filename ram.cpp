@@ -18,7 +18,7 @@ static inline int dprintf(const char *format, ...) {
 
 ram_module::~ram_module()
 {
-    delete memory;
+    delete [] memory;
 }
 
 unsigned ram_module::fast_read(unsigned address)
@@ -29,13 +29,12 @@ unsigned ram_module::fast_read(unsigned address)
     return data;
 
 }
-void ram_module::fast_write(unsigned address, unsigned datum)
+void ram_module::fast_write(unsigned address, unsigned datum, unsigned offset)
 {
-    dprintf(" || Write to %s || local address %X || Content %X\n",
-            this->name(), address, datum);
+    dprintf(" || Write to %s || local address %X (offset: %X) || Content %X\n",
+            this->name(), address, offset, datum);
 
-    unsigned offset = ((address+GetMemoryBegin()) % 4) * 8;
-    unsigned old_data;
+    unsigned old_data = 0;
     if(offset){
         old_data = fast_read(address);
         old_data &= (0xFFFFFFFF << (32 - offset)) >> (32 - offset);

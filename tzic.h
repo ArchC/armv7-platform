@@ -109,7 +109,19 @@ class tzic_module : public sc_module, public peripheral {
   // Hardware interrupts input - asserted signals vector
   unsigned int_in[4];
 
+  // Fast read/write don't implement error checking. The bus (or other caller)
+  // must ensure the address is valid.
+  // Invalid read/writes are treated as no-ops.
+  // Unaligned addresses have undefined behavior
+  unsigned fast_read(unsigned address);
+  void fast_write(unsigned address, unsigned datum);
+
  public:
+
+  //Wrappers to call fast_read/write with correct parameters
+  unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
+  void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
+
   // This port is used to send interrupts to the processor
   sc_port<ac_tlm_transport_if> proc_port;
 
@@ -117,13 +129,6 @@ class tzic_module : public sc_module, public peripheral {
 
   // This is the main process to simulate the IP behavior
   void prc_tzic();
-
-  // Fast read/write don't implement error checking. The bus (or other caller)
-  // must ensure the address is valid.
-  // Invalid read/writes are treated as no-ops.
-  // Unaligned addresses have undefined behavior
-  unsigned fast_read(unsigned address);
-  void fast_write(unsigned address, unsigned datum);
 
   // Interrupt input. intnumber goes from 0 to 127
   void interrupt(unsigned intnumber, bool deassert=false);
