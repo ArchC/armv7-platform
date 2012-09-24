@@ -23,10 +23,7 @@ public:
     {
         return mem_range_end;
     }
-    ///virtual unsigned fast_read(unsigned address) = 0 ;
 
-    //virtual void fast_write(unsigned address,
-    //                        unsigned datum, unsigned offset) = 0 ;
     virtual unsigned read_signal(unsigned address, unsigned offset) = 0;
     virtual void write_signal(unsigned address,
                               unsigned datum, unsigned offset) = 0 ;
