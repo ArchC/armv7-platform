@@ -16,8 +16,6 @@
 #include  "armv5e.H"
 #include  "armv5e_isa.cpp"
 
-#include  "armv5e_syscall.H"
-
 void armv5e::behavior() {
 
   unsigned ins_id;
@@ -39,7 +37,6 @@ void armv5e::behavior() {
   else {
     if( start_up ){
       decode_pc = ac_pc;
-      ISA.syscall.set_prog_args(argc, argv);
       start_up=0;
       init_dec_cache();
     }
@@ -47,21 +44,6 @@ void armv5e::behavior() {
       decode_pc = bhv_pc;
     }
  
-    //!Handling System calls.
-    switch( decode_pc ){
-
-#define AC_SYSC(NAME,LOCATION) \
-    case LOCATION: \
-        ISA.syscall.NAME(); \
-      break;  \
-
-
-#include <ac_syscall.def>
-
-#undef AC_SYSC
-
-    default:
-
       ins_cache = (DEC_CACHE+decode_pc);
       if ( !ins_cache->valid ){
         quant = 0;
@@ -78,440 +60,438 @@ void armv5e::behavior() {
         return;
       }
 
-      if (gdbstub && gdbstub->stop(decode_pc)) gdbstub->process_bp();
+    if (gdbstub && gdbstub->stop(decode_pc)) gdbstub->process_bp();
 
-      ac_pc = decode_pc;
+    ac_pc = decode_pc;
 
-      ISA.cur_instr_id = ins_id;
-      if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));
-      switch (ins_id) {
-      case 1: // Instruction and1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_and1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 2: // Instruction eor1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_eor1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 3: // Instruction sub1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_sub1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 4: // Instruction rsb1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_rsb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 5: // Instruction add1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_add1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 6: // Instruction adc1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_adc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 7: // Instruction sbc1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_sbc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 8: // Instruction rsc1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_rsc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 9: // Instruction tst1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_tst1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 10: // Instruction teq1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_teq1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 11: // Instruction cmp1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_cmp1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 12: // Instruction cmn1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_cmn1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 13: // Instruction orr1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_orr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 14: // Instruction mov1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mov1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 15: // Instruction bic1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_bic1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 16: // Instruction mvn1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mvn1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 17: // Instruction and2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_and2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 18: // Instruction eor2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_eor2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 19: // Instruction sub2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_sub2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 20: // Instruction rsb2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_rsb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 21: // Instruction add2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_add2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 22: // Instruction adc2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_adc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 23: // Instruction sbc2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_sbc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 24: // Instruction rsc2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_rsc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 25: // Instruction tst2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_tst2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 26: // Instruction teq2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_teq2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 27: // Instruction cmp2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_cmp2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 28: // Instruction cmn2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_cmn2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 29: // Instruction orr2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_orr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 30: // Instruction mov2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mov2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 31: // Instruction bic2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_bic2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 32: // Instruction mvn2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mvn2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 33: // Instruction and3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_and3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 34: // Instruction eor3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_eor3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 35: // Instruction sub3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_sub3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 36: // Instruction rsb3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_rsb3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 37: // Instruction add3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_add3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 38: // Instruction adc3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_adc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 39: // Instruction sbc3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_sbc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 40: // Instruction rsc3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_rsc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 41: // Instruction tst3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_tst3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 42: // Instruction teq3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_teq3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 43: // Instruction cmp3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_cmp3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 44: // Instruction cmn3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_cmn3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 45: // Instruction orr3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_orr3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 46: // Instruction mov3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_mov3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 47: // Instruction bic3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_bic3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 48: // Instruction mvn3
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_mvn3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 49: // Instruction mov4
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_mov4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 50: // Instruction movt
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_movt(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 51: // Instruction nop
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_nop(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 52: // Instruction pkh
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI5(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(15), instr_vec->get(16), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_pkh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(15), instr_vec->get(16), instr_vec->get(10));
-        break;
-      case 53: // Instruction bfi
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_BTM1(instr_vec->get(1), instr_vec->get(17), instr_vec->get(18), instr_vec->get(6), instr_vec->get(7), instr_vec->get(19), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_bfi(instr_vec->get(1), instr_vec->get(17), instr_vec->get(18), instr_vec->get(6), instr_vec->get(7), instr_vec->get(19), instr_vec->get(10));
-        break;
-      case 54: // Instruction blx1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_BBLT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        if (!ac_annul_sig) ISA.behavior_blx1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        break;
-      case 55: // Instruction b
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_BBL(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        if (!ac_annul_sig) ISA.behavior_b(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        break;
-      case 56: // Instruction bx
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBXBLX(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_bx(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 57: // Instruction blx2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBXBLX(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_blx2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 58: // Instruction swp
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_swp(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 59: // Instruction swpb
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_swpb(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 60: // Instruction mla
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mla(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 61: // Instruction mul
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mul(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 62: // Instruction mls
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mls(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 63: // Instruction smlal
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_smlal(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 64: // Instruction smull
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_smull(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 65: // Instruction umlal
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_umlal(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 66: // Instruction umull
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_umull(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 67: // Instruction ldrt1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_ldrt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 68: // Instruction ldrbt1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_ldrbt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 69: // Instruction ldr1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_ldr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 70: // Instruction ldrb1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_ldrb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 71: // Instruction strt1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_strt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 72: // Instruction strbt1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_strbt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 73: // Instruction str1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_str1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 74: // Instruction strb1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        if (!ac_annul_sig) ISA.behavior_strb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
-        break;
-      case 75: // Instruction ldrt2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 76: // Instruction ldrbt2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrbt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 77: // Instruction ldr2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 78: // Instruction ldrb2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 79: // Instruction strt2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_strt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 80: // Instruction strbt2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_strbt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 81: // Instruction str2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_str2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 82: // Instruction strb2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_strb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 83: // Instruction ldrh
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 84: // Instruction ldrsb
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrsb(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 85: // Instruction ldrsh
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrsh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 86: // Instruction strh
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_strh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 87: // Instruction ldrd
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_ldrd(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 88: // Instruction strd
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_strd(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 89: // Instruction ldm
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSM(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
-        if (!ac_annul_sig) ISA.behavior_ldm(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
-        break;
-      case 90: // Instruction stm
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSM(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
-        if (!ac_annul_sig) ISA.behavior_stm(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
-        break;
-      case 91: // Instruction cdp
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_CDP(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(27), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_cdp(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(27), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 92: // Instruction mcr
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_CRT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mcr(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 93: // Instruction mrc
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_CRT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mrc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 94: // Instruction ldc
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_CLS(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_ldc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 95: // Instruction stc
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_CLS(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_stc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 96: // Instruction bkpt
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBKPT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(30), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_bkpt(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(30), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 97: // Instruction swi
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MSWI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        if (!ac_annul_sig) ISA.behavior_swi(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
-        break;
-      case 98: // Instruction clz
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MCLZ(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_clz(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 99: // Instruction mrs
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_mrs(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 100: // Instruction msr1
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_msr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 101: // Instruction msr2
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        if (!ac_annul_sig) ISA.behavior_msr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-        break;
-      case 102: // Instruction dsmla
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_dsmla(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 103: // Instruction dsmlal
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_dsmlal(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 104: // Instruction dsmul
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_dsmul(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 105: // Instruction dsmlaw
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_dsmlaw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      case 106: // Instruction dsmulw
-        if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        if (!ac_annul_sig) ISA.behavior_dsmulw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-        break;
-      } // switch (ins_id)
+    ISA.cur_instr_id = ins_id;
+    if (!ac_annul_sig) ISA._behavior_instruction(instr_vec->get(1));
+    switch (ins_id) {
+    case 1: // Instruction and1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_and1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
       break;
-    }
+    case 2: // Instruction eor1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_eor1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 3: // Instruction sub1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_sub1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 4: // Instruction rsb1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_rsb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 5: // Instruction add1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_add1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 6: // Instruction adc1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_adc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 7: // Instruction sbc1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_sbc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 8: // Instruction rsc1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_rsc1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 9: // Instruction tst1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_tst1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 10: // Instruction teq1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_teq1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 11: // Instruction cmp1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_cmp1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 12: // Instruction cmn1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_cmn1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 13: // Instruction orr1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_orr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 14: // Instruction mov1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mov1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 15: // Instruction bic1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_bic1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 16: // Instruction mvn1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mvn1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 17: // Instruction and2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_and2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 18: // Instruction eor2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_eor2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 19: // Instruction sub2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_sub2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 20: // Instruction rsb2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_rsb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 21: // Instruction add2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_add2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 22: // Instruction adc2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_adc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 23: // Instruction sbc2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_sbc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 24: // Instruction rsc2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_rsc2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 25: // Instruction tst2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_tst2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 26: // Instruction teq2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_teq2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 27: // Instruction cmp2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_cmp2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 28: // Instruction cmn2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_cmn2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 29: // Instruction orr2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_orr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 30: // Instruction mov2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mov2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 31: // Instruction bic2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_bic2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 32: // Instruction mvn2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mvn2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 33: // Instruction and3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_and3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 34: // Instruction eor3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_eor3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 35: // Instruction sub3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_sub3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 36: // Instruction rsb3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_rsb3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 37: // Instruction add3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_add3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 38: // Instruction adc3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_adc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 39: // Instruction sbc3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_sbc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 40: // Instruction rsc3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_rsc3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 41: // Instruction tst3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_tst3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 42: // Instruction teq3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_teq3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 43: // Instruction cmp3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_cmp3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 44: // Instruction cmn3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_cmn3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 45: // Instruction orr3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_orr3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 46: // Instruction mov3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_mov3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 47: // Instruction bic3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_bic3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 48: // Instruction mvn3
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_mvn3(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 49: // Instruction mov4
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_mov4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 50: // Instruction movt
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_movt(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 51: // Instruction nop
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI4(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_nop(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 52: // Instruction pkh
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DPI5(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(15), instr_vec->get(16), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_pkh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(15), instr_vec->get(16), instr_vec->get(10));
+      break;
+    case 53: // Instruction bfi
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_BTM1(instr_vec->get(1), instr_vec->get(17), instr_vec->get(18), instr_vec->get(6), instr_vec->get(7), instr_vec->get(19), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_bfi(instr_vec->get(1), instr_vec->get(17), instr_vec->get(18), instr_vec->get(6), instr_vec->get(7), instr_vec->get(19), instr_vec->get(10));
+      break;
+    case 54: // Instruction blx1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_BBLT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      if (!ac_annul_sig) ISA.behavior_blx1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      break;
+    case 55: // Instruction b
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_BBL(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      if (!ac_annul_sig) ISA.behavior_b(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      break;
+    case 56: // Instruction bx
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBXBLX(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_bx(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 57: // Instruction blx2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBXBLX(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_blx2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 58: // Instruction swp
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_swp(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 59: // Instruction swpb
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_swpb(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 60: // Instruction mla
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mla(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 61: // Instruction mul
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mul(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 62: // Instruction mls
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mls(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 63: // Instruction smlal
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_smlal(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 64: // Instruction smull
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_smull(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 65: // Instruction umlal
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_umlal(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 66: // Instruction umull
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MULT2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_umull(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 67: // Instruction ldrt1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_ldrt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 68: // Instruction ldrbt1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_ldrbt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 69: // Instruction ldr1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_ldr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 70: // Instruction ldrb1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_ldrb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 71: // Instruction strt1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_strt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 72: // Instruction strbt1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_strbt1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 73: // Instruction str1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_str1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 74: // Instruction strb1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      if (!ac_annul_sig) ISA.behavior_strb1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(14));
+      break;
+    case 75: // Instruction ldrt2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 76: // Instruction ldrbt2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrbt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 77: // Instruction ldr2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 78: // Instruction ldrb2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 79: // Instruction strt2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_strt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 80: // Instruction strbt2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_strbt2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 81: // Instruction str2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_str2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 82: // Instruction strb2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSR(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_strb2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(7), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 83: // Instruction ldrh
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 84: // Instruction ldrsb
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrsb(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 85: // Instruction ldrsh
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrsh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 86: // Instruction strh
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_strh(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 87: // Instruction ldrd
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_ldrd(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 88: // Instruction strd
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSE(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_strd(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 89: // Instruction ldm
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSM(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
+      if (!ac_annul_sig) ISA.behavior_ldm(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
+      break;
+    case 90: // Instruction stm
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_LSM(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
+      if (!ac_annul_sig) ISA.behavior_stm(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(26));
+      break;
+    case 91: // Instruction cdp
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_CDP(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(27), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_cdp(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(27), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 92: // Instruction mcr
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_CRT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mcr(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 93: // Instruction mrc
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_CRT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mrc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(29), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(28), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 94: // Instruction ldc
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_CLS(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_ldc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 95: // Instruction stc
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_CLS(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_stc(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(22), instr_vec->get(23), instr_vec->get(24), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 96: // Instruction bkpt
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MBKPT(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(30), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_bkpt(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(30), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 97: // Instruction swi
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MSWI(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      if (!ac_annul_sig) ISA.behavior_swi(instr_vec->get(1), instr_vec->get(2), instr_vec->get(20), instr_vec->get(21));
+      break;
+    case 98: // Instruction clz
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MCLZ(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_clz(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 99: // Instruction mrs
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mrs(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 100: // Instruction msr1
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_msr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 101: // Instruction msr2
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_MMSR2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_msr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      break;
+    case 102: // Instruction dsmla
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmla(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 103: // Instruction dsmlal
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmlal(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 104: // Instruction dsmul
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmul(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 105: // Instruction dsmlaw
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmlaw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 106: // Instruction dsmulw
+      if (!ac_annul_sig) ISA._behavior_armv5e_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmulw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    } // switch (ins_id)
     if ((!ac_wait_sig) && (!ac_annul_sig)) ac_instr_counter+=1;
     ac_annul_sig = 0;
   }

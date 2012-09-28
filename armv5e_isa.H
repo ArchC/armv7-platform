@@ -22,7 +22,6 @@
 #include "ac_instr_info.H"
 #include "armv5e_arch.H"
 #include "armv5e_arch_ref.H"
-#include "armv5e_syscall.H"
 
 namespace armv5e_parms
 {
@@ -39,11 +38,10 @@ public:
 
   ac_decoder_full* decoder;
 
-  armv5e_syscall syscall;
   int cur_instr_id;
 
   //!Constructor.
-  armv5e_isa(armv5e_arch& ref) : armv5e_arch_ref(ref) , syscall(ref) {
+  armv5e_isa(armv5e_arch& ref) : armv5e_arch_ref(ref)  {
     //!Building Decoder.
     decoder = ac_decoder_full::CreateDecoder(armv5e_isa::formats, armv5e_isa::instructions, &ref);
   }

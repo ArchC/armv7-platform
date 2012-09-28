@@ -40,7 +40,8 @@ armv5e_arch::armv5e_arch() :
   R11_fiq("R11_fiq", 0),
   R10_fiq("R10_fiq", 0),
   R9_fiq("R9_fiq", 0),
-  R8_fiq("R8_fiq", 0) {
+  R8_fiq("R8_fiq", 0),
+  CP15_SCC("CP15_SCC") {
 
   ac_mt_endian = armv5e_parms::AC_MATCH_ENDIAN;
   ac_tgt_endian = armv5e_parms::AC_PROC_ENDIAN;

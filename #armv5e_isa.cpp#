@@ -1919,19 +1919,25 @@ inline void MCR(unsigned cp_num,unsigned funcc2,unsigned funcc3, unsigned crn,
 
     dprintf("Instruction: MRC\n");
 
+#ifdef SYSTEM_MODE
+
     if(rd == PC) {
         fprintf(stderr, "Warning: MRC unpredictable behavior.\n", cp_num);
         return;
     }
     if(CP[cp_num] == NULL){
-        //Coprocessor not implemented.
-        fprintf(stderr, "Warning: CP%d is not implemented in this model.\n", cp_num);
+        //This Coprocessor was not implemented.
+        fprintf(stderr, "Warning Coprocessor cp%d not implemented in this model", cp_num);
+        service_interrupt(*this, arm_impl::EXCEPTION_UNDEFINED_INSTR);
         return;
     }
     uint32_t rd_val = RB_read(rd);
 
-    //Call Coprocessor implementation of MRC
+    //Call Coprocessor implementation of MCR
     CP[cp_num]->MCR(funcc2, funcc3, crn, crm, rd_val);
+#else
+    fprintf(stderr, "Warning Coprocessor simulation not implemented in this model");
+#endif
 }
 //------------------------------------------------------
 
@@ -2903,7 +2909,7 @@ void ac_behavior( blx2 ){
   if(isBitSet(dest.entire,0)) {
     fprintf(stderr,"Change to thumb not implemented in this model. PC=%X\n", ac_pc.read());
     exit(EXIT_FAILURE);
-  } 
+  }
 
   RB_write(LR, RB_read(PC));
   dprintf("Branch return address: 0x%lX\n", RB_read(LR));
@@ -2912,7 +2918,7 @@ void ac_behavior( blx2 ){
   RB_write(PC, dest.entire & 0xFFFFFFFE);
   ac_pc = RB_read(PC);
 
-  dprintf("Calculated branch destination: 0x%lX\n", RB_read(PC));  
+  dprintf("Calculated branch destination: 0x%lX\n", RB_read(PC));
 }
 
 //!Instruction swp behavior method.

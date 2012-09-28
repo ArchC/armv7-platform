@@ -12,13 +12,13 @@
  *
  * @version   1.5
  * @date      Thu, 29 Jun 2006 14:49:08 -0300
- * 
+ *
  * @brief     The ArchC ARMv5e functional model.
- * 
+ *
  * @attention Copyright (C) 2002-2008 --- The ArchC Team
  *
  */
- 
+
 AC_ISA(armv5e) {
 
   /* Instrucoes de processamento de dados - ULA */
@@ -97,11 +97,17 @@ AC_ISA(armv5e) {
   ac_instr<Type_MCLZ> clz;
   ac_instr<Type_MMSR1> mrs, msr1;
   ac_instr<Type_MMSR2> msr2;
-  
+
   /* Instrucoes DSP */
   /* O tipo LSE de Load/Store possui instrucoes DSP (ldrd e strd) */
   ac_instr<Type_DSPSM> dsmla, dsmlal, dsmul, dsmlaw, dsmulw;
-  
+
+  ac_asm_map coproc{
+    "p"[0..15] = [0..15];
+  }
+  ac_asm_map coreg {
+    "c"[0..15] = [0..15];
+  }
   ac_asm_map reg {
    "r"[0..15] = [0..15];
    "a"[1..4] = [0..3];
@@ -121,7 +127,7 @@ AC_ISA(armv5e) {
     "ne" = 1;
     "cs", "hs" = 2;
     "cc", "lo" = 3;
-    "mi" = 4; 
+    "mi" = 4;
     "pl" = 5;
     "vs" = 6;
     "vc" = 7;
@@ -143,7 +149,7 @@ AC_ISA(armv5e) {
 
   ac_asm_map sf {
     "" = 0;
-    "s" = 1;    
+    "s" = 1;
   }
 
   /* MSR/MRS Instruction special fields */
@@ -156,13 +162,13 @@ AC_ISA(armv5e) {
   ac_asm_map mlstype {
     "da" = 0;
     "ia" = 1;
-    "db" = 2; 
+    "db" = 2;
     "ib" = 3;
   }
   ac_asm_map lstype {
     "fa" = 0;
     "fd" = 1;
-    "ea" = 2; 
+    "ea" = 2;
     "ed" = 3;
   }
 
@@ -171,14 +177,14 @@ AC_ISA(armv5e) {
     "ea" = 1;
     "fd" = 2;
     "fa" = 3;
-  }  
+  }
 
 
   ISA_CTOR(xscale) {
 
     /* Defining assembler-specific constraints */
 
-    assembler.set_comment("@");	
+    assembler.set_comment("@");
     assembler.set_line_comment("@#");
 
     /**************************************/
@@ -189,31 +195,29 @@ AC_ISA(armv5e) {
     and1.set_asm("and%[cond]%sf %reg, %reg, %reg, %shift #%imm", cond, s, rd, rn, rm, shift, shiftamount);
     and1.set_asm("and%[cond]%sf %reg, %reg, %reg, rrx", cond, s, rd, rn, rm, shift=3, shiftamount=0);
     and1.set_decoder(op=0x00, subop1=0x00, func1=0x00);
-    
+
     and2.set_asm("and%[cond]%sf %reg, %reg, %reg, %shift %reg", cond, s, rd, rn, rm, shift, rs); 
     and2.set_decoder(op=0x00, subop1=0x01, subop2=0x00, func1=0x00);
 
     and3.set_asm("and%[cond]%sf %reg, %reg, #%imm(aimm)", cond, s, rd, rn, rotate+imm8);
     and3.set_decoder(op=0x01, func1=0x00);
 
-    
     eor1.set_asm("eor%[cond]%sf %reg, %reg, %reg", cond, s, rd, rn, rm, shiftamount=0, shift=0); 
     eor1.set_asm("eor%[cond]%sf %reg, %reg, %reg, %shift #%imm", cond, s, rd, rn, rm, shift, shiftamount);
     eor1.set_asm("eor%[cond]%sf %reg, %reg, %reg, rrx", cond, s, rd, rn, rm, shift=3, shiftamount=0);
     eor1.set_decoder(op=0x00, subop1=0x00, func1=0x01);
-    
+
     eor2.set_asm("eor%[cond]%sf %reg, %reg, %reg, %shift %reg", cond, s, rd, rn, rm, shift, rs); 
     eor2.set_decoder(op=0x00, subop1=0x01, subop2=0x00, func1=0x01);
-    
+
     eor3.set_asm("eor%[cond]%sf %reg, %reg, #%imm(aimm)", cond, s, rd, rn, rotate+imm8);    
     eor3.set_decoder(op=0x01, func1=0x01);
-   
- 
+
     sub1.set_asm("sub%[cond]%sf %reg, %reg, %reg", cond, s, rd, rn, rm, shiftamount=0, shift=0); 
     sub1.set_asm("sub%[cond]%sf %reg, %reg, %reg, %shift #%imm", cond, s, rd, rn, rm, shift, shiftamount);
     sub1.set_asm("sub%[cond]%sf %reg, %reg, %reg, rrx", cond, s, rd, rn, rm, shift=3, shiftamount=0);
     sub1.set_decoder(op=0x00, subop1=0x00, func1=0x02);
-    
+
     sub2.set_asm("sub%[cond]%sf %reg, %reg, %reg, %shift %reg", cond, s, rd, rn, rm, shift, rs); 
     sub2.set_decoder(op=0x00, subop1=0x01, subop2=0x00, func1=0x02);
     
@@ -862,13 +866,13 @@ AC_ISA(armv5e) {
     */
 
 //  ac_format Type_LSM = "%cond:4 %op:3 %p:1 %u:1 %r:1 %w:1 %l:1 %rn:4 %rlist:16";
-    ldm.set_asm("ldm%cond%lstype %reg, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0,w=0);    
-    ldm.set_asm("ldm%cond%lstype %reg!, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0, w=1);  
-    ldm.set_asm("ldm%cond%lstype %reg, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=0);  
-    ldm.set_asm("ldm%cond%lstype %reg!, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=1);     
-    ldm.set_asm("ldm%cond%mlstype %reg, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0, w=0);    
-    ldm.set_asm("ldm%cond%mlstype %reg!, {%reg...(dorlist)}", cond, p+u, rn, rlist,r=0, w=1);  
-    ldm.set_asm("ldm%cond%mlstype %reg, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=0);      
+    ldm.set_asm("ldm%cond%lstype %reg, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0,w=0);
+    ldm.set_asm("ldm%cond%lstype %reg!, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0, w=1);
+    ldm.set_asm("ldm%cond%lstype %reg, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=0);
+    ldm.set_asm("ldm%cond%lstype %reg!, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=1);
+    ldm.set_asm("ldm%cond%mlstype %reg, {%reg...(dorlist)}", cond, p+u, rn, rlist, r=0, w=0);
+    ldm.set_asm("ldm%cond%mlstype %reg!, {%reg...(dorlist)}", cond, p+u, rn, rlist,r=0, w=1);
+    ldm.set_asm("ldm%cond%mlstype %reg, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=0);
     ldm.set_asm("ldm%cond%mlstype %reg!, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1,w=1);
     ldm.set_decoder(op=0x04, l=0x01);
     
@@ -886,16 +890,19 @@ AC_ISA(armv5e) {
     /* Coprocessor instructions    */
     /*******************************/
 
-    /* Coprocessor instructions will NOT be implemented in this model ! */
+    /*coprocessor instructions will NOT be implemented in this model ! */
 
 //    cdp.set_asm("");
-    cdp.set_decoder(op=0x07, subop1=0x00, subop3=0x00); 
-    
-//    mcr.set_asm("");
-    mcr.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x00); 
-  
+    cdp.set_decoder(op=0x07, subop1=0x00, subop3=0x00);
+
+    mcr.set_asm("mcr%[cond] %coproc, #%imm, %reg, %coreg, %coreg", cond,cp_num, funcc2, rd, crn, crm, funcc3=0x0);
+    mcr.set_asm("mcr%[cond] %coproc, #%imm, %reg, %coreg, %coreg, #%imm", cond,cp_num, funcc2, rd, crn, crm, funcc3);
+    mcr.set_asm("mcr2 %coproc, #%imm, %reg, %coreg, %coreg", cp_num, funcc2, rd, crn, crm, funcc3=0x0, cond=0xF);
+    mcr.set_asm("mcr2 %coproc, #%imm, %reg, %coreg, %coreg, #%imm",cp_num, funcc2, rd, crn, crm, funcc3, cond= 0xF);
+    mcr.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x00);
+
 //    mrc.set_asm("");
-    mrc.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x01); 
+    mrc.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x01);
 
 //    ldc.set_asm("");
     ldc.set_decoder(op=0x06, l=0x01);

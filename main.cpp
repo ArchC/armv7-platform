@@ -40,6 +40,9 @@ const char *archc_options="-abi ";
 #include "ram.h"
 #include "uart.h"
 #include "bus.h"
+#include "coprocessor.h"
+#include "cp15.h"
+
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
 bool DEBUG_CORE = false;
@@ -47,11 +50,14 @@ bool DEBUG_GPT  = false;
 bool DEBUG_TZIC = false;
 bool DEBUG_UART = false;
 bool DEBUG_RAM  = false;
+bool DEBUG_CP15 = false;
+
 static unsigned CYCLES = 0;
 static unsigned BATCH_SIZE = 100;
 static unsigned GDB_PORT = 5000;
 static bool ENABLE_GDB = false;
 static char* SYSCODE = 0;
+coprocessor *CP[16];
 
 void process_params(int ac, char *av[]) {
     for (int i = 0, e = ac; i != e; ++i) {
@@ -70,6 +76,8 @@ void process_params(int ac, char *av[]) {
             DEBUG_UART = true;
         } else if (strcmp(cur, "-debug-ram") == 0) {
             DEBUG_RAM = true;
+        } else if (strcmp(cur, "-debug-cp15") == 0) {
+            DEBUG_CP15 = true;
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
             const char *src = cur + 8;
@@ -92,7 +100,7 @@ void process_params(int ac, char *av[]) {
         } else if (strcmp(cur, "--help") == 0) {
             std::cout << std::endl;
             std::cout << "ARM i.MX53 platform simulator." << std::endl;
-            std::cout << "Written by Rafael Auler, University of Campinas." 
+            std::cout << "Written by Rafael Auler, University of Campinas."
                       << std::endl;
             std::cout << "Version 07 Jun 2012" << std::endl;
             std::cout << "Report bugs to rafael.auler@lsc.ic.unicamp.br" << std::endl;
@@ -116,6 +124,12 @@ void process_params(int ac, char *av[]) {
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
+    // If CP pointers arent initialized as NULL, we might get segfault
+    // when executing  CP instructions with uninitialized CP.
+    for(int i = 0; i < 16; i++) CP[i] = NULL;
+
+    //Coprocessors
+    CP[15] = new cp15();
 
     //--- Devices ---
     armv5e armv5e_proc1("armv5e");                                                                          // Core
