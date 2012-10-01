@@ -125,7 +125,7 @@ int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
     // If CP pointers arent initialized as NULL, we might get segfault
-    // when executing  CP instructions with uninitialized CP.
+    // when executing CP instructions.
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //Coprocessors

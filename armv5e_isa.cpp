@@ -1893,9 +1893,9 @@ inline void MOV(int rd, bool s,
     flags.N = getBit(dpi_shiftop.entire, 31);
     flags.Z = ((dpi_shiftop.entire == 0) ? true : false);
     flags.C = dpi_shiftopcarry;
-    // nothing happens with flags.V 
+    // nothing happens with flags.V
   }
-     
+
   dprintf(" *  R%d <= 0x%08X (%d)\n", rd, dpi_shiftop.entire, dpi_shiftop.entire); 
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
@@ -1914,24 +1914,29 @@ inline void MOVT(int rd, bool s,
 }
 
 //------------------------------------------------------
-inline void MCR(unsigned cp_num,unsigned funcc2,unsigned funcc3, unsigned crn,
-           unsigned crm,unsigned rd){
+inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, int crn,
+           int crm,unsigned rd){
 
     dprintf("Instruction: MRC\n");
 
+#ifdef SYSTEM_MODEL
     if(rd == PC) {
         fprintf(stderr, "Warning: MRC unpredictable behavior.\n", cp_num);
         return;
     }
     if(CP[cp_num] == NULL){
-        //Coprocessor not implemented.
-        fprintf(stderr, "Warning: CP%d is not implemented in this model.\n", cp_num);
+        //This Coprocessor was not implemented.
+        fprintf(stderr, "Warning Coprocessor cp%d not implemented in this model", cp_num);
+        service_interrupt(*self, arm_impl::EXCEPTION_UNDEFINED_INSTR);
         return;
     }
     uint32_t rd_val = RB_read(rd);
 
-    //Call Coprocessor implementation of MRC
-    CP[cp_num]->MCR(funcc2, funcc3, crn, crm, rd_val);
+    //Call Coprocessor implementation of MCR
+    (CP[cp_num])->MCR(funcc2, funcc3, crn, crm, rd_val);
+#else
+    fprintf(stderr, "Warning Coprocessor simulation not implemented in this model");
+#endif
 }
 //------------------------------------------------------
 
@@ -2903,7 +2908,7 @@ void ac_behavior( blx2 ){
   if(isBitSet(dest.entire,0)) {
     fprintf(stderr,"Change to thumb not implemented in this model. PC=%X\n", ac_pc.read());
     exit(EXIT_FAILURE);
-  } 
+  }
 
   RB_write(LR, RB_read(PC));
   dprintf("Branch return address: 0x%lX\n", RB_read(LR));
@@ -2912,7 +2917,7 @@ void ac_behavior( blx2 ){
   RB_write(PC, dest.entire & 0xFFFFFFFE);
   ac_pc = RB_read(PC);
 
-  dprintf("Calculated branch destination: 0x%lX\n", RB_read(PC));  
+  dprintf("Calculated branch destination: 0x%lX\n", RB_read(PC));
 }
 
 //!Instruction swp behavior method.
@@ -3210,11 +3215,8 @@ void ac_behavior( pkh ) { PKH(rd, rn, rm, tb, RB, ac_pc ); }
 
 void ac_behavior( end ) { }
 
-
-
 //Coprocessor Generic CPxx implementation
-
 //! instruction MCR
-void ac_behavior( mcr ) { MCR(cp_num, funcc2, funcc3, crn,crm, rd); }
+void ac_behavior( mcr ) { MCR(this, cp_num, funcc2, funcc3, crn,crm, rd); }
 
 // -----------------------------------------------------------------

@@ -1,0 +1,91 @@
+#define __CP15_lookuptable__
+#define __CP15_lookuptable__
+
+
+#define CRN_SIZE  16
+#define OPC1_SIZE 8
+#define CRM_SIZE 16
+#define OPC2_SIZE 8
+
+//This lookup table remaps register to real accessing values used on
+// MRC and MCR instructions
+uint32_t regMap[CRN_SIZE][OPC1_SIZE][CRM_SIZE][OPC2_SIZE]
+{
+    {//Cr0
+        {//OPC1 = 0
+            /*CRM=0*/ {MAIN_ID,   NULL,       NULL,     TLB_TYPE,  MAIN_ID,              NULL,      MAIN_ID,   MAIN_ID   }
+            /*CRM=1*/ {NULL,      NULL,       NULL,     NULL,      MEMORY_MODEL_FEATURE, NULL,      NULL,      NULL      }
+            /*CRM=2*/ {IS_ATTR_0, IS_ATTR_1, IS_ATTR_2, IS_ATTR_3, IS_ATTR_4,            IS_ATTR_5, IS_ATTR_6, IS_ATTR_7 }
+            /*CRM=3*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=4*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=5*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=6*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=7*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=8*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=9*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=10*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=11*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=12*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=13*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=14*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+            /*CRM=15*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,      NULL      }
+        }
+        {//OPC =1
+            /*CRM=0*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     SILICON_ID }
+            /*CRM=1*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=2*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=3*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=4*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=5*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=6*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=7*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=8*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=9*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=10*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=11*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=12*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=13*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=14*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=15*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+        }
+        {//OPC =2
+            /*CRM=0*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=1*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=2*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=3*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=4*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=5*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=6*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=7*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=8*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=9*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=10*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=11*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=12*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=13*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=14*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=15*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+        }
+        {//OPC =3
+            /*CRM=0*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=1*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=2*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=3*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=4*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=5*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=6*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=7*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=8*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=9*/ {NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=10*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=11*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=12*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=13*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=14*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+            /*CRM=15*/{NULL,      NULL,       NULL,     NULL,      NULL,                 NULL,      NULL,     NULL       }
+        }
+         
+    }
+
+}
+#endif
