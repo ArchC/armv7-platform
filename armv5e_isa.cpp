@@ -1235,7 +1235,7 @@ inline void ADC(int rd, int rn, bool s,
 		  ((!getBit(RN2.entire,31)) && (!getBit(dpi_shiftop.entire,31)) && getBit(RD2.entire,31))) ? true : false);
     }
   }
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1478,7 +1478,7 @@ inline void CMN(int rn,
   flags.V = (((getBit(RN2.entire,31) && getBit(dpi_shiftop.entire,31) && (!getBit(alu_out.entire,31))) ||
 	      ((!getBit(RN2.entire,31)) && (!getBit(dpi_shiftop.entire,31)) && getBit(alu_out.entire,31))) ? true : false);
 
-  dprintf("Results: 0x%lX\n *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", alu_out.entire,flags.N,flags.Z,flags.C,flags.V);    
+  dprintf("Results: 0x%lX\n *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", alu_out.entire,flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -1502,8 +1502,8 @@ inline void CMP(int rn,
   flags.C = !(((uint32_t) dpi_shiftop.uentire > (uint32_t) RN2.uentire) ? true : false);
   flags.V = (((getBit(RN2.entire,31) && getBit(neg_shiftop.entire,31) && (!getBit(alu_out.entire,31))) ||
 	      ((!getBit(RN2.entire,31)) && (!getBit(neg_shiftop.entire,31)) && getBit(alu_out.entire,31))) ? true : false);
-  
-  dprintf("Results: 0x%lX\n *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", alu_out.entire,flags.N,flags.Z,flags.C,flags.V);     
+
+  dprintf("Results: 0x%lX\n *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", alu_out.entire,flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -1738,12 +1738,12 @@ inline void LDRH(int rd, int rn,
     return;
   }
   value = MEM.read(ls_address.entire);
-  value &= 0xFFFF; /* Zero extends halfword value 
+  value &= 0xFFFF; /* Zero extends halfword value
 		      BUG: Model must be little endian in order to the code work  */
 
   RB_write(rd, value);
 
-  dprintf(" *  R%d <= 0x%04X\n", rd, value); 
+  dprintf(" *  R%d <= 0x%04X\n", rd, value);
 
   ac_pc = RB_read(PC);
 }
@@ -1764,8 +1764,8 @@ inline void LDRSB(int rd, int rn,
 
   RB_write(rd, data);
 
-  dprintf(" *  R%d <= 0x%08X\n", rd, data); 
- 
+  dprintf(" *  R%d <= 0x%08X\n", rd, data);
+
   ac_pc = RB_read(PC);
 }
 
@@ -1777,7 +1777,7 @@ inline void LDRSH(int rd, int rn,
   uint32_t data;
 
   dprintf("Instruction: LDRSH\n");
-  dprintf("Reading memory position 0x%08X\n", ls_address.entire);    
+  dprintf("Reading memory position 0x%08X\n", ls_address.entire);
   // Special cases
   // verificar alinhamento do halfword
   if(isBitSet(ls_address.entire, 0)) {
@@ -1915,10 +1915,11 @@ inline void MOVT(int rd, bool s,
 
 //------------------------------------------------------
 inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, int crn,
-           int crm,unsigned rd){
+                int crm,unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
 
     dprintf("Instruction: MRC\n");
-
 #ifdef SYSTEM_MODEL
     if(rd == PC) {
         fprintf(stderr, "Warning: MRC unpredictable behavior.\n", cp_num);
@@ -1934,18 +1935,45 @@ inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, in
 
     //Call Coprocessor implementation of MCR
     (CP[cp_num])->MCR(funcc2, funcc3, crn, crm, rd_val);
+
+#else
+    fprintf(stderr, "Warning Coprocessor simulation not implemented in this model");
+#endif
+}
+//------------------------------------------------------
+inline void MRC(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, int crn,
+                int crm,unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+    dprintf("Instruction: MCR\n");
+#ifdef SYSTEM_MODEL
+
+    if(CP[cp_num] == NULL){
+        //This Coprocessor was not implemented.
+        fprintf(stderr, "Warning Coprocessor cp%d not implemented in this model", cp_num);
+        service_interrupt(*self, arm_impl::EXCEPTION_UNDEFINED_INSTR);
+        return;
+    }
+
+    //Call Coprocessor implementation of MRC
+    uint32_t cp_val = (CP[cp_num])->MRC(funcc2, funcc3, crn, crm);
+
+    if(rd != PC)
+        RB_write(rd,cp_val);
+    else{
+        flags.N = getBit(cp_val, 31);
+        flags.Z = getBit(cp_val, 30);
+        flags.C = getBit(cp_val, 29);
+        flags.V = getBit(cp_val, 28);
+        dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", flags.N,flags.Z,flags.C,flags.V);
+    }
+
 #else
     fprintf(stderr, "Warning Coprocessor simulation not implemented in this model");
 #endif
 }
 //------------------------------------------------------
 
-inline void MRC(){
-  dprintf("Instruction: MRC\n");
-  fprintf(stderr, "Warning: MRC instruction is not implemented in this model.\n");
-}
-
-//------------------------------------------------------
 inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, int rm, int field,
          ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
          ac_reg<unsigned>& ac_pc) {
@@ -3018,9 +3046,6 @@ void ac_behavior( stm ){ STM(rlist, RB, ac_pc, MEM, r); }
 //!Instruction cdp behavior method.
 void ac_behavior( cdp ){ CDP();}
 
-//!Instruction mrc behavior method.
-void ac_behavior( mrc ){ MRC();}
-
 //!Instruction ldc behavior method.
 void ac_behavior( ldc ){ LDC();}
 
@@ -3217,6 +3242,10 @@ void ac_behavior( end ) { }
 
 //Coprocessor Generic CPxx implementation
 //! instruction MCR
-void ac_behavior( mcr ) { MCR(this, cp_num, funcc2, funcc3, crn,crm, rd); }
+void ac_behavior( mcr ) { MCR(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
+
+//! instruction MRC
+void ac_behavior( mrc ) { MRC(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
+
 
 // -----------------------------------------------------------------

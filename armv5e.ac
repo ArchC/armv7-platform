@@ -32,10 +32,6 @@ AC_ARCH(armv5e){
 	// FIQ private regs
 	ac_reg R12_fiq, R11_fiq, R10_fiq, R9_fiq, R8_fiq;
 
-  //CP15 registers
-  ac_regbank CP15_SCC:11;   // CP15 System control and Configuration Registers
-  //ac_regbank CP15_MMUCC:15; // CP15 MMU Control and Configuration Registers
-
   ac_wordsize 32;
 
   ARCH_CTOR(armv5e) {

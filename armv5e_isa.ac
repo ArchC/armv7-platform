@@ -902,6 +902,10 @@ AC_ISA(armv5e) {
     mcr.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x00);
 
 //    mrc.set_asm("");
+    mrc.set_asm("mrc%[cond] %coproc, #%imm, %reg, %coreg, %coreg", cond,cp_num, funcc2, rd, crn, crm, funcc3=0x0);
+    mrc.set_asm("mrc%[cond] %coproc, #%imm, %reg, %coreg, %coreg, #%imm", cond,cp_num, funcc2, rd, crn, crm, funcc3);
+    mrc.set_asm("mrc2 %coproc, #%imm, %reg, %coreg, %coreg", cp_num, funcc2, rd, crn, crm, funcc3=0x0, cond=0xF);
+    mrc.set_asm("mrc2 %coproc, #%imm, %reg, %coreg, %coreg, #%imm",cp_num, funcc2, rd, crn, crm, funcc3, cond= 0xF);
     mrc.set_decoder(op=0x07, subop1=0x01, subop3=0x00, l=0x01);
 
 //    ldc.set_asm("");

@@ -42,6 +42,7 @@ const char *archc_options="-abi ";
 #include "bus.h"
 #include "coprocessor.h"
 #include "cp15.h"
+#include "mmu.h"
 
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
@@ -51,6 +52,7 @@ bool DEBUG_TZIC = false;
 bool DEBUG_UART = false;
 bool DEBUG_RAM  = false;
 bool DEBUG_CP15 = false;
+bool DEBUG_MMU  = false;
 
 static unsigned CYCLES = 0;
 static unsigned BATCH_SIZE = 100;
@@ -78,6 +80,8 @@ void process_params(int ac, char *av[]) {
             DEBUG_RAM = true;
         } else if (strcmp(cur, "-debug-cp15") == 0) {
             DEBUG_CP15 = true;
+        } else if (strcmp(cur, "-debug-mmu") == 0) {
+            DEBUG_MMU = true;
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
             const char *src = cur + 8;
@@ -128,22 +132,27 @@ int sc_main(int ac, char *av[])
     // when executing CP instructions.
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
-    //Coprocessors
-    CP[15] = new cp15();
-
-    //--- Devices ---
+    //--- Devices -----
+    imx53_bus   mainBus     ("imx53bus");         // Main Bus
     armv5e armv5e_proc1("armv5e");                                                                          // Core
     tzic_module tzic    ("tzic",         (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);                     // TZIC
     gpt_module  gpt     ("gpt",    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
     uart_module uart    ("uart",   tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);                     // UART1
     ram_module  bootmem ("bootmem",tzic, (uint32_t)        0x0, (uint32_t)    0xFFFFF, (uint32_t)0xFFFFF);  // Boot Memory
     ram_module  mem     ("mem",    tzic, (uint32_t) 0x70000000, (uint32_t) 0x71000000, (uint32_t)0x1000000);// Internal RAM
-    imx53_bus   bus     ("imx53bus");                                                                       // Main Bus
 
-    bus.connectDevice(&bootmem);
-    bus.connectDevice(&tzic);
-    bus.connectDevice(&gpt);
-    bus.connectDevice(&uart);
+    //--- Connect devices to bus ----
+    mainBus.connectDevice(&bootmem);
+    mainBus.connectDevice(&tzic);
+    mainBus.connectDevice(&gpt);
+    mainBus.connectDevice(&uart);
+
+    //--- Coprocessors ----
+    cp15 *coprocessor15 = new cp15();
+    CP[15] = coprocessor15;
+
+    //---Memory Management Unit ----
+    MMU mmu("MMU", coprocessor15,&mainBus);
 
 #ifdef AC_DEBUG
     ac_trace("armv5e_proc1.trace");
@@ -153,8 +162,8 @@ int sc_main(int ac, char *av[])
     armv5e_proc1.set_instr_batch_size(BATCH_SIZE);
 
     tzic.proc_port(armv5e_proc1.inta);
-    bus.proc_port(armv5e_proc1.inta);
-    armv5e_proc1.MEM_port(bus);
+    mainBus.proc_port(armv5e_proc1.inta);
+    armv5e_proc1.MEM_port(mmu);
 
     if (SYSCODE != 0) {
         std::cout << "Loading system kernel: " << SYSCODE << std::endl;
@@ -182,11 +191,11 @@ int sc_main(int ac, char *av[])
 
 #ifdef AC_STATS
     ac_stats_base::print_all_stats(std::cerr);
-#endif 
+#endif
 
 #ifdef AC_DEBUG
     ac_close_trace();
-#endif 
+#endif
     if (SYSCODE != 0)
         free(SYSCODE);
 

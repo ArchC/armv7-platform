@@ -7,6 +7,9 @@ class coprocessor
 public:
     virtual void MCR(unsigned opc1, unsigned opc2,
                      unsigned crn, unsigned crm, unsigned rt_value)=0;
+    virtual unsigned MRC(unsigned opc1, unsigned opc2,
+                     unsigned crn, unsigned crm)=0;
+
 };
 
 #endif
