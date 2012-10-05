@@ -19,6 +19,8 @@ imx53_bus::~imx53_bus() {}
 void imx53_bus::connectDevice(peripheral *device){
     devices.push_back(device);
 }
+
+
 //Route a request to an specific device.
 ac_tlm_rsp imx53_bus::transport(const ac_tlm_req& req){
 
