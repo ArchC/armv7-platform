@@ -1,10 +1,12 @@
-#ifndef ARM_INTERRUPTS_H
-#define ARM_INTERRUPTS_H
+#ifndef __ARM_INTERRUPTS_H__
+#define __ARM_INTERRUPTS_H__
 
 #include "armv5e_arch_ref.H"
 
 
 namespace arm_impl {
+
+        enum PrivilegeLevel { PL0=0, PL1};
 
     class processor_mode {
     public:
@@ -17,9 +19,6 @@ namespace arm_impl {
         static const unsigned int SYSTEM_MODE     = 0x1F; // 0b11111;
         static const unsigned int MODE_MASK       = 0x1F; // 0b11111;
 
-        static const unsigned int PL0             = 0;
-        static const unsigned int PL1             = 1;
-
         bool fiq, irq, thumb;
         unsigned int mode;
 
@@ -30,7 +29,12 @@ namespace arm_impl {
         // User mode
     processor_mode() : fiq(false), irq(false), thumb(false), mode (USER_MODE) {}
 
-        unsigned getPriviledgeLevel();
+        //Returns PrivilegedLevel, PLx, based on current processor mode
+        PrivilegeLevel getPrivilegeLevel();
+
+        //Returns current processor mode name for debugging and status reasons.
+        const char* currentMode_str();
+
     };
 
     enum exception_type {
@@ -38,7 +42,6 @@ namespace arm_impl {
         EXCEPTION_PREFETCH_ABORT, EXCEPTION_DATA_ABORT, EXCEPTION_IRQ,
         EXCEPTION_FIQ
     };
-
 }
 
 // Whoever calls this interrupt, it must enforce correct exception priority,
@@ -54,10 +57,6 @@ namespace arm_impl {
 
 // Interrupt handler behavior for interrupt port inta.
 void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type);
-
-
-
-
 
 #endif
 

@@ -13,57 +13,202 @@ cp15::~cp15()
 {
 }
 
+#define NO_ACCESS 0x0      //0b00000000
+#define READ      0x1      //0b00000001
+#define WRITE     0x2      //0b00000010
+
+
+inline bool readPermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
+    (reg.permissions[pl] & WRITE)? true:false;
+}
+inline bool writePermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
+    (reg.permissions[pl] & READ)? true:false;
+}
+
 void cp15::reset()
 {
     dprintf("CP15 reseted to default values");
 
     //SCC
-    SCC_RB[CTR]                  = 0x00C50078; //Depends on external
-    SCC_RB[AUX_CTR]              = 0x00000002;
-    SCC_RB[SEC_CONF]             = 0x00000000;
-    SCC_RB[SEC_DBG_ENABLE]       = 0x00000000;
-    SCC_RB[NONSEC_ACC_CTR]       = 0x00000000;
-    SCC_RB[COPROC_ACC_CTR]       = 0x00000000;
-    SCC_RB[SEC_NONSEC_VEC_BASE]  = 0x00000000;
-    SCC_RB[MON_VEC_BASE_ADD]     = 0x00000000;
-    SCC_RB[MAIN_ID]              = 0x413FC082;
-    SCC_RB[SILICON_ID]           = 0x00000000; //Depends on external
-    SCC_RB[MEM_MODEL_FEAT_0]     = 0x01100003;
+    //Control
+    SCC_RB[CTR].value                                       = 0x00C50078; //Depends on external
+    SCC_RB[CTR].permissions[arm_impl::PL0]                  = (NO_ACCESS);
+    SCC_RB[CTR].permissions[arm_impl::PL1]                  = (READ|WRITE);
+    //Auxiliar Control
+    SCC_RB[AUX_CTR].value                                   = 0x00000002;
+    SCC_RB[AUX_CTR].permissions[arm_impl::PL0]              = (NO_ACCESS);
+    SCC_RB[AUX_CTR].permissions[arm_impl::PL1]              = (READ|WRITE);
 
-    SCC_RB[IS_ATTR_0]            = 0x00101111;
-    SCC_RB[IS_ATTR_1]            = 0x13112111;
-    SCC_RB[IS_ATTR_2]            = 0x21232031;
-    SCC_RB[IS_ATTR_3]            = 0x11112131;
-    SCC_RB[IS_ATTR_4]            = 0x00011142;
-    SCC_RB[IS_ATTR_5]            = 0x00000000;
-    SCC_RB[IS_ATTR_6]            = 0x00000000;
-    SCC_RB[IS_ATTR_7]            = 0x00000000;
+    //Secure Configuration
+    SCC_RB[SEC_CONF].value                                  = 0x00000000;
+    SCC_RB[SEC_CONF].permissions[arm_impl::PL0]             = (NO_ACCESS);
+    SCC_RB[SEC_CONF].permissions[arm_impl::PL1]             = (READ|WRITE);
 
+    //Secure Debug Enable
+    SCC_RB[SEC_DBG_ENABLE].value                            = 0x00000000;
+    SCC_RB[SEC_DBG_ENABLE].permissions[arm_impl::PL0]       = (NO_ACCESS);
+    SCC_RB[SEC_DBG_ENABLE].permissions[arm_impl::PL1]       = (READ|WRITE);
+
+    //NonSecure Access Control
+    SCC_RB[NONSEC_ACC_CTR].value                            = 0x00000000;
+    SCC_RB[NONSEC_ACC_CTR].permissions[arm_impl::PL0]       = (NO_ACCESS);
+    SCC_RB[NONSEC_ACC_CTR].permissions[arm_impl::PL1]       = (READ|WRITE);
+
+    //Coprocessor access control
+    SCC_RB[COPROC_ACC_CTR].value                            = 0x00000000;
+    SCC_RB[COPROC_ACC_CTR].permissions[arm_impl::PL0]       = (NO_ACCESS);
+    SCC_RB[COPROC_ACC_CTR].permissions[arm_impl::PL1]       = (READ|WRITE);
+
+    //Secure & nonsecure vector base
+    SCC_RB[SEC_NONSEC_VEC_BASE].value                       = 0x00000000;
+    SCC_RB[SEC_NONSEC_VEC_BASE].permissions[arm_impl::PL0]  = (NO_ACCESS);
+    SCC_RB[SEC_NONSEC_VEC_BASE].permissions[arm_impl::PL1]  = (READ|WRITE);
+
+    //Monitor vector base address
+    SCC_RB[MON_VEC_BASE_ADD].value                          = 0x00000000;
+    SCC_RB[MON_VEC_BASE_ADD].permissions[arm_impl::PL0]     = (NO_ACCESS);
+    SCC_RB[MON_VEC_BASE_ADD].permissions[arm_impl::PL1]     = (READ|WRITE);
+
+    //Main ID
+    SCC_RB[MAIN_ID].value                                   = 0x413FC082;
+    SCC_RB[MAIN_ID].permissions[arm_impl::PL0]              = (NO_ACCESS);
+    SCC_RB[MAIN_ID].permissions[arm_impl::PL1]              = (READ);
+
+    //Silicon ID
+    SCC_RB[SILICON_ID].value                                = 0x00000000; //Depends on external
+    SCC_RB[SILICON_ID].permissions[arm_impl::PL0]           = (NO_ACCESS);
+    SCC_RB[SILICON_ID].permissions[arm_impl::PL1]           = (READ);
+
+    //Memory model feature
+    SCC_RB[MEM_MODEL_FEAT_0].value                          = 0x01100003;
+    SCC_RB[MEM_MODEL_FEAT_0].permissions[arm_impl::PL0]     = (NO_ACCESS);
+    SCC_RB[MEM_MODEL_FEAT_0].permissions[arm_impl::PL1]     = (READ);
+
+    //Instruction Set Attribute 0-7
+    SCC_RB[IS_ATTR_0].value                                 = 0x00101111;
+    SCC_RB[IS_ATTR_0].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_0].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_1].value                                 = 0x13112111;
+    SCC_RB[IS_ATTR_1].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_1].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_2].value                                 = 0x21232031;
+    SCC_RB[IS_ATTR_2].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_2].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_3].value                                 = 0x11112131;
+    SCC_RB[IS_ATTR_3].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_3].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_4].value                                 = 0x00011142;
+    SCC_RB[IS_ATTR_4].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_4].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_5].value                                 = 0x00000000;
+    SCC_RB[IS_ATTR_5].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_5].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_6].value                                 = 0x00000000;
+    SCC_RB[IS_ATTR_6].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_6].permissions[arm_impl::PL1]            = (READ);
+
+    SCC_RB[IS_ATTR_7].value                                 = 0x00000000;
+    SCC_RB[IS_ATTR_7].permissions[arm_impl::PL0]            = (NO_ACCESS);
+    SCC_RB[IS_ATTR_7].permissions[arm_impl::PL1]            = (READ);
 
     //MMU
-    MMU_RB[TLB_TYPE]             = 0x00202001;
-    MMU_RB[TTB_0]                = 0x00000000; //Unpredictable
-    MMU_RB[TTB_1]                = 0x00000000; //Unpredictable
-    MMU_RB[TTB_CTR]              = 0x00000000; //Unpredictable
-    MMU_RB[DOMAIN_ACC_CTR]       = 0x00000000; //Unpredictable
-    MMU_RB[DFSR]                 = 0x00000000; //Unpredictable
-    MMU_RB[DFSR_AUX]             = 0x00000000; //Unpredictable
-    MMU_RB[IFSR]                 = 0x00000000; //Unpredictable
-    MMU_RB[IFSR_AUX]             = 0x00000000; //Unpredictable
-    MMU_RB[IFAR]                 = 0x00000000; //Unpredictable
-    MMU_RB[DFAR]                 = 0x00000000; //Unpredictable
-    MMU_RB[PRIMARY_REGION_REMAP] = 0x00098AA4;
-    MMU_RB[NORMAL_REGION_REMAP]  = 0x44E048E0;
-    MMU_RB[CONTEXT_ID]           = 0x00000000; //Unpredictable
-    MMU_RB[FCSE_PID]            = 0x00000000;
-    MMU_RB[TPID_RW]              = 0x00000000; //Unpredictable
-    MMU_RB[TPID_RO]              = 0x00000000; //Unpredictable
-    MMU_RB[TPID_PO]              = 0x00000000; //Unpredictable
+    //TLB type
+    MMU_RB[TLB_TYPE].value                                  = 0x00202001;
+    MMU_RB[TLB_TYPE].permissions[arm_impl::PL0]             = (NO_ACCESS);
+    MMU_RB[TLB_TYPE].permissions[arm_impl::PL1]             = (READ);
 
+    //Translation table 0 base
+    MMU_RB[TTB_0].value                                     = 0x00000000; //Unpredictable
+    MMU_RB[TTB_0].permissions[arm_impl::PL0]                = (NO_ACCESS);
+    MMU_RB[TTB_0].permissions[arm_impl::PL1]                = (READ|WRITE);
 
+    //translation table 1 base
+    MMU_RB[TTB_1].value                                     = 0x00000000; //Unpredictable
+    MMU_RB[TTB_1].permissions[arm_impl::PL0]                = (NO_ACCESS);
+    MMU_RB[TTB_1].permissions[arm_impl::PL1]                = (READ|WRITE);
+
+    //Translation table control
+    MMU_RB[TTB_CTR].value                                   = 0x00000000; //Unpredictable
+    MMU_RB[TTB_CTR].permissions[arm_impl::PL0]              = (NO_ACCESS);
+    MMU_RB[TTB_CTR].permissions[arm_impl::PL1]              = (READ|WRITE);
+
+    //Domain access control
+    MMU_RB[DOMAIN_ACC_CTR].value                            = 0x00000000; //Unpredictable
+    MMU_RB[DOMAIN_ACC_CTR].permissions[arm_impl::PL0]       = (NO_ACCESS);
+    MMU_RB[DOMAIN_ACC_CTR].permissions[arm_impl::PL1]       = (READ|WRITE);
+
+    //Data Fault Status Register
+    MMU_RB[DFSR].value                                      = 0x00000000; //Unpredictable
+    MMU_RB[DFSR].permissions[arm_impl::PL0]                 = (NO_ACCESS);
+    MMU_RB[DFSR].permissions[arm_impl::PL1]                 = (READ|WRITE);
+
+    //Data Fault Status Auxiliar Register
+    MMU_RB[DFSR_AUX].value                                  = 0x00000000; //Unpredictable
+    MMU_RB[DFSR_AUX].permissions[arm_impl::PL0]             = (NO_ACCESS);
+    MMU_RB[DFSR_AUX].permissions[arm_impl::PL1]             = (READ|WRITE);
+
+    //Instruction Fault Status Register
+    MMU_RB[IFSR].value                                      = 0x00000000; //Unpredictable
+    MMU_RB[IFSR].permissions[arm_impl::PL0]                 = (NO_ACCESS);
+    MMU_RB[IFSR].permissions[arm_impl::PL1]                 = (READ|WRITE);
+
+    //Instruction Fault Status Auxiliar Register
+    MMU_RB[IFSR_AUX].value                                  = 0x00000000; //Unpredictable
+    MMU_RB[IFSR_AUX].permissions[arm_impl::PL0]             = (NO_ACCESS);
+    MMU_RB[IFSR_AUX].permissions[arm_impl::PL1]             = (READ|WRITE);
+
+    //Instruction Fault Address Register
+    MMU_RB[IFAR].value                                      = 0x00000000; //Unpredictable
+    MMU_RB[IFAR].permissions[arm_impl::PL0]                 = (NO_ACCESS);
+    MMU_RB[IFAR].permissions[arm_impl::PL1]                 = (READ|WRITE);
+
+    //Data fault address register
+    MMU_RB[DFAR].value                                      = 0x00000000; //Unpredictable
+    MMU_RB[DFAR].permissions[arm_impl::PL0]                 = (NO_ACCESS);
+    MMU_RB[DFAR].permissions[arm_impl::PL1]                 = (READ|WRITE);
+
+    //Primary region remap
+    MMU_RB[PRIMARY_REGION_REMAP].value                      = 0x00098AA4;
+    MMU_RB[PRIMARY_REGION_REMAP].permissions[arm_impl::PL0] = (NO_ACCESS);
+    MMU_RB[PRIMARY_REGION_REMAP].permissions[arm_impl::PL1] = (READ|WRITE);
+
+    //Normal Region Remap
+    MMU_RB[NORMAL_REGION_REMAP].value  = 0x44E048E0;
+    MMU_RB[NORMAL_REGION_REMAP].permissions[arm_impl::PL0]  = (NO_ACCESS);
+    MMU_RB[NORMAL_REGION_REMAP].permissions[arm_impl::PL1]  = (READ|WRITE);
+
+    //Context ID
+    MMU_RB[CONTEXT_ID].value                                = 0x00000000; //Unpredictable
+    MMU_RB[CONTEXT_ID].permissions[arm_impl::PL0]           = (NO_ACCESS);
+    MMU_RB[CONTEXT_ID].permissions[arm_impl::PL1]           = (READ|WRITE);
+
+    //FCSE PID
+    MMU_RB[FCSE_PID].value                                  = 0x00000000;
+    MMU_RB[FCSE_PID].permissions[arm_impl::PL0]             = (NO_ACCESS);
+    MMU_RB[FCSE_PID].permissions[arm_impl::PL1]             = (READ|WRITE);
+
+    //Thread and process ID registers
+    MMU_RB[TPID_RW].value                                   = 0x00000000; //Unpredictable
+    MMU_RB[TPID_RW].permissions[arm_impl::PL0]              = (READ|WRITE);
+    MMU_RB[TPID_RW].permissions[arm_impl::PL1]              = (READ|WRITE);
+
+    MMU_RB[TPID_RO].value                                   = 0x00000000; //Unpredictable
+    MMU_RB[TPID_RO].permissions[arm_impl::PL0]              = (READ);
+    MMU_RB[TPID_RO].permissions[arm_impl::PL1]              = (READ);
+
+    MMU_RB[TPID_PO].value                                   = 0x00000000; //Unpredictable
+    MMU_RB[TPID_PO].permissions[arm_impl::PL0]              = (NO_ACCESS);
+    MMU_RB[TPID_PO].permissions[arm_impl::PL1]              = (READ|WRITE);
+    //
 }
 
-uint32_t * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm)
+cp15_reg * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm)
 {
     if(crn == 0){
         if(opc1 == 0){
@@ -175,9 +320,9 @@ uint32_t * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigne
 }
 
 
-void cp15::MCR(unsigned opc1, unsigned opc2, unsigned crn,
-               unsigned crm, unsigned rt_value)
-{
+void cp15::MCR(armv5e_arch_ref *core,
+               arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2,
+               unsigned crn, unsigned crm, unsigned rt_value){
     dprintf("CP15 operation MCR: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X, RegVal=0x%X\n", opc1, opc2, crn, crm, rt_value);
 
     if(crn == 8){
@@ -186,34 +331,44 @@ void cp15::MCR(unsigned opc1, unsigned opc2, unsigned crn,
         return;
     }
 
-    uint32_t *dest = getRegister(opc1, opc2, crn,crm);
+    cp15_reg *dest = getRegister(opc1, opc2, crn,crm);
     if(dest == NULL){
         fprintf(stderr,"WARNING: access to non-implemented cp15 register. Operation: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n", opc1, opc2, crn, crm);
         return;
     }
+    if(!writePermission(*dest, pl)){
+        //caller has no permission to write to this register
+        //Generate Unidentified interruption
+        service_interrupt(*core,arm_impl::EXCEPTION_UNDEFINED_INSTR);
+    }
 
-     *dest = rt_value;
+        (*dest).value = rt_value;
     return;
 }
-
-
-uint32_t cp15::MRC(unsigned opc1, unsigned opc2, unsigned crn,
-               unsigned crm)
-{
+uint32_t cp15::MRC(armv5e_arch_ref *core,
+                   arm_impl::PrivilegeLevel pl, unsigned opc1,
+                   unsigned opc2, unsigned crn, unsigned crm){
     dprintf("CP15 operation MRC: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n", opc1, opc2, crn, crm);
-    uint32_t *dest = getRegister(opc1, opc2, crn,crm);
+    cp15_reg *dest = getRegister(opc1, opc2, crn,crm);
 
     if(dest == NULL){
         fprintf(stderr,"WARNING: access to non-implemented cp15 register.\n operation: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X", opc1, opc2, crn, crm);
         return 0;
     }
-    return *dest;
+
+     if(!readPermission(*dest, pl)){
+        //caller has no permission to read this register
+        //Generate Unidentified interruption
+         service_interrupt(*core,arm_impl::EXCEPTION_UNDEFINED_INSTR);
+
+     }
+    return ((*dest).value);
 }
 
 
 void cp15::TLB_operations(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value)
 {
-    fprintf(stderr,"TLB Operations not implemented in this model(yet).");
+    fprintf(stderr,"TLB Operations not implemented in this model (yet). ");
 }
 
 

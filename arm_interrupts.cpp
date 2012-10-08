@@ -134,8 +134,7 @@ void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type) {
   writeCPSR(cpsr);
 }
 
-
-unsigned arm_impl::processor_mode::getPriviledgeLevel()
+arm_impl::PrivilegeLevel arm_impl::processor_mode::getPrivilegeLevel()
 {
     switch(this->mode) {
     case SYSTEM_MODE:
@@ -149,5 +148,24 @@ unsigned arm_impl::processor_mode::getPriviledgeLevel()
     return PL0;
 }
 
+const char * arm_impl::processor_mode::currentMode_str() {
+    switch (this->mode) {
+    case SYSTEM_MODE:
+        return "SYSTEM";
+    case USER_MODE:
+        return "USER";
+    case FIQ_MODE:
+        return "FIQ";
+    case IRQ_MODE:
+        return "IRQ";
+    case SUPERVISOR_MODE:
+        return "SUPERVISOR";
+    case ABORT_MODE:
+        return "ABORT";
+    case UNDEFINED_MODE:
+        return "UNDEFINED";
+    }
+    return 0;
+}
 
 

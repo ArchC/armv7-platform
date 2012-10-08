@@ -7,7 +7,7 @@ extern bool DEBUG_MMU;
 bool MMU::isActive()
 {
     //MMU is active if bit 0 of SCC[ControlRegister] is active
-    return (cop->SCC_RB[CTR] & 0x1);
+    return (cop->SCC_RB[CTR].value & 0x1);
 }
 
 ac_tlm_rsp MMU::transport(const ac_tlm_req& req)

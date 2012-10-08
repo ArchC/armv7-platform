@@ -32,7 +32,7 @@ extern coprocessor * CP[16];
 
 #define SYSTEM_MODEL
 
-#define dprintf(args...) if(DEBUG_CP15){fprintf(stderr,args);}
+#define dprintf(args...) if(DEBUG_CORE){fprintf(stderr,args);}
 
 // #include <stdarg.h>
 // static inline int dprintf(const char *format, ...) {
@@ -96,6 +96,8 @@ static reg_t lsm_endaddress;
 static reg_t OP1;
 static reg_t OP2;
 
+static ac_memory  *mem_port;
+
 #ifdef SYSTEM_MODEL
   #define RB_write  bypass_write
   #define RB_read   bypass_read
@@ -110,11 +112,8 @@ static reg_t OP2;
 
 void bypass_MEM_write(unsigned address, unsigned datum)
 {
-    MEM.write(address, datum);
+    mem_port->write(address, datum);
 }
-
-  
-
 
 void bypass_write(unsigned address, unsigned datum) {
   if (arm_proc_mode.mode == arm_impl::processor_mode::USER_MODE ||
@@ -396,26 +395,6 @@ unsigned readSPSR() {
   return 0;
 }
 
-const char * cur_mode_str() {
-  switch (arm_proc_mode.mode) {
-  case arm_impl::processor_mode::SYSTEM_MODE:
-    return "SYSTEM";
-  case arm_impl::processor_mode::USER_MODE:
-    return "USER";
-  case arm_impl::processor_mode::FIQ_MODE:
-    return "FIQ";
-  case arm_impl::processor_mode::IRQ_MODE:
-    return "IRQ";
-  case arm_impl::processor_mode::SUPERVISOR_MODE:
-    return "SUPERVISOR";
-  case arm_impl::processor_mode::ABORT_MODE:
-    return "ABORT";
-  case arm_impl::processor_mode::UNDEFINED_MODE:
-    return "UNDEFINED";
-  }
-  return 0;
-}
-
 void ac_behavior( begin ) {
   ref = this;
 #ifdef SYSTEM_MODEL
@@ -424,6 +403,8 @@ void ac_behavior( begin ) {
   arm_proc_mode.fiq = false;
   arm_proc_mode.irq = false;
   ac_pc = 0;
+  mem_port = &MEM;
+
 #endif
 }
 
@@ -441,13 +422,13 @@ void ac_behavior( instruction ) {
     case  2: if (flags.C == true) execute = true; break;
     case  3: if (flags.C == false) execute = true; break;
     case  4: if (flags.N == true) execute = true; break;
-    case  5: if (flags.N == false) execute = true; break; 
+    case  5: if (flags.N == false) execute = true; break;
     case  6: if (flags.V == true) execute = true; break;
-    case  7: if (flags.V == false) execute = true; break; 
-    case  8: if ((flags.C == true)&&(flags.Z == false)) execute = true; break; 
+    case  7: if (flags.V == false) execute = true; break;
+    case  8: if ((flags.C == true)&&(flags.Z == false)) execute = true; break;
     case  9: if ((flags.C == false)||(flags.Z == true)) execute = true; break;
     case 10: if (flags.N == flags.V) execute = true; break;
-    case 11: if (flags.N != flags.V) execute = true; break; 
+    case 11: if (flags.N != flags.V) execute = true; break;
     case 12: if ((flags.Z == false)&&(flags.N == flags.V)) execute = true; break;
     case 13: if ((flags.Z == true)||(flags.N != flags.V)) execute = true;  break;
     case 14: execute = true; break;
@@ -464,7 +445,7 @@ void ac_behavior( instruction ) {
     ac_annul();
   }
 }
- 
+
 // Instruction Format behavior methods.
 
 //!DPI1 - Second operand is register with imm shift
@@ -478,7 +459,7 @@ void ac_behavior( Type_DPI1 ) {
     RM2.entire = RB_read(rm) + 4;
   }
   else RM2.entire = RB_read(rm);
-      
+
   switch(shift) {
   case 0: // Logical shift left
     if ((shiftamount >= 0) && (shiftamount <= 31)) {
@@ -1569,7 +1550,7 @@ inline void LDM(int rlist, bool r,
     }
   } else {    
     // LDM(2) similar to LDM(1), except for the above "if"
-      if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
+      if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL0) {
       fprintf (stderr, "Unpredictable behavior for LDM2/LDM3\n");
       abort();
     }
@@ -1927,7 +1908,8 @@ inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, in
     uint32_t rd_val = RB_read(rd);
 
     //Call Coprocessor implementation of MCR
-    (CP[cp_num])->MCR(funcc2, funcc3, crn, crm, rd_val);
+    (CP[cp_num])->MCR(self, arm_proc_mode.getPrivilegeLevel(),
+                      funcc2, funcc3, crn, crm, rd_val);
 
 #else
     fprintf(stderr, "Warning Coprocessor simulation not implemented in this model");
@@ -1949,7 +1931,8 @@ inline void MRC(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, in
     }
 
     //Call Coprocessor implementation of MRC
-    uint32_t cp_val = (CP[cp_num])->MRC(funcc2, funcc3, crn, crm);
+    uint32_t cp_val = (CP[cp_num])->MRC(self,arm_proc_mode.getPrivilegeLevel(),
+                                        funcc2, funcc3, crn, crm);
 
     if(rd != PC)
         RB_write(rd,cp_val);
@@ -1983,7 +1966,7 @@ inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, in
   }
 
   if (r == 1) {
-    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
+    if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL0) {
       printf("Unpredictable MRS instruction result\n");
       dprintf("**! Unpredictable MRS instruction result\n");
       return;
@@ -2332,18 +2315,18 @@ inline void STM(int rlist,
 
   int i;
 
-  if (r == 0) { // STM(1) 
+  if (r == 0) { // STM(1)
     dprintf("Instruction: STM\n");
     ls_address = lsm_startaddress;
     for(i=0;i<16;i++){
       if(isBitSet(rlist,i)) {
-        MEM.write(ls_address.entire,RB_read(i));
+        MEM_write(ls_address.entire,RB_read(i));
         ls_address.entire += 4;
         dprintf(" *  Stored register: 0x%X; value: 0x%X; address: 0x%lX\n",i,RB_read(i),ls_address.entire-4);
       }
     }
   } else { // STM(2)
-    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
+    if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL0) {
       fprintf(stderr, "STM(2) unpredictable in user mode");
       abort();
     }
@@ -2351,7 +2334,7 @@ inline void STM(int rlist,
     ls_address = lsm_startaddress;
     for(i=0;i<16;i++){
       if(isBitSet(rlist,i)) {
-        MEM.write(ls_address.entire,RB .read(i));
+        MEM_write(ls_address.entire,RB .read(i));
         ls_address.entire += 4;
         dprintf(" *  Stored register: 0x%X; value: 0x%X; address: 0x%lX\n",i,RB_read(i),ls_address.entire-4);
       }
@@ -2371,7 +2354,7 @@ inline void STR(int rd, int rn,
   // Special cases
   // verify coprocessor alignment
   
-  MEM.write(ls_address.entire, RB_read(rd));
+  MEM_write(ls_address.entire, RB_read(rd));
 
   dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd)); 
 
@@ -2436,8 +2419,8 @@ inline void STRD(int rd, int rn,
   }
 
   //FIXME: Check if writeback receives +4 from second address
-  MEM.write(ls_address.entire,RB_read(rd));
-  MEM.write(ls_address.entire+4,RB_read(rd+1));
+  MEM_write(ls_address.entire,RB_read(rd));
+  MEM_write(ls_address.entire+4,RB_read(rd+1));
 
   dprintf(" *  MEM[0x%08X], MEM[0x%08X] <= 0x%08X %08X\n", ls_address.entire, ls_address.entire+4, RB_read(rd+1), RB_read(rd)); 
 
@@ -2479,7 +2462,7 @@ inline void STRT(int rd, int rn,
   // Special cases
   // verificar caso do coprocessador (alinhamento)
   
-  MEM.write(ls_address.entire, RB_read(rd));
+  MEM_write(ls_address.entire, RB_read(rd));
 
   dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd)); 
 
@@ -2563,7 +2546,7 @@ inline void SWP(int rd, int rn, int rm,
     tmp = (RotateRight(24,rtmp)).entire;
   }
     
-  MEM.write(RN2.entire,RM2.entire);
+  MEM_write(RN2.entire,RM2.entire);
   RB_write(rd,tmp);
 
   dprintf(" *  MEM[0x%08X] <= 0x%08X (%d)\n", RN2.entire, RM2.entire, RM2.entire); 
@@ -3066,7 +3049,7 @@ void ac_behavior( swi ){
     // Old ABI (syscall encoded in instruction)
   } else {
     dprintf("Syscall number: 0x%X\t%d\n", swinumber, swinumber);
-    if (syscall.process_syscall(swinumber) == -1) {    
+    if (syscall.process_syscall(swinumber) == -1) {
       fprintf(stderr, "Warning: A syscall not implemented in this model was called.\n\tCaller address: 0x%X\n\tSWI number: 0x%X\t(%d)\n", (unsigned int)ac_pc, swinumber, swinumber);
     }
   }
@@ -3088,7 +3071,7 @@ void ac_behavior( msr1 ){
   // Write to CPSR
   if (r == 0)  {
     res = readCPSR();
-    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL1) {
+    if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL1) {
       if (fieldmask & 1) {
         res &= ~0xFF;
         res |= (in & 0xFF);
@@ -3112,7 +3095,7 @@ void ac_behavior( msr1 ){
             "=0x%X, IRQ disable=0x%X, Thumb=0x%X\n",flags.N,flags.Z,
             flags.C,flags.V, arm_proc_mode.fiq, arm_proc_mode.irq,
             arm_proc_mode.thumb);
-    dprintf(" *  Processor mode <= %s MODE\n", cur_mode_str());
+    dprintf(" *  Processor mode <= %s MODE\n", arm_proc_mode.currentMode_str());
   } else { // r == 1, write to SPSR
     res = readSPSR();
     if (fieldmask & 1) {
@@ -3146,7 +3129,7 @@ void ac_behavior( msr2 ){
   // Write to CPSR
   if (r == 0)  {
     res = readCPSR();
-    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL1) {
+    if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL1) {
       if (fieldmask & 1) {
         res &= ~0xFF;
         res |= (in & 0xFF);
@@ -3165,12 +3148,12 @@ void ac_behavior( msr2 ){
       res |= (in & 0xFF000000);
     }
     writeCPSR(res);
-    dprintf(" *  CPSR <= 0x%08X\n", res); 
+    dprintf(" *  CPSR <= 0x%08X\n", res);
     dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n     FIQ disable"
             "=0x%X, IRQ disable=0x%X, Thumb=0x%X\n",flags.N,flags.Z,
             flags.C,flags.V, arm_proc_mode.fiq, arm_proc_mode.irq,
             arm_proc_mode.thumb);
-    dprintf(" *  Processor mode <= %s MODE\n", cur_mode_str());
+    dprintf(" *  Processor mode <= %s MODE\n", arm_proc_mode.currentMode_str());
   } else { // r == 1, write to SPSR
     res = readSPSR();
     if (fieldmask & 1) {
@@ -3227,7 +3210,6 @@ void ac_behavior( bfi ){ BFI(rd, rn, lsb, msb, RB, ac_pc); }
 //! Instruction nop behavior method
 void ac_behavior( nop){/*Nothing to do here.*/}
 
-
 //! instruction PKH
 void ac_behavior( pkh ) { PKH(rd, rn, rm, tb, RB, ac_pc ); }
 
@@ -3239,6 +3221,5 @@ void ac_behavior( mcr ) { MCR(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc
 
 //! instruction MRC
 void ac_behavior( mrc ) { MRC(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
-
 
 // -----------------------------------------------------------------
