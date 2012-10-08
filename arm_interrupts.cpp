@@ -3,20 +3,20 @@
 #include <cassert>
 
 // Exception vector addresses
-static const unsigned int RESET_ADDR             = 0x00000000; 
-static const unsigned int RESET_ADDR_HI          = 0xffff0000; 
-static const unsigned int UNDEFINED_ADDR         = 0x00000004; 
-static const unsigned int UNDEFINED_ADDR_HI      = 0xffff0004; 
-static const unsigned int SWI_ADDR               = 0x00000008; 
-static const unsigned int SWI_ADDR_HI            = 0xffff0008; 
-static const unsigned int PREFETCH_ABORT_ADDR    = 0x0000000c; 
-static const unsigned int PREFETCH_ABORT_ADDR_HI = 0xffff000c; 
-static const unsigned int DATA_ABORT_ADDR        = 0x00000010; 
-static const unsigned int DATA_ABORT_ADDR_HI     = 0xffff0010; 
-static const unsigned int IRQ_ADDR               = 0x00000018; 
-static const unsigned int IRQ_ADDR_HI            = 0xffff0018; 
-static const unsigned int FIQ_ADDR               = 0x0000001c; 
-static const unsigned int FIQ_ADDR_HI            = 0xffff001c; 
+static const unsigned int RESET_ADDR             = 0x00000000;
+static const unsigned int RESET_ADDR_HI          = 0xffff0000;
+static const unsigned int UNDEFINED_ADDR         = 0x00000004;
+static const unsigned int UNDEFINED_ADDR_HI      = 0xffff0004;
+static const unsigned int SWI_ADDR               = 0x00000008;
+static const unsigned int SWI_ADDR_HI            = 0xffff0008;
+static const unsigned int PREFETCH_ABORT_ADDR    = 0x0000000c;
+static const unsigned int PREFETCH_ABORT_ADDR_HI = 0xffff000c;
+static const unsigned int DATA_ABORT_ADDR        = 0x00000010;
+static const unsigned int DATA_ABORT_ADDR_HI     = 0xffff0010;
+static const unsigned int IRQ_ADDR               = 0x00000018;
+static const unsigned int IRQ_ADDR_HI            = 0xffff0018;
+static const unsigned int FIQ_ADDR               = 0x0000001c;
+static const unsigned int FIQ_ADDR_HI            = 0xffff001c;
 
 unsigned readCPSR();
 void writeCPSR(unsigned);
@@ -133,4 +133,39 @@ void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type) {
 
   writeCPSR(cpsr);
 }
+
+arm_impl::PrivilegeLevel arm_impl::processor_mode::getPrivilegeLevel()
+{
+    switch(this->mode) {
+    case SYSTEM_MODE:
+    case FIQ_MODE:
+    case IRQ_MODE:
+    case SUPERVISOR_MODE:
+    case ABORT_MODE:
+    case UNDEFINED_MODE:
+        return PL1;
+    }
+    return PL0;
+}
+
+const char * arm_impl::processor_mode::currentMode_str() {
+    switch (this->mode) {
+    case SYSTEM_MODE:
+        return "SYSTEM";
+    case USER_MODE:
+        return "USER";
+    case FIQ_MODE:
+        return "FIQ";
+    case IRQ_MODE:
+        return "IRQ";
+    case SUPERVISOR_MODE:
+        return "SUPERVISOR";
+    case ABORT_MODE:
+        return "ABORT";
+    case UNDEFINED_MODE:
+        return "UNDEFINED";
+    }
+    return 0;
+}
+
 

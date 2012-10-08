@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <systemc.h>
 #include "ac_stats_base.H"
+#include "arm_interrupts.h"
 
 
 typedef enum {CTR=0,AUX_CTR,SEC_CONF, SEC_DBG_ENABLE, NONSEC_ACC_CTR,
@@ -34,23 +35,32 @@ typedef enum {TLB_TYPE,TTB_0, TTB_1, TTB_CTR,DOMAIN_ACC_CTR, DFSR,
               CONTEXT_ID, FCSE_PID, TPID_RW,TPID_RO, TPID_PO,
               PRIMARY_REGION_REMAP,NORMAL_REGION_REMAP} MMU_regNAME;
 
+
+typedef struct{
+    uint32_t value;
+    unsigned char permissions[2];
+}cp15_reg;
+
 class cp15: public coprocessor{
 
     friend class MMU;
 
 private:
-    uint32_t SCC_RB[19];
-    uint32_t MMU_RB[18];
+    cp15_reg SCC_RB[19];
+    cp15_reg MMU_RB[18];
 
     void TLB_operations(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
     void reset();
+    cp15_reg *getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 public:
-    uint32_t *getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
-    void MCR(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
-    uint32_t MRC(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
+
+    void MCR(armv5e_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
+    uint32_t MRC(armv5e_arch_ref *core, arm_impl::PrivilegeLevel pl,unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 
     cp15();
     ~cp15();
 };
 
 #endif
+
+
