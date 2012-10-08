@@ -32,21 +32,20 @@ extern coprocessor * CP[16];
 
 #define SYSTEM_MODEL
 
-//#ifdef DEBUG_CORE
-#include <stdarg.h>
-static inline int dprintf(const char *format, ...) {
-  int ret;
-  if (DEBUG_CORE) {
-    va_list args;
-    va_start(args, format);
-    ret = vfprintf(ac_err, format, args);
-    va_end(args);
-  }
-  return ret;
-}
-//#else
-//inline void dprintf(const char *format, ...) {}
-//#endif
+#define dprintf(args...) if(DEBUG_CP15){fprintf(stderr,args);}
+
+// #include <stdarg.h>
+// static inline int dprintf(const char *format, ...) {
+//   int ret;
+//   if (DEBUG_CORE) {
+//     va_list args;
+//     va_start(args, format);
+//     ret = vfprintf(ac_err, format, args);
+//     va_end(args);
+//   }
+//   return ret;
+// }
+
 
 //! User defined macros to access a single bit
 #define isBitSet(variable, position) (((variable & (1 << (position))) != 0) ? true : false) 
@@ -98,16 +97,24 @@ static reg_t OP1;
 static reg_t OP2;
 
 #ifdef SYSTEM_MODEL
-
-#define RB_write bypass_write
-#define RB_read bypass_read
-
+  #define RB_write  bypass_write
+  #define RB_read   bypass_read
+  #define MEM_write bypass_MEM_write
+  #define MEM_read  bypass_MEM_read
 #else
-
-#define RB_write RB.write
-#define RB_read RB.read
-
+  #define RB_write  RB.write
+  #define RB_read   RB.read
+  #define MEM_write MEM.write
+  #define MEM_read  MEM.read
 #endif
+
+void bypass_MEM_write(unsigned address, unsigned datum)
+{
+    MEM.write(address, datum);
+}
+
+  
+
 
 void bypass_write(unsigned address, unsigned datum) {
   if (arm_proc_mode.mode == arm_impl::processor_mode::USER_MODE ||
@@ -260,7 +267,7 @@ inline reg_t RotateRight(int shiftamount, reg_t reg) {
 
   reg_t ret;
   ret.entire = (((uint32_t)reg.entire) >> shiftamount) | (((uint32_t)reg.entire) << (32 - shiftamount));
- 
+
   return ret;
 }
 
@@ -326,7 +333,7 @@ void writeCPSR(unsigned value) {
   flags.T = (getBit(CPSR.entire,5))? true : false;
   arm_proc_mode.fiq = getBit(CPSR.entire,6)? true : false;
   arm_proc_mode.irq = getBit(CPSR.entire,7)? true : false;
-  arm_proc_mode.mode = value & arm_impl::processor_mode::MODE_MASK;    
+  arm_proc_mode.mode = value & arm_impl::processor_mode::MODE_MASK;
 }
 
 // This function implements the transfer of the SPSR of the current processor
@@ -353,7 +360,6 @@ static void SPSRtoCPSR() {
     return;
   }
 }
-
 void writeSPSR(unsigned value) {
   switch (arm_proc_mode.mode) {
   case arm_impl::processor_mode::FIQ_MODE:
@@ -388,19 +394,6 @@ unsigned readSPSR() {
     return ref->SPSR_und;
   }
   return 0;
-}
-
-static bool in_a_privileged_mode() {
-  switch (arm_proc_mode.mode) {
-  case arm_impl::processor_mode::SYSTEM_MODE:
-  case arm_impl::processor_mode::FIQ_MODE:
-  case arm_impl::processor_mode::IRQ_MODE:
-  case arm_impl::processor_mode::SUPERVISOR_MODE:
-  case arm_impl::processor_mode::ABORT_MODE:
-  case arm_impl::processor_mode::UNDEFINED_MODE:
-    return true;
-  }  
-  return false;
 }
 
 const char * cur_mode_str() {
@@ -1390,7 +1383,7 @@ inline void BIC(int rd, int rn, bool s,
          ac_reg<unsigned>& ac_pc) {
 
   reg_t RD2, RN2;
-  
+
   dprintf("Instruction: BIC\n");
   RN2.entire = RB_read(rn);
   RD2.entire = RN2.entire & ~dpi_shiftop.entire;
@@ -1409,10 +1402,10 @@ inline void BIC(int rd, int rn, bool s,
       flags.N = getBit(RD2.entire,31);
       flags.Z = ((RD2.entire == 0) ? true : false);
       flags.C = dpi_shiftopcarry;
-      // nothing happens with flags.V 
+      // nothing happens with flags.V
     }
-  }   
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  }
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1453,8 +1446,8 @@ inline void CLZ(int rd, int rm,
   }
 
   RB_write(rd, RD2.entire);
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
-    
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
+
   ac_pc = RB_read(PC);
 }
 
@@ -1576,7 +1569,7 @@ inline void LDM(int rlist, bool r,
     }
   } else {    
     // LDM(2) similar to LDM(1), except for the above "if"
-    if (!in_a_privileged_mode()) {
+      if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
       fprintf (stderr, "Unpredictable behavior for LDM2/LDM3\n");
       abort();
     }
@@ -1618,7 +1611,7 @@ inline void LDR(int rd, int rn,
   // Special cases
   // TODO: Verify coprocessor cases (alignment)
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-      
+
   switch(addr10) {
   case 0:
     value = MEM.read(ls_address.entire);
@@ -1635,13 +1628,13 @@ inline void LDR(int rd, int rn,
     tmp.entire = MEM.read(ls_address.entire);
     value = (RotateRight(24,tmp)).entire;
   }
-    
+
   if(rd == PC) {
     RB_write(PC,(value & 0xFFFFFFFE));
     flags.T = isBitSet(value,0);
     dprintf(" *  PC <= 0x%08X\n", value & 0xFFFFFFFE);
   }
-  else 
+  else
     {
       RB_write(rd,value);
       dprintf(" *  R%d <= 0x%08X\n", rd, value);
@@ -1661,7 +1654,7 @@ inline void LDRB(int rd, int rn,
   // Special cases
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
   value = (uint8_t) MEM.read_byte(ls_address.entire);
-  
+
   dprintf("Byte: 0x%X\n", value);
   RB_write(rd, ((uint32_t)value));
 
@@ -1682,7 +1675,7 @@ inline void LDRBT(int rd, int rn,
   // Special cases
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
   value = (uint8_t) MEM.read_byte(ls_address.entire);
-  
+
   dprintf("Byte: 0x%X\n", (uint32_t) value);
   RB_write(rd, (uint32_t) value);
 
@@ -1756,9 +1749,9 @@ inline void LDRSB(int rd, int rn,
   uint32_t data;
 
   dprintf("Instruction: LDRSB\n");
-    
+
   // Special cases
-  dprintf("Reading memory position 0x%08X\n", ls_address.entire);  
+  dprintf("Reading memory position 0x%08X\n", ls_address.entire);
   data = MEM.read_byte(ls_address.entire);
   data = SignExtend(data, 8);
 
@@ -1787,13 +1780,13 @@ inline void LDRSH(int rd, int rn,
   // Verify coprocessor alignment
 
   data = MEM.read(ls_address.entire);
-  data &= 0xFFFF; /* Extracts halfword 
+  data &= 0xFFFF; /* Extracts halfword
 		     BUG: Model must be little endian */
   data = SignExtend(data,16);
   RB_write(rd, data);
 
-  dprintf(" *  R%d <= 0x%08X\n", rd, data); 
-    
+  dprintf(" *  R%d <= 0x%08X\n", rd, data);
+
   ac_pc = RB_read(PC);
 }
 
@@ -1836,7 +1829,7 @@ inline void LDRT(int rd, int rn,
     RB_write(rd, value);
   }
 
-  dprintf(" *  R%d <= 0x%08X\n", rd, value); 
+  dprintf(" *  R%d <= 0x%08X\n", rd, value);
 
   ac_pc = RB_read(PC);
 }
@@ -1858,7 +1851,7 @@ inline void MLA(int rd, int rn, int rm, int rs, bool s,
   // Special cases
   if((rd == PC)||(rm == PC)||(rs == PC)||(rn == PC)||(rd == rm)) {
     fprintf(stderr, "Unpredictable MLA instruction result\n");
-    return;    
+    return;
   }
 
   RD2.entire = RM2.entire * RS2.entire + RN2.entire;
@@ -1869,7 +1862,7 @@ inline void MLA(int rd, int rn, int rm, int rs, bool s,
   }
   RB_write(rd,RD2.entire);
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1990,7 +1983,7 @@ inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, in
   }
 
   if (r == 1) {
-    if (!in_a_privileged_mode()) {
+    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
       printf("Unpredictable MRS instruction result\n");
       dprintf("**! Unpredictable MRS instruction result\n");
       return;
@@ -2350,7 +2343,7 @@ inline void STM(int rlist,
       }
     }
   } else { // STM(2)
-    if (!in_a_privileged_mode()) {
+    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL0) {
       fprintf(stderr, "STM(2) unpredictable in user mode");
       abort();
     }
@@ -3095,7 +3088,7 @@ void ac_behavior( msr1 ){
   // Write to CPSR
   if (r == 0)  {
     res = readCPSR();
-    if (in_a_privileged_mode()) {
+    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL1) {
       if (fieldmask & 1) {
         res &= ~0xFF;
         res |= (in & 0xFF);
@@ -3153,7 +3146,7 @@ void ac_behavior( msr2 ){
   // Write to CPSR
   if (r == 0)  {
     res = readCPSR();
-    if (in_a_privileged_mode()) {
+    if (arm_proc_mode.getPriviledgeLevel() == arm_impl::processor_mode::PL1) {
       if (fieldmask & 1) {
         res &= ~0xFF;
         res |= (in & 0xFF);

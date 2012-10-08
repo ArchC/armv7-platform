@@ -3,35 +3,41 @@
 
 #include "armv5e_arch_ref.H"
 
+
 namespace arm_impl {
 
-  class processor_mode {
-  public:
-    static const unsigned int USER_MODE       = 0x10; // 0b10000;
-    static const unsigned int FIQ_MODE        = 0x11; // 0b10001;
-    static const unsigned int IRQ_MODE        = 0x12; // 0b10010;
-    static const unsigned int SUPERVISOR_MODE = 0x13; // 0b10011;
-    static const unsigned int ABORT_MODE      = 0x17; // 0b10111;
-    static const unsigned int UNDEFINED_MODE  = 0x1B; // 0b11011;
-    static const unsigned int SYSTEM_MODE     = 0x1F; // 0b11111;
-    static const unsigned int MODE_MASK       = 0x1F; // 0b11111;
-    
-    bool fiq, irq, thumb;
-    unsigned int mode;
-    
-    // Initializes with:
-    // FIQ enabled  (CPSR FIQ disable bit set = false)
-    // IRQ enabled
-    // Thumb disabled
-    // User mode
-  processor_mode() : fiq(false), irq(false), thumb(false), mode (USER_MODE) {}
-  };
+    class processor_mode {
+    public:
+        static const unsigned int USER_MODE       = 0x10; // 0b10000;
+        static const unsigned int FIQ_MODE        = 0x11; // 0b10001;
+        static const unsigned int IRQ_MODE        = 0x12; // 0b10010;
+        static const unsigned int SUPERVISOR_MODE = 0x13; // 0b10011;
+        static const unsigned int ABORT_MODE      = 0x17; // 0b10111;
+        static const unsigned int UNDEFINED_MODE  = 0x1B; // 0b11011;
+        static const unsigned int SYSTEM_MODE     = 0x1F; // 0b11111;
+        static const unsigned int MODE_MASK       = 0x1F; // 0b11111;
 
-  enum exception_type {
-    EXCEPTION_RESET, EXCEPTION_UNDEFINED_INSTR,  EXCEPTION_SWI, 
-    EXCEPTION_PREFETCH_ABORT, EXCEPTION_DATA_ABORT, EXCEPTION_IRQ,
-    EXCEPTION_FIQ
-  };
+        static const unsigned int PL0             = 0;
+        static const unsigned int PL1             = 1;
+
+        bool fiq, irq, thumb;
+        unsigned int mode;
+
+        // Initializes with:
+        // FIQ enabled  (CPSR FIQ disable bit set = false)
+        // IRQ enabled
+        // Thumb disabled
+        // User mode
+    processor_mode() : fiq(false), irq(false), thumb(false), mode (USER_MODE) {}
+
+        unsigned getPriviledgeLevel();
+    };
+
+    enum exception_type {
+        EXCEPTION_RESET, EXCEPTION_UNDEFINED_INSTR,  EXCEPTION_SWI,
+        EXCEPTION_PREFETCH_ABORT, EXCEPTION_DATA_ABORT, EXCEPTION_IRQ,
+        EXCEPTION_FIQ
+    };
 
 }
 
@@ -48,6 +54,10 @@ namespace arm_impl {
 
 // Interrupt handler behavior for interrupt port inta.
 void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type);
+
+
+
+
 
 #endif
 
