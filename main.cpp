@@ -10,6 +10,9 @@
  - TZIC, the interrupt control IP for the iMX53 SoC
  - General Purpose Timer
  - UART-1
+ - Generic RAM devices
+ - System control coprocessor - CP15
+ - Memory Management Unit
 
  In this platform design, the ARM core runs one instruction, possibly
  interacting with external modules via the bus functional model.
@@ -59,28 +62,30 @@ static unsigned BATCH_SIZE = 100;
 static unsigned GDB_PORT = 5000;
 static bool ENABLE_GDB = false;
 static char* SYSCODE = 0;
+
 coprocessor *CP[16];
+MMU *mmu;
 
 void process_params(int ac, char *av[]) {
     for (int i = 0, e = ac; i != e; ++i) {
         const char * cur = av[i];
         if (strcmp(cur, "-enable-gdb") == 0) {
             ENABLE_GDB = true;
-        } else if (strcmp(cur, "-debug-core") == 0) {
+        } else if (strcmp(cur, "-debug-core")  == 0) {
             DEBUG_CORE = true;
-        } else if (strcmp(cur, "-debug-bus") == 0) {
+        } else if (strcmp(cur, "-debug-bus")   == 0) {
             DEBUG_BUS = true;
-        } else if (strcmp(cur, "-debug-tzic") == 0) {
+        } else if (strcmp(cur, "-debug-tzic")  == 0) {
             DEBUG_TZIC = true;
-        } else if (strcmp(cur, "-debug-gpt") == 0) {
+        } else if (strcmp(cur, "-debug-gpt")   == 0) {
             DEBUG_GPT = true;
-        } else if (strcmp(cur, "-debug-uart") == 0) {
+        } else if (strcmp(cur, "-debug-uart")  == 0) {
             DEBUG_UART = true;
-        } else if (strcmp(cur, "-debug-ram") == 0) {
+        } else if (strcmp(cur, "-debug-ram")   == 0) {
             DEBUG_RAM = true;
-        } else if (strcmp(cur, "-debug-cp15") == 0) {
+        } else if (strcmp(cur, "-debug-cp15")  == 0) {
             DEBUG_CP15 = true;
-        } else if (strcmp(cur, "-debug-mmu") == 0) {
+        } else if (strcmp(cur, "-debug-mmu")   == 0) {
             DEBUG_MMU = true;
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
@@ -111,10 +116,13 @@ void process_params(int ac, char *av[]) {
             std::cout << "Platform options:" << std::endl;
             std::cout << "\t-enable-gdb" << std::endl;
             std::cout << "\t-debug-core" << std::endl;
-            std::cout << "\t-debug-bus" << std::endl;
+            std::cout << "\t-debug-bus"  << std::endl;
             std::cout << "\t-debug-tzic" << std::endl;
-            std::cout << "\t-debug-gpt" << std::endl;
+            std::cout << "\t-debug-gpt"  << std::endl;
             std::cout << "\t-debug-uart" << std::endl;
+            std::cout << "\t-debug-ram"  << std::endl;
+            std::cout << "\t-debug-cp15" << std::endl;
+            std::cout << "\t-debug-mmu"  << std::endl;
             std::cout << "\t--load-sys=<path>\t\tLoad system software." << std::endl;
             std::cout << "\t--load=<path\t\tLoad application software." << std::endl;
             std::cout << "\t-cycles=<num>\t\tRun for <num> platform cycles."
@@ -128,18 +136,19 @@ void process_params(int ac, char *av[]) {
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
-    // If CP pointers arent initialized as NULL, we might get segfault
+    // If CP pointers arent initialized as NULL,
+    // we might get Segmentation Fault
     // when executing CP instructions.
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
-    imx53_bus   mainBus     ("imx53bus");         // Main Bus
-    armv5e armv5e_proc1("armv5e");                                                                          // Core
+    armv5e armv5e_proc1 ("armv5e");                                                                          // Core
     tzic_module tzic    ("tzic",         (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);                     // TZIC
     gpt_module  gpt     ("gpt",    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
     uart_module uart    ("uart",   tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);                     // UART1
     ram_module  bootmem ("bootmem",tzic, (uint32_t)        0x0, (uint32_t)    0xFFFFF, (uint32_t)0xFFFFF);  // Boot Memory
     ram_module  mem     ("mem",    tzic, (uint32_t) 0x70000000, (uint32_t) 0x71000000, (uint32_t)0x1000000);// Internal RAM
+    imx53_bus mainBus("imx53bus");
 
     //--- Connect devices to bus ----
     mainBus.connectDevice(&bootmem);
@@ -152,7 +161,7 @@ int sc_main(int ac, char *av[])
     CP[15] = coprocessor15;
 
     //---Memory Management Unit ----
-    MMU mmu("MMU", coprocessor15,&mainBus);
+    mmu = new MMU("MMU", *coprocessor15, armv5e_proc1.MEM);
 
 #ifdef AC_DEBUG
     ac_trace("armv5e_proc1.trace");
@@ -163,7 +172,7 @@ int sc_main(int ac, char *av[])
 
     tzic.proc_port(armv5e_proc1.inta);
     mainBus.proc_port(armv5e_proc1.inta);
-    armv5e_proc1.MEM_port(mmu);
+    armv5e_proc1.MEM_port(mainBus);
 
     if (SYSCODE != 0) {
         std::cout << "Loading system kernel: " << SYSCODE << std::endl;
