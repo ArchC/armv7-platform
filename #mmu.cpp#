@@ -79,6 +79,7 @@ namespace L1
         case 0:
             //FAULT
             entry.type = L1::fault;
+            break;
         case 1:
             //Page Table
             entry.type = L1::page_table;
@@ -136,14 +137,20 @@ namespace L1
 // Structs and functions to easily describe second level translation.
 namespace L2
 {
-    typedef enum  {small, large} Type;
+    typedef enum  {small, large, fault} Type;
+
     typedef struct {
         Type type;
-        union{
-            uint32_t properties;
-        }data;
-    }table_entry;
-
+        uint32_t baseAddress;
+        bool nG;
+        bool S;
+        bool AP[3];
+        bool TEX[3];
+        bool C;
+        bool B;
+        bool XN;
+        bool SBZ[3];
+    }tableEntry;
 
     uint32_t getTableIndex(uint32_t va)
     {
@@ -153,7 +160,58 @@ namespace L2
         for(int i = msb; i >= lsb; i--) setBit(mask, i);
         return (va & mask) >> lsb;
     }
+
+    tableEntry tableWalk(MMU & mmu, uint32_t SLA)
+    {
+        ac_tlm_rsp rsp = mmu.talk_to_bus(READ,FLA, 0); //Read second level entry
+        uint32_t data = rsp.data;
+
+        l2::tableEntry entry;
+        switch(data & 0b11){
+        case 0:
+            // FAULT
+            entry.type = L2::fault;
+            break;
+        case 1:
+            //LARGE
+            entry.type = L2::large;
+            entry.baseAddress = (data & 0xFFFF0000) >> 16;
+            entry.XN     = isBitSet(data,15);
+            entry.TEX[2] = isBitSet(data,14);
+            entry.TEX[1] = isBitSet(data,13);
+            entry.TEX[0] = isBitSet(data,12);
+            entry.nG     = isBitSet(data,11);
+            entry.S      = isBitSet(data,10);
+            entry.AP[2]  = isBitSet(data,9);
+            entry.SBZ[2] = isBitSet(data,8);
+            entry.SBZ[1] = isBitSet(data,7);
+            entry.SBZ[0] = isBitSet(data,6);
+            entry.AP[1]  = isBitSet(data,5);
+            entry.AP[0]  = isBitSet(data,4);
+            entry.C      = isBitSet(data,3);
+            entry.B      = isBitSet(data,2);
+            break;
+        case 2: case 3:
+            //SMALL
+            entry.type = L2::small;
+            entry.baseAddress = (data & 0xFFFFF000) >> 12;
+            entry.nG     = isBitSet(data,11);
+            entry.S      = isBitSet(data,10);
+            entry.AP[2]  = isBitSet(data,9);
+            entry.TEX[2] = isBitSet(data,8);
+            entry.TEX[1] = isBitSet(data,7);
+            entry.TEX[0] = isBitSet(data,6);
+            entry.AP[1]  = isBitSet(data,5);
+            entry.AP[0]  = isBitSet(data,4);
+            entry.C      = isBitSet(data,3);
+            entry.B      = isBitSet(data,2);
+            entry.XN     = isBitSet(data,0);
+            break;
+        }
+        return entry;
+    }
 }
+
 
 
 
@@ -237,6 +295,7 @@ uint32_t MMU::translateAddress(uint32_t va)
     //Prepare First Level Address (FLA)
     uint32_t l1_index = L1::getTableIndex(n,va);
     uint32_t FLA = ttb | (l1_index << 2);
+
     L1::tableEntry l1 = L1::tableWalk(*this, FLA);
 
     if(l1.type == L1::section || l1.type == L1::supersection){
@@ -257,25 +316,20 @@ uint32_t MMU::translateAddress(uint32_t va)
         //Prepare Second Level Address (SLA)
         uint32_t l2_index = getL2TableIndex(va);
         uint32_t SLA = ((l1.data.page.baseAddress << 8) | l2_index) << 2;
-        //L2_entry l2  = L2_tableWalk(SLA);
+
+        L2::tableEntry l2  = L2_tableWalk(*this, SLA);
+
+        if(l2.type == L2::fault){
+            //Generate Translation Fault
+        }
+        else if(l2.type == L2::large){
+            printf("This model does not support large pages entry");
+        }
+        else if(l2.type == L2::small){
+            uint32_t section_index = (va & 0xFFF);
+            uint32_t pAdd = ((l2.baseAddress << 12) | section_index);
+        }
     }
-    return 0;
+    return pAdd;
 }
 // ---------------------------------------------------------------------------
-
-//! Second Level (L2)
-// This function, given a Virtual Address, extracts L2
-// Table Index
-uint32_t getL2TableIndex(uint32_t va)
-{
-    int msb = 31-19;
-    int lsb = 12;
-    uint32_t mask = 0;
-    for(int i = msb; i >= lsb; i--) setBit(mask, i);
-    return (va & mask) >> lsb;
-}
-
-//L2::tableEntry MMU::L2_tableWalk(uint32_t SLA)
-//{
-
-//}
