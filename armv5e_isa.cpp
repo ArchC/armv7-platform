@@ -2,6 +2,7 @@
 - * @file      armv5e_isa.cpp
  * @author    Danilo Marcolin Caravana
  *            Rafael Auler
+ *            Gabriel Krisman Bertazi
  *
  *            The ArchC Team
  *            http://www.archc.org/
@@ -25,30 +26,19 @@
 #include "arm_interrupts.h"
 #include <stdint.h> // define types uint32_t, etc
 #include "coprocessor.h"
+#include "mmu.h"
 using namespace armv5e_parms;
 
 extern bool DEBUG_CORE;
 extern coprocessor * CP[16];
+extern MMU *mmu;
 
 #define SYSTEM_MODEL
 
 #define dprintf(args...) if(DEBUG_CORE){fprintf(stderr,args);}
 
-// #include <stdarg.h>
-// static inline int dprintf(const char *format, ...) {
-//   int ret;
-//   if (DEBUG_CORE) {
-//     va_list args;
-//     va_start(args, format);
-//     ret = vfprintf(ac_err, format, args);
-//     va_end(args);
-//   }
-//   return ret;
-// }
-
-
 //! User defined macros to access a single bit
-#define isBitSet(variable, position) (((variable & (1 << (position))) != 0) ? true : false) 
+#define isBitSet(variable, position) (((variable & (1 << (position))) != 0) ? true : false)
 #define getBit(variable, position) (((variable & (1 << (position))) != 0) ? true : false)
 #define setBit(variable, position) variable = variable | (1 << (position))
 #define clearBit(variable, position) variable = variable & (~(1 << (position)))
@@ -56,6 +46,10 @@ extern coprocessor * CP[16];
 //! User defined macros to reference registers
 #define LR 14 // link return
 #define PC 15 // program counter
+
+#define WORD 4
+#define HALF 2
+#define BYTE 1
 
 arm_impl::processor_mode arm_proc_mode;
 static armv5e_arch_ref *ref = 0;
@@ -96,25 +90,43 @@ static reg_t lsm_endaddress;
 static reg_t OP1;
 static reg_t OP2;
 
-static ac_memory  *mem_port;
-
 #ifdef SYSTEM_MODEL
-  #define RB_write  bypass_write
-  #define RB_read   bypass_read
-  #define MEM_write bypass_MEM_write
-  #define MEM_read  bypass_MEM_read
+  #define RB_write       bypass_write
+  #define RB_read        bypass_read
+  #define MEM_read       bypass_MEM_read_Word
+  #define MEM_read_byte  bypass_MEM_read_Byte
+  #define MEM_write      bypass_MEM_write_Word
+  #define MEM_write_half bypass_MEM_write_Half
+  #define MEM_write_byte bypass_MEM_write_Byte
 #else
-  #define RB_write  RB.write
-  #define RB_read   RB.read
-  #define MEM_write MEM.write
-  #define MEM_read  MEM.read
+  #define RB_write       RB.write
+  #define RB_read        RB.read
+  #define MEM_read       MEM.read
+  #define MEM_read_byte  MEM.read_byte
+  #define MEM_write      MEM.write
+  #define MEM_write_Half MEM.write_half
+  #define MEM_write_byte MEM.write_byte
 #endif
 
-void bypass_MEM_write(unsigned address, unsigned datum)
-{
-    mem_port->write(address, datum);
-}
+// These quick inline functions bypass MEM calls and dispatch
+// then to MMU, if SYSTEM_MODEL. Otherwise they are bypassed
+// direct to bus.
+inline void bypass_MEM_write_Word(unsigned address, unsigned datum)
+{ mmu->write(WORD, address,datum); }
+inline void bypass_MEM_write_Byte(unsigned address, unsigned datum)
+{ mmu->write(BYTE, address, datum);}
+inline void bypass_MEM_write_Half(unsigned address, unsigned datum)
+{ return mmu->write(HALF, address, datum); }
+inline uint32_t bypass_MEM_read_Word(unsigned address)
+{ return mmu->read(WORD, address); }
+inline uint32_t bypass_MEM_read_Byte(unsigned address)
+{ return mmu->read(BYTE, address); }
 
+// If SYSTEM_MODEL, These methods take control whenever
+// a instruciton attempts to write/read the main
+// Register Bank.
+// they route the read/write procedure to the correct
+// register based upon current processor state.
 void bypass_write(unsigned address, unsigned datum) {
   if (arm_proc_mode.mode == arm_impl::processor_mode::USER_MODE ||
       arm_proc_mode.mode == arm_impl::processor_mode::SYSTEM_MODE) {
@@ -293,7 +305,6 @@ inline int LSM_CountSetBits(reg_t registerList) {
 inline reg_t CPSRBuild() {
 
   reg_t CPSR;
-
   CPSR.entire = arm_proc_mode.mode;
   if (arm_proc_mode.fiq)
     setBit(CPSR.entire,6); // FIQ disable
@@ -403,8 +414,6 @@ void ac_behavior( begin ) {
   arm_proc_mode.fiq = false;
   arm_proc_mode.irq = false;
   ac_pc = 0;
-  mem_port = &MEM;
-
 #endif
 }
 
@@ -452,7 +461,6 @@ void ac_behavior( instruction ) {
 void ac_behavior( Type_DPI1 ) {
 
   reg_t RM2;
-
   // Special case: rm = 15
   if (rm == 15) {
     // PC is already incremented by four, so only add 4 again (not 8)
@@ -522,7 +530,7 @@ void ac_behavior( Type_DPI2 ) {
   // Special case: r* = 15
   if ((rd == 15)||(rm == 15)||(rn == 15)||(rs == 15)) {
     printf("Register 15 cannot be used in this instruction.\n");
-    ac_annul(); 
+    ac_annul();
   }
 
   RM2.entire = RB_read(rm);
@@ -546,7 +554,7 @@ void ac_behavior( Type_DPI2 ) {
     else { // rs > 32
       dpi_shiftop.entire = 0;
       dpi_shiftopcarry = 0;
-    }  
+    }
     break;
   case 1: // Logical shift right
     if (RS2.byte[0] == 0) {
@@ -564,7 +572,7 @@ void ac_behavior( Type_DPI2 ) {
     else { // rs > 32
       dpi_shiftop.entire = 0;
       dpi_shiftopcarry = 0;
-    }  
+    }
     break;
   case 2: // Arithmetical shift right
     if (RS2.byte[0] == 0) {
@@ -594,7 +602,7 @@ void ac_behavior( Type_DPI2 ) {
       dpi_shiftop.entire = RM2.entire;
       dpi_shiftopcarry = getBit(RM2.entire, 31);
     }
-    else { // rs40 > 0 
+    else { // rs40 > 0
       dpi_shiftop.entire = (RotateRight(rs40, RM2)).entire;
       dpi_shiftopcarry = getBit(RM2.entire, rs40 - 1);
     }
@@ -607,10 +615,10 @@ void ac_behavior( Type_DPI3 ){
   tmp = (uint32_t)imm8;
   dpi_shiftop.entire = (((uint32_t)tmp) >> (2 * rotate)) | (((uint32_t)tmp) << (32 - (2 * rotate)));
 
-  if (rotate == 0) 
+  if (rotate == 0)
     dpi_shiftopcarry = flags.C;
-  else 
-    dpi_shiftopcarry = getBit(dpi_shiftop.entire, 31);    
+  else
+    dpi_shiftopcarry = getBit(dpi_shiftop.entire, 31);
 }
 
 //DPI4 behavior
@@ -635,18 +643,17 @@ void ac_behavior( Type_DPI5 ) {
         dpi_shiftop.entire  =  RB.read(rm) << shiftamount;
 }
 
-void ac_behavior(Type_BTM1 ){
+void ac_behavior(Type_BTM1 )  {
     // no special actions necessary
 }
-
-void ac_behavior( Type_BBL ) {
-  // no special actions necessary
+void ac_behavior( Type_BBL )  {
+    // no special actions necessary
 }
 void ac_behavior( Type_BBLT ) {
-  // no special actions necessary
+    // no special actions necessary
 }
 void ac_behavior( Type_MBXBLX ) {
-  // no special actions necessary
+    // no special actions necessary
 }
 
 //!MULT1 - 32-bit result multiplication
@@ -664,9 +671,8 @@ void ac_behavior( Type_LSI ) {
 
   reg_t RN2;
   RN2.entire = RB_read(rn);
-  
   ls_address.entire = 0;
-    
+
   if((p == 1)&&(w == 0)) { // immediate pre-indexed without writeback
     // Special case: Rn = PC
     if (rn == PC)
@@ -738,7 +744,7 @@ void ac_behavior( Type_LSR ) {
 
   if ((p == 1)&&(w == 0)) { // offset
     // Special case: PC
-    if(rn == PC) 
+    if(rn == PC)
       ls_address.entire = 4;
 
     if(rm == PC) {
@@ -806,14 +812,14 @@ void ac_behavior( Type_LSR ) {
       ac_annul();
       return;
     }
-    
+
     switch(shift){
     case 0:
       if(shiftamount == 0) { // Register
 	index.entire = RM2.entire;
       } else { // Scaled logical shift left
 	index.entire = RM2.entire << shiftamount;
-      } 
+      }
       break;
     case 1: // logical shift right
       if(shiftamount == 0) index.entire = 0;
@@ -821,9 +827,9 @@ void ac_behavior( Type_LSR ) {
       break;
     case 2: // arithmetic shift right
       if(shiftamount == 0) {
-	if (isBitSet(RM2.entire,31)) 
+	if (isBitSet(RM2.entire,31))
 	  index.entire = 0xFFFFFFFF;
-	else 
+	else
 	  index.entire = 0;
       } else index.entire = ((int32_t) RM2.entire) >> shiftamount;
       break;
@@ -840,7 +846,7 @@ void ac_behavior( Type_LSR ) {
     if(u == 1) {
       ls_address.entire = RN2.entire + index.entire;
     } else {
-      ls_address.entire = RN2.entire - index.entire;    
+      ls_address.entire = RN2.entire - index.entire;
     }
 
     RB_write(rn, ls_address.entire);
@@ -871,7 +877,7 @@ void ac_behavior( Type_LSR ) {
       ac_annul();
       return;
     }
-    
+
     ls_address.entire = RN2.entire;
 
     switch(shift) {
@@ -888,9 +894,9 @@ void ac_behavior( Type_LSR ) {
       break;
     case 2: // arithmetic shift right
       if(shiftamount == 0) {
-	if (isBitSet(RM2.entire, 31)) 
+	if (isBitSet(RM2.entire, 31))
 	  index.entire = 0xFFFFFFFF;
-	else 
+	else
 	  index.entire = 0;
       } else index.entire = ((int32_t) RM2.entire) >> shiftamount;
       break;
@@ -898,7 +904,7 @@ void ac_behavior( Type_LSR ) {
       if(shiftamount == 0) { // RRX
 	tmp.entire = 0;
 	if(flags.C) setBit(tmp.entire, 31);
-	index.entire = tmp.entire | (((uint32_t) RM2.entire) >> 1);	
+	index.entire = tmp.entire | (((uint32_t) RM2.entire) >> 1);
       } else { // rotate right
 	index.entire = (RotateRight(shiftamount, RM2)).entire;
       }
@@ -909,7 +915,7 @@ void ac_behavior( Type_LSR ) {
     } else {
       RB_write(rn, RN2.entire - index.entire);
     }
-  } 
+  }
 }
 
 //!LSE - Load Store HalfWord
@@ -929,7 +935,7 @@ void ac_behavior( Type_LSE ){
     ac_annul();
     return;
   }
-  if((ss == 1)&&(l == 0)) 
+  if((ss == 1)&&(l == 0))
     dprintf("Special DSP\n");
     // FIXME: Test LDRD and STRD second registers in case of writeback
 
@@ -942,7 +948,7 @@ void ac_behavior( Type_LSE ){
 
   if(p == 1) { // offset ou pre-indexed
     if((i == 1)&&(w == 0)) { // immediate offset
-      if(rn == PC) 
+      if(rn == PC)
 	ls_address.entire = 4;
       if(u == 1) {
 	ls_address.entire += (RN2.entire + off8);
@@ -959,7 +965,7 @@ void ac_behavior( Type_LSE ){
 	return;
       }
 
-      if(rn == PC) 
+      if(rn == PC)
 	ls_address.entire = 4;
 
       if(u == 1) {
@@ -968,7 +974,7 @@ void ac_behavior( Type_LSE ){
 	ls_address.entire += (RN2.entire - RM2.entire);
       }
     }
-    
+
     else if ((i == 1)&&(w == 1)) { // immediate pre-indexed
       // Special case: Rn = PC
       if (rn == PC) {
@@ -982,7 +988,7 @@ void ac_behavior( Type_LSE ){
 	ac_annul();
 	return;
       }
-      
+
       if(u == 1) {
 	ls_address.entire = (RN2.entire + off8);
       } else {
@@ -991,7 +997,7 @@ void ac_behavior( Type_LSE ){
 
       RB_write(rn, ls_address.entire);
     }
-    
+
     else { // i == 0 && w == 1: register pre-indexed
       // Special case: Rn = PC
       if (rn == PC) {
@@ -1017,7 +1023,7 @@ void ac_behavior( Type_LSE ){
 	ac_annul();
 	return;
       }
-      
+
       if(u == 1) {
 	ls_address.entire = (RN2.entire + RM2.entire);
       } else {
@@ -1067,7 +1073,7 @@ void ac_behavior( Type_LSE ){
 	ac_annul();
 	return;
       }
-      
+
       ls_address.entire = RN2.entire;
       if(u == 1) {
 	RB_write(rn, RN2.entire + RM2.entire);
@@ -1094,7 +1100,7 @@ void ac_behavior( Type_LSM ){
     ac_annul();
     return;
   }
-  
+
   RN2.entire = RB_read(rn);
   setbits = LSM_CountSetBits(registerList);
 
@@ -1104,7 +1110,7 @@ void ac_behavior( Type_LSM ){
     if(w == 1) RN2.entire += (setbits * 4);
   }
   else if((p == 1)&&(u == 1)) { // increment before
-    lsm_startaddress.entire = RN2.entire + 4; 
+    lsm_startaddress.entire = RN2.entire + 4;
     lsm_endaddress.entire = RN2.entire + (setbits * 4);
     if(w == 1) RN2.entire += (setbits * 4);
   }
@@ -1157,21 +1163,21 @@ void ac_behavior( Type_MMSR2 ){
 void ac_behavior( Type_DSPSM ){
 
   reg_t RM2, RS2;
-  
+
   RM2.entire = RB_read(rm);
   RS2.entire = RB_read(rs);
-  
+
   // Special cases
   if((drd == PC)||(drn == PC)||(rm == PC)||(rs == PC)) {
     printf("Unpredictable SMLA<y><x> instruction result\n");
-    return;  
+    return;
   }
-  
+
   if(xx == 0)
     OP1.entire = SignExtend(RM2.entire, 16);
   else
     OP1.entire = SignExtend((RM2.entire >> 16), 16);
-  
+
   if(yy == 0)
     OP2.entire = SignExtend(RS2.entire, 16);
   else
@@ -1245,7 +1251,7 @@ inline void ADD(int rd, int rn, bool s,
 		  ((!getBit(RN2.entire,31)) && (!getBit(dpi_shiftop.entire,31)) && getBit(RD2.entire,31))) ? true : false);
     }
   }
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1256,7 +1262,7 @@ inline void AND(int rd, int rn, bool s,
          ac_reg<unsigned>& ac_pc) {
 
   reg_t RD2, RN2;
-  
+
   dprintf("Instruction: AND\n");
   RN2.entire = RB_read(rn);
   dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
@@ -1275,10 +1281,10 @@ inline void AND(int rd, int rn, bool s,
       flags.N = getBit(RD2.entire, 31);
       flags.Z = ((RD2.entire == 0) ? true : false);
       flags.C = dpi_shiftopcarry;
-      // nothing happens with flags.V 
+      // nothing happens with flags.V
     }
-  }   
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  }
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n", flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1487,7 +1493,7 @@ inline void EOR(int rd, int rn, bool s,
          ac_reg<unsigned>& ac_pc) {
 
   reg_t RD2, RN2;
-  
+
   dprintf("Instruction: EOR\n");
   RN2.entire = RB_read(rn);
   dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
@@ -1506,11 +1512,11 @@ inline void EOR(int rd, int rn, bool s,
       flags.N = getBit(RD2.entire, 31);
       flags.Z = ((RD2.entire == 0) ? true : false);
       flags.C = dpi_shiftopcarry;
-      // nothing happens with flags.V 
+      // nothing happens with flags.V
     }
-  }   
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
-  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V); 
+  }
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
+  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -1536,19 +1542,19 @@ inline void LDM(int rlist, bool r,
     dprintf("Initial address: 0x%lX\n",ls_address.entire);
     for(i=0;i<15;i++){
       if(isBitSet(rlist,i)) {
-        RB_write(i,MEM.read(ls_address.entire));
+        RB_write(i,MEM_read(ls_address.entire));
         ls_address.entire += 4;
         dprintf(" *  Loaded register: 0x%X; Value: 0x%X; Next address: 0x%lX\n", i,RB_read(i),ls_address.entire - 4);
       }
     }
-    
+
     if((isBitSet(rlist,PC))) { // LDM(1)
-      value = MEM.read(ls_address.entire);
+      value = MEM_read(ls_address.entire);
       RB_write(PC,value & 0xFFFFFFFE);
       ls_address.entire += 4;
       dprintf(" *  Loaded register: PC; Next address: 0x%lX\n", ls_address.entire);
     }
-  } else {    
+  } else {
     // LDM(2) similar to LDM(1), except for the above "if"
       if (arm_proc_mode.getPrivilegeLevel() == arm_impl::PL0) {
       fprintf (stderr, "Unpredictable behavior for LDM2/LDM3\n");
@@ -1559,13 +1565,13 @@ inline void LDM(int rlist, bool r,
     dprintf("Initial address: 0x%lX\n",ls_address.entire);
     for(i=0;i<15;i++){
       if(isBitSet(rlist,i)) {
-        RB.write(i,MEM.read(ls_address.entire));
+        RB.write(i,MEM_read(ls_address.entire));
         ls_address.entire += 4;
         dprintf(" *  Loaded register: 0x%X; Value: 0x%X; Next address: 0x%lX\n", i,RB_read(i),ls_address.entire);
       }
     }
     if((isBitSet(rlist,PC))) { // LDM(3)
-      value = MEM.read(ls_address.entire);
+      value = MEM_read(ls_address.entire);
       RB.write(PC,value & 0xFFFFFFFE);
       ls_address.entire += 4;
       dprintf(" *  Loaded register: PC; Next address: 0x%lX\n", ls_address.entire);
@@ -1595,18 +1601,18 @@ inline void LDR(int rd, int rn,
 
   switch(addr10) {
   case 0:
-    value = MEM.read(ls_address.entire);
+    value = MEM_read(ls_address.entire);
     break;
   case 1:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = (RotateRight(8,tmp)).entire;
     break;
   case 2:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = (RotateRight(16,tmp)).entire;
     break;
   default:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = (RotateRight(24,tmp)).entire;
   }
 
@@ -1634,7 +1640,7 @@ inline void LDRB(int rd, int rn,
 
   // Special cases
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-  value = (uint8_t) MEM.read_byte(ls_address.entire);
+  value = (uint8_t) MEM_read_byte(ls_address.entire);
 
   dprintf("Byte: 0x%X\n", value);
   RB_write(rd, ((uint32_t)value));
@@ -1655,7 +1661,7 @@ inline void LDRBT(int rd, int rn,
 
   // Special cases
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-  value = (uint8_t) MEM.read_byte(ls_address.entire);
+  value = (uint8_t) MEM_read_byte(ls_address.entire);
 
   dprintf("Byte: 0x%X\n", (uint32_t) value);
   RB_write(rd, (uint32_t) value);
@@ -1673,8 +1679,8 @@ inline void LDRD(int rd, int rn,
 
   dprintf("Instruction: LDRD\n");
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-  value1 = MEM.read_byte(ls_address.entire);
-  value2 = MEM.read_byte(ls_address.entire+4);
+  value1 = MEM_read_byte(ls_address.entire);
+  value2 = MEM_read_byte(ls_address.entire+4);
 
   // Special cases
   // Registrador destino deve ser par
@@ -1711,7 +1717,7 @@ inline void LDRH(int rd, int rn,
     printf("Unpredictable LDRH instruction result (Address is not Halfword Aligned)\n");
     return;
   }
-  value = MEM.read(ls_address.entire);
+  value = MEM_read(ls_address.entire);
   value &= 0xFFFF; /* Zero extends halfword value
 		      BUG: Model must be little endian in order to the code work  */
 
@@ -1733,7 +1739,7 @@ inline void LDRSB(int rd, int rn,
 
   // Special cases
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-  data = MEM.read_byte(ls_address.entire);
+  data = MEM_read_byte(ls_address.entire);
   data = SignExtend(data, 8);
 
   RB_write(rd, data);
@@ -1760,7 +1766,7 @@ inline void LDRSH(int rd, int rn,
   }
   // Verify coprocessor alignment
 
-  data = MEM.read(ls_address.entire);
+  data = MEM_read(ls_address.entire);
   data &= 0xFFFF; /* Extracts halfword
 		     BUG: Model must be little endian */
   data = SignExtend(data,16);
@@ -1785,27 +1791,27 @@ inline void LDRT(int rd, int rn,
   addr10 = (int)ls_address.entire & 0x00000003;
   ls_address.entire &= 0xFFFFFFFC;
   dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-    
+
   // Special cases
   // Verify coprocessor alignment
-    
+
   switch(addr10) {
   case 0:
-    value = MEM.read(ls_address.entire);
+    value = MEM_read(ls_address.entire);
     RB_write(rd, value);
     break;
   case 1:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = RotateRight(8,tmp).entire;
     RB_write(rd, value);
     break;
   case 2:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = RotateRight(16,tmp).entire;
     RB_write(rd, value);
     break;
   default:
-    tmp.entire = MEM.read(ls_address.entire);
+    tmp.entire = MEM_read(ls_address.entire);
     value = RotateRight(24, tmp).entire;
     RB_write(rd, value);
   }
@@ -1852,7 +1858,7 @@ inline void MLA(int rd, int rn, int rm, int rs, bool s,
 inline void MOV(int rd, bool s,
          ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
          ac_reg<unsigned>& ac_pc) {
-  
+
   dprintf("Instruction: MOV\n");
   RB_write(rd, dpi_shiftop.entire);
 
@@ -1870,7 +1876,7 @@ inline void MOV(int rd, bool s,
     // nothing happens with flags.V
   }
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, dpi_shiftop.entire, dpi_shiftop.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, dpi_shiftop.entire, dpi_shiftop.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -1888,27 +1894,27 @@ inline void MOVT(int rd, bool s,
 }
 
 //------------------------------------------------------
-inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, int crn,
-                int crm,unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+inline void MCR(unsigned cp_num,int funcc2,int funcc3, int crn,int crm,
+                unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
-
 
     dprintf("Instruction: MRC\n");
 #ifdef SYSTEM_MODEL
     if(rd == PC) {
-        fprintf(stderr, "Warning: MRC unpredictable behavior.\n", cp_num);
+        fprintf(stderr, "Warning: MRC unpredictable behavior.\n");
         return;
     }
+
     if(CP[cp_num] == NULL){
         //This Coprocessor was not implemented.
         fprintf(stderr, "Warning Coprocessor cp%d not implemented in this model", cp_num);
-        service_interrupt(*self, arm_impl::EXCEPTION_UNDEFINED_INSTR);
+        service_interrupt(*ref, arm_impl::EXCEPTION_UNDEFINED_INSTR);
         return;
     }
     uint32_t rd_val = RB_read(rd);
 
     //Call Coprocessor implementation of MCR
-    (CP[cp_num])->MCR(self, arm_proc_mode.getPrivilegeLevel(),
+    (CP[cp_num])->MCR(ref, arm_proc_mode.getPrivilegeLevel(),
                       funcc2, funcc3, crn, crm, rd_val);
 
 #else
@@ -1916,7 +1922,7 @@ inline void MCR(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, in
 #endif
 }
 //------------------------------------------------------
-inline void MRC(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, int crn,
+inline void MRC(unsigned cp_num,int funcc2,int funcc3, int crn,
                 int crm,unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
@@ -1926,12 +1932,12 @@ inline void MRC(armv5e_arch_ref *self, unsigned cp_num,int funcc2,int funcc3, in
     if(CP[cp_num] == NULL){
         //This Coprocessor was not implemented.
         fprintf(stderr, "Warning Coprocessor cp%d not implemented in this model", cp_num);
-        service_interrupt(*self, arm_impl::EXCEPTION_UNDEFINED_INSTR);
+        service_interrupt(*ref, arm_impl::EXCEPTION_UNDEFINED_INSTR);
         return;
     }
 
     //Call Coprocessor implementation of MRC
-    uint32_t cp_val = (CP[cp_num])->MRC(self,arm_proc_mode.getPrivilegeLevel(),
+    uint32_t cp_val = (CP[cp_num])->MRC(ref,arm_proc_mode.getPrivilegeLevel(),
                                         funcc2, funcc3, crn, crm);
 
     if(rd != PC)
@@ -2011,7 +2017,7 @@ inline void MUL(int rd, int rm, int rs, bool s,
   }
   RB_write(rd, RD2.entire);
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2051,11 +2057,11 @@ inline void MVN(int rd, bool s,
       flags.N = getBit(~dpi_shiftop.entire,31);
       flags.Z = ((~dpi_shiftop.entire == 0) ? true : false);
       flags.C = dpi_shiftopcarry;
-      // nothing happens with flags.V 
+      // nothing happens with flags.V
     }
-  }   
+  }
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, ~dpi_shiftop.entire, ~dpi_shiftop.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, ~dpi_shiftop.entire, ~dpi_shiftop.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2091,7 +2097,7 @@ inline void ORR(int rd, int rn, bool s,
          ac_reg<unsigned>& ac_pc) {
 
   reg_t RD2, RN2;
-  
+
   dprintf("Instruction: ORR\n");
   RN2.entire = RB_read(rn);
   dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
@@ -2110,11 +2116,11 @@ inline void ORR(int rd, int rn, bool s,
       flags.N = getBit(RD2.entire,31);
       flags.Z = ((RD2.entire == 0) ? true : false);
       flags.C = dpi_shiftopcarry;
-      // nothing happens with flags.V 
+      // nothing happens with flags.V
     }
-  }  
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
-  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);  
+  }
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
+  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -2150,7 +2156,7 @@ inline void RSB(int rd, int rn, bool s,
 		  ((!getBit(neg_RN2.entire,31)) && (!getBit(dpi_shiftop.entire,31)) && getBit(RD2.entire,31))) ? true : false);
     }
   }
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2189,7 +2195,7 @@ inline void RSC(int rd, int rn, bool s,
 		  ((!getBit(neg_RN2.entire,31)) && (!getBit(dpi_shiftop.entire,31)) && getBit(RD2.entire,31))) ? true : false);
     }
   }
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2251,7 +2257,7 @@ inline void SMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
   // Special cases
   if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
     printf("Unpredictable SMLAL instruction result\n");
-    return;  
+    return;
   }
 
   result.hilo = (int64_t)RM2.entire * RS2.entire + acc.hilo;
@@ -2262,7 +2268,7 @@ inline void SMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
     flags.Z = ((result.hilo == 0) ? true : false);
     // nothing happens with flags.C and flags.V
   }
-  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]); 
+  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2284,7 +2290,7 @@ inline void SMULL(int rdhi, int rdlo, int rm, int rs, bool s,
   // Special cases
   if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
     printf("Unpredictable SMULL instruction result\n");
-    return;  
+    return;
   }
 
   result.hilo = (int64_t)RM2.entire * RS2.entire;
@@ -2353,10 +2359,10 @@ inline void STR(int rd, int rn,
 
   // Special cases
   // verify coprocessor alignment
-  
+
   MEM_write(ls_address.entire, RB_read(rd));
 
-  dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd)); 
+  dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd));
 
   ac_pc = RB_read(PC);
 }
@@ -2373,9 +2379,9 @@ inline void STRB(int rd, int rn,
   // Special cases
 
   RD2.entire = RB_read(rd);
-  MEM.write_byte(ls_address.entire, RD2.byte[0]);
+  MEM_write_byte(ls_address.entire, RD2.byte[0]);
 
-  dprintf(" *  MEM[0x%08X] <= 0x%02X\n", ls_address.entire, RD2.byte[0]); 
+  dprintf(" *  MEM[0x%08X] <= 0x%02X\n", ls_address.entire, RD2.byte[0]);
 
   ac_pc = RB_read(PC);
 }
@@ -2390,11 +2396,11 @@ inline void STRBT(int rd, int rn,
   dprintf("Instruction: STRBT\n");
 
   // Special cases
-  
-  RD2.entire = RB_read(rd);
-  MEM.write_byte(ls_address.entire, RD2.byte[0]);
 
-  dprintf(" *  MEM[0x%08X] <= 0x%02X\n", ls_address.entire, RD2.byte[0]); 
+  RD2.entire = RB_read(rd);
+  MEM_write_byte(ls_address.entire, RD2.byte[0]);
+
+  dprintf(" *  MEM[0x%08X] <= 0x%02X\n", ls_address.entire, RD2.byte[0]);
 
   ac_pc = RB_read(PC);
 }
@@ -2422,7 +2428,7 @@ inline void STRD(int rd, int rn,
   MEM_write(ls_address.entire,RB_read(rd));
   MEM_write(ls_address.entire+4,RB_read(rd+1));
 
-  dprintf(" *  MEM[0x%08X], MEM[0x%08X] <= 0x%08X %08X\n", ls_address.entire, ls_address.entire+4, RB_read(rd+1), RB_read(rd)); 
+  dprintf(" *  MEM[0x%08X], MEM[0x%08X] <= 0x%08X %08X\n", ls_address.entire, ls_address.entire+4, RB_read(rd+1), RB_read(rd));
 
   ac_pc = RB_read(PC);
 }
@@ -2435,7 +2441,7 @@ inline void STRH(int rd, int rn,
   int16_t data;
 
   dprintf("Instruction: STRH\n");
-    
+
   // Special cases
   // verify coprocessor alignment
   // verify halfword alignment
@@ -2445,10 +2451,10 @@ inline void STRH(int rd, int rn,
   }
 
   data = (int16_t) (RB_read(rd) & 0x0000FFFF);
-  MEM.write_half(ls_address.entire, data);
+  MEM_write_half(ls_address.entire, data);
 
-  dprintf(" *  MEM[0x%08X] <= 0x%04X\n", ls_address.entire, data); 
-    
+  dprintf(" *  MEM[0x%08X] <= 0x%04X\n", ls_address.entire, data);
+
   ac_pc = RB_read(PC);
 }
 
@@ -2461,10 +2467,10 @@ inline void STRT(int rd, int rn,
 
   // Special cases
   // verificar caso do coprocessador (alinhamento)
-  
+
   MEM_write(ls_address.entire, RB_read(rd));
 
-  dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd)); 
+  dprintf(" *  MEM[0x%08X] <= 0x%08X\n", ls_address.entire, RB_read(rd));
 
   ac_pc = RB_read(PC);
 }
@@ -2501,10 +2507,10 @@ inline void SUB(int rd, int rn, bool s,
 		  ((!getBit(RN2.entire,31)) && (!getBit(neg_shiftop.entire,31)) && getBit(RD2.entire,31))) ? true : false);
     }
   }
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
- 
+
 }
 
 //------------------------------------------------------
@@ -2531,26 +2537,26 @@ inline void SWP(int rd, int rn, int rm,
 
   switch(rn10) {
   case 0:
-    tmp = MEM.read(RN2.entire);
+    tmp = MEM_read(RN2.entire);
     break;
   case 1:
-    rtmp.entire = MEM.read(RN2.entire);
+    rtmp.entire = MEM_read(RN2.entire);
     tmp = (RotateRight(8,rtmp)).entire;
     break;
   case 2:
-    rtmp.entire = MEM.read(RN2.entire);
+    rtmp.entire = MEM_read(RN2.entire);
     tmp = (RotateRight(16,rtmp)).entire;
     break;
   default:
-    rtmp.entire = MEM.read(RN2.entire);
+    rtmp.entire = MEM_read(RN2.entire);
     tmp = (RotateRight(24,rtmp)).entire;
   }
-    
+
   MEM_write(RN2.entire,RM2.entire);
   RB_write(rd,tmp);
 
-  dprintf(" *  MEM[0x%08X] <= 0x%08X (%d)\n", RN2.entire, RM2.entire, RM2.entire); 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, tmp, tmp); 
+  dprintf(" *  MEM[0x%08X] <= 0x%08X (%d)\n", RN2.entire, RM2.entire, RM2.entire);
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, tmp, tmp);
 
   ac_pc = RB_read(PC);
 }
@@ -2574,12 +2580,12 @@ inline void SWPB(int rd, int rn, int rm,
   RM2.entire = RB_read(rm);
   RN2.entire = RB_read(rn);
 
-  tmp = (uint32_t) MEM.read_byte(RN2.entire);
-  MEM.write_byte(RN2.entire,RM2.byte[0]);
+  tmp = (uint32_t) MEM_read_byte(RN2.entire);
+  MEM_write_byte(RN2.entire,RM2.byte[0]);
   RB_write(rd,tmp);
 
-  dprintf(" *  MEM[0x%08X] <= 0x%02X (%d)\n", RN2.entire, RM2.byte[0], RM2.byte[0]); 
-  dprintf(" *  R%d <= 0x%02X (%d)\n", rd, tmp, tmp); 
+  dprintf(" *  MEM[0x%08X] <= 0x%02X (%d)\n", RN2.entire, RM2.byte[0], RM2.byte[0]);
+  dprintf(" *  R%d <= 0x%02X (%d)\n", rd, tmp, tmp);
 
   ac_pc = RB_read(PC);
 }
@@ -2600,8 +2606,8 @@ inline void TEQ(int rn,
   flags.Z = ((alu_out.entire == 0) ? true : false);
   flags.C = dpi_shiftopcarry;
   // nothing happens with flags.V
-    
-  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);  
+
+  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -2621,8 +2627,8 @@ inline void TST(int rn,
   flags.Z = ((alu_out.entire == 0) ? true : false);
   flags.C = dpi_shiftopcarry;
   // nothing happens with flags.V
-    
-  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V); 
+
+  dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
 
@@ -2645,10 +2651,10 @@ inline void UMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
   // Special cases
   if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
     printf("Unpredictable UMLAL instruction result\n");
-    return;  
+    return;
   }
 
-  result.uhilo = (uint64_t)RM2.uentire * (uint64_t)RS2.uentire 
+  result.uhilo = (uint64_t)RM2.uentire * (uint64_t)RS2.uentire
     + (uint64_t)acc.uhilo;
   RB_write(rdhi,result.reg[1]);
   RB_write(rdlo,result.reg[0]);
@@ -2658,7 +2664,7 @@ inline void UMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
     // nothing happens with flags.C and flags.V
   }
 
-  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]); 
+  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2668,22 +2674,22 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
            ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
            ac_reg<unsigned>& ac_pc) {
 
-  
+
   r64bit_t result;
   reg_t RM2, RS2;
-  
+
   RM2.entire = RB_read(rm);
   RS2.entire = RB_read(rs);
-  
+
   dprintf("Instruction: UMULL\n");
   dprintf("Operands:\n  rm=0x%X, contains 0x%lX\n  rs=0x%X, contains 0x%lX\n  Destination(Hi): Rdhi=0x%X, Rdlo=0x%X\n", rm,RM2.entire,rs,RS2.entire,rdhi,rdlo);
 
   // Special cases
   if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
     printf("Unpredictable UMULL instruction result\n");
-    return;  
+    return;
   }
-  
+
   result.uhilo = (uint64_t)RM2.uentire * (uint64_t)RS2.uentire;
   RB_write(rdhi,result.reg[1]);
   RB_write(rdlo,result.reg[0]);
@@ -2692,7 +2698,7 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
     flags.Z = ((result.hilo == 0) ? true : false);
     // nothing happens with flags.C and flags.V
   }
-  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]); 
+  dprintf(" *  R%d(high) R%d(low) <= 0x%08X%08X (%d)\n", rdhi, rdlo, result.reg[1], result.reg[0], result.reg[0]);
   dprintf(" *  Flags <= N=0x%X, Z=0x%X, C=0x%X, V=0x%X\n",flags.N,flags.Z,flags.C,flags.V);
   ac_pc = RB_read(PC);
 }
@@ -2708,12 +2714,12 @@ inline void DSMLA(int rd, int rn,
 
   dprintf("Instruction: SMLA<y><x>\n");
   dprintf("Operands:\n  rn=0x%X, contains 0x%lX\n  first operand contains 0x%lX\n  second operand contains 0x%lX\n  rd=0x%X, contains 0x%lX\n", rn, RN2.entire, OP1.entire, OP2.entire, rd, RD2.entire);
-  
+
   RD2.entire = (OP1.entire * OP2.entire) + RN2.entire;
 
   RB_write(rd, RD2.entire);
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
 
   // SET Q FLAG
 }
@@ -2727,12 +2733,12 @@ inline void DSMUL(int rd,
 
   dprintf("Instruction: SMUL<y><x>\n");
   dprintf("Operands:\n  first operand contains 0x%lX\n  second operand contains 0x%lX\n  rd=0x%X, contains 0x%lX\n", OP1.entire, OP2.entire, rd, RD2.entire);
-  
+
   RD2.entire = OP1.entire * OP2.entire;
 
   RB_write(rd, RD2.entire);
 
-  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire); 
+  dprintf(" *  R%d <= 0x%08X (%d)\n", rd, RD2.entire, RD2.entire);
 
   // SET Q FLAG
 }
@@ -3208,7 +3214,7 @@ void ac_behavior( dsmulw ){
 void ac_behavior( bfi ){ BFI(rd, rn, lsb, msb, RB, ac_pc); }
 
 //! Instruction nop behavior method
-void ac_behavior( nop){/*Nothing to do here.*/}
+void ac_behavior( nop ){/*Nothing to do here.*/}
 
 //! instruction PKH
 void ac_behavior( pkh ) { PKH(rd, rn, rm, tb, RB, ac_pc ); }
@@ -3217,9 +3223,9 @@ void ac_behavior( end ) { }
 
 //Coprocessor Generic CPxx implementation
 //! instruction MCR
-void ac_behavior( mcr ) { MCR(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
+void ac_behavior( mcr ) { MCR(cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
 
 //! instruction MRC
-void ac_behavior( mrc ) { MRC(this, cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
+void ac_behavior( mrc ) { MRC(cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
 
 // -----------------------------------------------------------------
