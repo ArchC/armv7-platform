@@ -90,37 +90,37 @@ static reg_t lsm_endaddress;
 static reg_t OP1;
 static reg_t OP2;
 
-#ifdef SYSTEM_MODEL
-  #define RB_write       bypass_write
-  #define RB_read        bypass_read
-  #define MEM_read       bypass_MEM_read_Word
-  #define MEM_read_byte  bypass_MEM_read_Byte
-  #define MEM_write      bypass_MEM_write_Word
-  #define MEM_write_half bypass_MEM_write_Half
-  #define MEM_write_byte bypass_MEM_write_Byte
-#else
+// #ifdef SYSTEM_MODEL
+//   #define RB_write       bypass_write
+//   #define RB_read        bypass_read
+//   #define MEM_read       bypass_MEM_read_Word
+//   #define MEM_read_byte  bypass_MEM_read_Byte
+//   #define MEM_write      bypass_MEM_write_Word
+//   #define MEM_write_half bypass_MEM_write_Half
+//   #define MEM_write_byte bypass_MEM_write_Byte
+// #else
   #define RB_write       RB.write
   #define RB_read        RB.read
   #define MEM_read       MEM.read
   #define MEM_read_byte  MEM.read_byte
   #define MEM_write      MEM.write
-  #define MEM_write_Half MEM.write_half
+  #define MEM_write_half MEM.write_half
   #define MEM_write_byte MEM.write_byte
-#endif
+//#endif
 
 // These quick inline functions bypass MEM calls and dispatch
 // then to MMU, if SYSTEM_MODEL. Otherwise they are bypassed
 // direct to bus.
-inline void bypass_MEM_write_Word(unsigned address, unsigned datum)
-{ mmu->write(WORD, address,datum); }
-inline void bypass_MEM_write_Byte(unsigned address, unsigned datum)
-{ mmu->write(BYTE, address, datum);}
-inline void bypass_MEM_write_Half(unsigned address, unsigned datum)
-{ return mmu->write(HALF, address, datum); }
-inline uint32_t bypass_MEM_read_Word(unsigned address)
-{ return mmu->read(WORD, address); }
-inline uint32_t bypass_MEM_read_Byte(unsigned address)
-{ return mmu->read(BYTE, address); }
+// inline void bypass_MEM_write_Word(unsigned address, unsigned datum)
+// { mmu->write(WORD, address,datum); }
+// inline void bypass_MEM_write_Byte(unsigned address, unsigned datum)
+// { mmu->write(BYTE, address, datum);}
+// inline void bypass_MEM_write_Half(unsigned address, unsigned datum)
+// { return mmu->write(HALF, address, datum); }
+// inline uint32_t bypass_MEM_read_Word(unsigned address)
+// { return mmu->read(WORD, address); }
+// inline uint32_t bypass_MEM_read_Byte(unsigned address)
+// { return mmu->read(BYTE, address); }
 
 // If SYSTEM_MODEL, These methods take control whenever
 // a instruciton attempts to write/read the main

@@ -10,7 +10,7 @@
  - TZIC, the interrupt control IP for the iMX53 SoC
  - General Purpose Timer
  - UART-1
- - Generic RAM devices
+ - Generic RAM/ROM devices
  - System control coprocessor - CP15
  - Memory Management Unit
 
@@ -41,6 +41,7 @@ const char *archc_options="-abi ";
 #include "gpt.h"
 #include "tzic.h"
 #include "ram.h"
+#include "rom.h"
 #include "uart.h"
 #include "bus.h"
 #include "coprocessor.h"
@@ -56,12 +57,14 @@ bool DEBUG_UART = false;
 bool DEBUG_RAM  = false;
 bool DEBUG_CP15 = false;
 bool DEBUG_MMU  = false;
+bool DEBUG_ROM  = false;
 
 static unsigned CYCLES = 0;
 static unsigned BATCH_SIZE = 100;
 static unsigned GDB_PORT = 5000;
 static bool ENABLE_GDB = false;
 static char* SYSCODE = 0;
+static char* BOOTCODE = 0;
 
 coprocessor *CP[16];
 MMU *mmu;
@@ -83,6 +86,8 @@ void process_params(int ac, char *av[]) {
             DEBUG_UART = true;
         } else if (strcmp(cur, "-debug-ram")   == 0) {
             DEBUG_RAM = true;
+        } else if (strcmp(cur, "-debug-rom")   == 0) {
+            DEBUG_ROM = true;
         } else if (strcmp(cur, "-debug-cp15")  == 0) {
             DEBUG_CP15 = true;
         } else if (strcmp(cur, "-debug-mmu")   == 0) {
@@ -106,6 +111,9 @@ void process_params(int ac, char *av[]) {
         } else if (strncmp(cur, "--load-sys=", 11) == 0) {
             SYSCODE = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
             strcpy(SYSCODE, cur+11);
+        }else if (strncmp(cur, "--boot-rom=", 11) == 0) {
+            BOOTCODE = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
+            strcpy(BOOTCODE, cur+11);
         } else if (strcmp(cur, "--help") == 0) {
             std::cout << std::endl;
             std::cout << "ARM i.MX53 platform simulator." << std::endl;
@@ -121,6 +129,7 @@ void process_params(int ac, char *av[]) {
             std::cout << "\t-debug-gpt"  << std::endl;
             std::cout << "\t-debug-uart" << std::endl;
             std::cout << "\t-debug-ram"  << std::endl;
+            std::cout << "\t-debug-rom"  << std::endl;
             std::cout << "\t-debug-cp15" << std::endl;
             std::cout << "\t-debug-mmu"  << std::endl;
             std::cout << "\t--load-sys=<path>\t\tLoad system software." << std::endl;
@@ -139,6 +148,8 @@ int sc_main(int ac, char *av[])
     // If CP pointers arent initialized as NULL,
     // we might get Segmentation Fault
     // when executing CP instructions.
+
+        process_params(ac, av);
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
@@ -146,7 +157,7 @@ int sc_main(int ac, char *av[])
     tzic_module tzic    ("tzic",         (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);                     // TZIC
     gpt_module  gpt     ("gpt",    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
     uart_module uart    ("uart",   tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);                     // UART1
-    ram_module  bootmem ("bootmem",tzic, (uint32_t)        0x0, (uint32_t)    0xFFFFF, (uint32_t)0xFFFFF);  // Boot Memory
+    rom_module  bootmem ("bootmem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);  // Boot Memory
     ram_module  mem     ("mem",    tzic, (uint32_t) 0x70000000, (uint32_t) 0x71000000, (uint32_t)0x1000000);// Internal RAM
     imx53_bus mainBus("imx53bus");
 
@@ -161,18 +172,18 @@ int sc_main(int ac, char *av[])
     CP[15] = coprocessor15;
 
     //---Memory Management Unit ----
-    mmu = new MMU("MMU", *coprocessor15, armv5e_proc1.MEM);
+    mmu = new MMU("MMU", *coprocessor15, mainBus);
 
 #ifdef AC_DEBUG
     ac_trace("armv5e_proc1.trace");
 #endif
-    process_params(ac, av);
+
 
     armv5e_proc1.set_instr_batch_size(BATCH_SIZE);
 
     tzic.proc_port(armv5e_proc1.inta);
     mainBus.proc_port(armv5e_proc1.inta);
-    armv5e_proc1.MEM_port(mainBus);
+    armv5e_proc1.MEM_port(*mmu);
 
     if (SYSCODE != 0) {
         std::cout << "Loading system kernel: " << SYSCODE << std::endl;
