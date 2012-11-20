@@ -11,19 +11,22 @@
  * IC-UNICAMP                                         *
  * http://www.lsc.ic.unicamp.br                       *
  ******************************************************/
- 
+
 
 #include  "armv5e.H"
 #include  "armv5e_isa.cpp"
+#include "defines.H"
 
 void armv5e::behavior() {
 
   unsigned ins_id;
   cache_item_t* ins_cache;
   if (has_delayed_load) {
-    APP_MEM->load(delayed_load_program);
-    ac_pc = ac_start_addr;
-    has_delayed_load = false;
+#ifndef iMX53_MODEL
+      APP_MEM->load(delayed_load_program);
+#endif
+      ac_pc = ac_start_addr;
+      has_delayed_load = false;
   }
 
   for (;;) {
@@ -40,10 +43,10 @@ void armv5e::behavior() {
       start_up=0;
       init_dec_cache();
     }
-    else{ 
+    else{
       decode_pc = bhv_pc;
     }
- 
+
       ins_cache = (DEC_CACHE+decode_pc);
       if ( !ins_cache->valid ){
         quant = 0;
@@ -548,7 +551,9 @@ void armv5e::init(int ac, char *av[]) {
   extern char* appfilename;
   ac_init_opt( ac, av);
   ac_init_app( ac, av);
+#ifndef iMX53_MODEL
   APP_MEM->load(appfilename);
+#endif
   set_args(ac_argc, ac_argv);
 #ifdef AC_VERIFY
   set_queue(av[0]);
@@ -586,14 +591,16 @@ void armv5e::stop(int status) {
 }
 
 void armv5e::load(char* program) {
-  APP_MEM->load(program);
+#ifndef iMX53_MODEL
+    APP_MEM->load(program);
+#endif
 }
 
 void armv5e::delayed_load(char* program) {
   has_delayed_load = true;
   delayed_load_program = new char[strlen(program)];
   strcpy(delayed_load_program, program);
-}
+    }
 
 // Returns pointer to gdbstub
 AC_GDB<armv5e_parms::ac_word>* armv5e::get_gdbstub() {

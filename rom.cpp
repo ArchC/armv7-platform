@@ -3,18 +3,7 @@
 #include "sys/mman.h"
 
 extern bool DEBUG_ROM;
-
-#include <stdarg.h>
-static inline int dprintf(const char *format, ...) {
-  int ret;
-  if (DEBUG_ROM) {
-    va_list args;
-    va_start(args, format);
-    ret = vfprintf(ac_err, format, args);
-    va_end(args);
-  }
-  return ret;
-}
+#define dprintf(args...) if(DEBUG_ROM){fprintf(stderr,args);}
 
 rom_module::~rom_module()
 {
