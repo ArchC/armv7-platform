@@ -17,7 +17,7 @@ TLM := /usr/local/tlm/
 
 # Variable that points to ArchC installation path
 # Change this with your path
-ARCHC := /home/gabriel/Desktop/Iniciacao/archc_installs/teste
+ARCHC := /home/gabriel/desktop/Iniciacao/archc_installs/teste
 
 # Target Arch used by SystemC
 TARGET_ARCH :=  linux64
