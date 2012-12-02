@@ -1,4 +1,4 @@
-// gpt.h
+// uart.h
 // -
 // This represents the UART used in the ARM SoC by Freescale iMX35.
 //

@@ -37,6 +37,7 @@ const char *archc_options="-abi ";
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
+//#include  "armv5e_isa.cpp"
 #include "armv5e.H"
 #include "gpt.h"
 #include "tzic.h"
@@ -47,6 +48,8 @@ const char *archc_options="-abi ";
 #include "coprocessor.h"
 #include "cp15.h"
 #include "mmu.h"
+#include "sd.h"
+#include "defines.H"
 
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
@@ -58,6 +61,8 @@ bool DEBUG_RAM  = false;
 bool DEBUG_CP15 = false;
 bool DEBUG_MMU  = false;
 bool DEBUG_ROM  = false;
+bool DEBUG_SD   = false;
+bool DEBUG_ESDHCV2 = false;
 
 static unsigned CYCLES = 0;
 static unsigned BATCH_SIZE = 100;
@@ -65,6 +70,7 @@ static unsigned GDB_PORT = 5000;
 static bool ENABLE_GDB = false;
 static char* SYSCODE = 0;
 static char* BOOTCODE = 0;
+static char* SDCARD = 0;
 
 coprocessor *CP[16];
 MMU *mmu;
@@ -92,6 +98,8 @@ void process_params(int ac, char *av[]) {
             DEBUG_CP15 = true;
         } else if (strcmp(cur, "-debug-mmu")   == 0) {
             DEBUG_MMU = true;
+        }else if (strcmp(cur, "-debug-esdhcv2")   == 0) {
+            DEBUG_ESDHCV2 = true;
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
             const char *src = cur + 8;
@@ -114,7 +122,10 @@ void process_params(int ac, char *av[]) {
         }else if (strncmp(cur, "--boot-rom=", 11) == 0) {
             BOOTCODE = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
             strcpy(BOOTCODE, cur+11);
-        } else if (strcmp(cur, "--help") == 0) {
+        }else if (strncmp(cur, "--sd=", 5) == 0) {
+            SDCARD = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
+            strcpy(SDCARD, cur+5);
+        }  else if (strcmp(cur, "--help") == 0) {
             std::cout << std::endl;
             std::cout << "ARM i.MX53 platform simulator." << std::endl;
             std::cout << "Written by Rafael Auler, University of Campinas."
@@ -130,6 +141,7 @@ void process_params(int ac, char *av[]) {
             std::cout << "\t-debug-uart" << std::endl;
             std::cout << "\t-debug-ram"  << std::endl;
             std::cout << "\t-debug-rom"  << std::endl;
+            std::cout << "\t-debug-sd"  << std::endl;
             std::cout << "\t-debug-cp15" << std::endl;
             std::cout << "\t-debug-mmu"  << std::endl;
             std::cout << "\t--load-sys=<path>\t\tLoad system software." << std::endl;
@@ -153,16 +165,23 @@ int sc_main(int ac, char *av[])
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
-    armv5e armv5e_proc1 ("armv5e");                                                                          // Core
+    armv5e armv5e_proc1 ("armv5e");                                                                         // Core
     tzic_module tzic    ("tzic",         (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);                     // TZIC
-    gpt_module  gpt     ("gpt",    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
+    gpt_module  gpt     ("gpt" ,   tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
     uart_module uart    ("uart",   tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);                     // UART1
-    rom_module  bootmem ("bootmem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);  // Boot Memory
-    ram_module  mem     ("mem",    tzic, (uint32_t) 0x70000000, (uint32_t) 0x71000000, (uint32_t)0x1000000);// Internal RAM
+    ram_module  iram    ("iRAM",   tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF,(uint32_t)0x1FFFF);   // Internal RAM
     imx53_bus mainBus("imx53bus");
+
+#ifdef iMX53_MODEL
+    rom_module  bootmem ("bootMem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
+    sd_card   card("microSD", SDCARD);
+#else
+    ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
+#endif
 
     //--- Connect devices to bus ----
     mainBus.connectDevice(&bootmem);
+    mainBus.connectDevice(&iram);
     mainBus.connectDevice(&tzic);
     mainBus.connectDevice(&gpt);
     mainBus.connectDevice(&uart);
@@ -185,10 +204,13 @@ int sc_main(int ac, char *av[])
     mainBus.proc_port(armv5e_proc1.inta);
     armv5e_proc1.MEM_port(*mmu);
 
+#ifndef iMX53_MODEL
     if (SYSCODE != 0) {
         std::cout << "Loading system kernel: " << SYSCODE << std::endl;
         armv5e_proc1.APP_MEM->load(SYSCODE);
     }
+#endif
+
     if (ENABLE_GDB) {
         armv5e_proc1.enable_gdb(GDB_PORT);
     }
@@ -198,11 +220,18 @@ int sc_main(int ac, char *av[])
     double duration = CYCLES;
     if (duration == 0)
         duration = -1.0;
+
+#ifdef iMX53_MODEL
+        armv5e_proc1.ac_start_addr = 0;
+        armv5e_proc1.ac_heap_ptr = 10485700;
+        armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
+#else
     if (SYSCODE != 0) {
         armv5e_proc1.ac_start_addr = 0;
-        //armv5e_proc1.ac_heap_ptr = 10485700;
+        // armv5e_proc1.ac_heap_ptr = 10485700;
         armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
     }
+#endif
 
     sc_start(duration, SC_NS);
 

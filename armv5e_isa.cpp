@@ -32,8 +32,7 @@ using namespace armv5e_parms;
 extern bool DEBUG_CORE;
 extern coprocessor * CP[16];
 extern MMU *mmu;
-
-#define SYSTEM_MODEL
+#include "defines.H"
 
 #define dprintf(args...) if(DEBUG_CORE){fprintf(stderr,args);}
 
