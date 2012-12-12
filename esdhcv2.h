@@ -15,7 +15,7 @@
 
 //
 //
-class ESDHCV2_module : public sc_module, public peripheral {
+class ESDHCV2_module : public sc_module, public peripheral, public dma_device {
 private:
     void do_reset(bool hard_reset=true) {
         // Initial values
@@ -237,7 +237,10 @@ public:
     // -- External signals
     SC_HAS_PROCESS( ESDHCV2_module );
     ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
-                   uint32_t start_add, uint32_t end_add);
+                   uint32_t start_add,          //Core Bus memory address space
+                   uint32_t end_add,            //
+                   uint32_t dma_address_start,  // DMA bus address space
+                   uint32_t dma_address_end);
     ~ESDHCV2_module();
 };
 #endif

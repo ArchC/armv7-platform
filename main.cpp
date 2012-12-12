@@ -165,33 +165,37 @@ int sc_main(int ac, char *av[])
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
-    armv5e armv5e_proc1 ("armv5e");                                                                         // Core
-    tzic_module tzic    ("tzic",         (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);                     // TZIC
-    gpt_module  gpt     ("gpt" ,   tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);                     // GPT1
-    uart_module uart    ("uart",   tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);                     // UART1
-    ram_module  iram    ("iRAM",   tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF,(uint32_t)0x1FFFF);   // Internal RAM
-    imx53_bus mainBus("imx53bus");
+    armv5e armv5e_proc1 ("armv5e");   // Core
+    imx53_bus mainBus  ("imx53bus");  // Core Bus
+    tzic_module tzic   ("tzic",          (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF); // TZIC
+    gpt_module  gpt    ("gpt" ,    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF); // GPT1
+    uart_module uart   ("uart",    tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF); // UART1
+    ram_module  iram   ("iRAM",    tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF, (uint32_t) 0x0001FFFF);// Internal RAM
 
 #ifdef iMX53_MODEL
-    rom_module  bootmem ("bootMem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
-    sd_card   card("microSD", SDCARD);
+    rom_module bootmem ("bootMem", tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
+    sd_card    card ("microSD", SDCARD);
+    ram_module ddr1 ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
+    ram_module ddr2 ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
+    imx53_bus dmaBus  ("DMA_bus");  // DMA Bus
 #else
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
 #endif
 
-    //--- Connect devices to bus ----
+    //--- Connect devices to Core bus ----
     mainBus.connectDevice(&bootmem);
     mainBus.connectDevice(&iram);
     mainBus.connectDevice(&tzic);
-    mainBus.connectDevice(&gpt);
+    mainBus.connectDevice(&gpt );
     mainBus.connectDevice(&uart);
+    mainBus.connectDevice(&ddr1);
+    mainBus.connectDevice(&ddr2);
 
     //--- Coprocessors ----
-    cp15 *coprocessor15 = new cp15();
-    CP[15] = coprocessor15;
+    CP[15] = new cp15();
 
     //---Memory Management Unit ----
-    mmu = new MMU("MMU", *coprocessor15, mainBus);
+    mmu = new MMU("MMU", *((cp15*)CP[15]), mainBus);
 
 #ifdef AC_DEBUG
     ac_trace("armv5e_proc1.trace");

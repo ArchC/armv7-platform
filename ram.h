@@ -47,6 +47,7 @@ private:
           //Initialize memory
           memory = new unsigned[blockNumber/4];
 
+
   }
   ~ram_module();
 

@@ -8,9 +8,14 @@ extern bool DEBUG_ESDHCV2;
 #define setBit(variable, position) variable = variable | (1 << (position))
 
 
-ESDHCV2_module::ESDHCV2_module (sc_module_name name_, tzic_module &tzic_,
-                                uint32_t start_add, uint32_t end_add):
-    sc_module(name_), peripheral(start_add, end_add), tzic(tzic_)
+ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
+                               uint32_t start_add, uint32_t end_add,
+                               uint32_t dma_addres_start,
+                               uint32_t dma_address_end):
+    sc_module(name_),
+    peripheral(start_add, end_add),
+    dma_device(dma_address_start,dma_address_end),
+    tzic(tzic_)
 {
     do_reset();
 
