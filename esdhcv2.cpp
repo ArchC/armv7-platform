@@ -4,17 +4,15 @@
 extern bool DEBUG_ESDHCV2;
 #define dprintf(args...) if(DEBUG_ESDHCV2){fprintf(stderr,args);}
 
-#define isBitSet(variable, position) (((variable & (1 << (position))) != 0) ? true : false)
-#define setBit(variable, position) variable = variable | (1 << (position))
+#define isBitSet(reg, bit) (((reg & (1 << (bit))) != 0) ? true : false)
+#define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
 
 
 ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
-                               uint32_t start_add, uint32_t end_add,
-                               uint32_t dma_addres_start,
-                               uint32_t dma_address_end):
+                               uint32_t start_add, uint32_t end_add):
+
     sc_module(name_),
     peripheral(start_add, end_add),
-    dma_device(dma_address_start,dma_address_end),
     tzic(tzic_)
 {
     do_reset();
@@ -22,19 +20,20 @@ ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
     // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls.
     SC_THREAD(prc_ESDHCV2);
-
-
 }
 
 ESDHCV2_module::~ESDHCV2_module() {
 }
 
+void ESDHCV2_module::connect_card(sd_card & card) {
+    port = &card;
+    CINS=true;  // Flag to host a card is inserted
 
-void ESDHCV2_module::prc_ESDHCV2() {
-    dprintf("-------------------- ESDHCV2 -------------------- \n");
 }
 
 unsigned ESDHCV2_module::fast_read(unsigned address) {
+
+    dprintf("ESDHCv2 READ address: 0x%X\n", address);
     switch(address)
     {
     case XFERTYP:
@@ -117,6 +116,7 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
 }
 
 void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
+    dprintf("ESDHCv2 READ address: 0x%X data:0x%X", address, datum);
     switch(address)
     {
     case DSADR:
@@ -132,28 +132,29 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         break;
     case XFERTYP:
         //Can write only if no CIHB and CDIHB or if CDIB, there is no data
-        if( !((CDIHB && isBitSet(datum, 21))  || CIHB) )
-        { //if CDIHB
-            if(isBitSet(datum, 1) ||
-               (~isBitSet(datum,5) && (regs[BLKATTR/4] & 0xFFF) != 0))
-            {
-                if(!(isBitSet(datum, 4) && !WPSPL))
-                {
-                    if(!data_transfer)
-                    {
-                        DPSEL  = isBitSet(datum,21);
-                        MSBSEL = isBitSet(datum, 5);
-                        DTDSEL = isBitSet(datum, 4);
-                        AC12EN = isBitSet(datum, 2);
-                        BCEN   = isBitSet(datum, 1);
-                        DMAEN  = isBitSet(datum, 0);
-                    }
-                    CMDINX = (datum & (0b111111<<24)>> 24);
-                    RSPTYP = (datum & (0b11<<16) >> 16);
-                    CMDTYP = (datum & (0b11<<22) >> 22);
-                }
-            }
-        }
+        // if( !((CDIHB && isBitSet(datum, 21))  || CIHB) )
+        // { //if CDIHB
+        //     if(isBitSet(datum, 1) ||
+        //        (~isBitSet(datum,5) && (regs[BLKATTR/4] & 0xFFF) != 0))
+        //     {
+        //         if(!(!isBitSet(datum, 4) && !WPSPL))
+        //         {
+        //             if(!data_transfer)
+        //             {
+        DPSEL  = isBitSet(datum,21);
+        MSBSEL = isBitSet(datum, 5);
+        DTDSEL = isBitSet(datum, 4);
+        AC12EN = isBitSet(datum, 2);
+        BCEN   = isBitSet(datum, 1);
+        DMAEN  = isBitSet(datum, 0);
+//                    }
+        CMDINX = ((datum & (0b111111<<24))>> 24);
+        RSPTYP = ((datum & (0b11<<16)) >> 16);
+        CMDTYP = ((datum & (0b11<<22)) >> 22);
+        cmd_issued = true;  //Tell ESDHC to send this command to SD
+                    //         }
+        //     }
+        // }
         break;
     case PROCTL:
         WECRM   = isBitSet(datum, 26);
@@ -213,9 +214,48 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         break;
     case MMCBOOT:
         regs[MMCBOOT/4]  = datum & 0xFF0F;
-        
     default:
+        dprintf("ignored");
         break; //ignore write
     }
+    dprintf("\n");
 }
+
+//#define SET_BIT_BREN() {BREN=true; regs[IRQSTAT/4] |= ((1 << 5) & (reg[IRQSIGEN/4] & 0b10000);}
+
+void ESDHCV2_module::prc_ESDHCV2() {
+    do{
+        dprintf("-------------------- ESDHCV2 -------------------- \n");
+        wait(1, SC_NS);
+        //SD protocol
+        interface_sd();
+
+        // Host Protocol
+        if(ibuffer >= RD_WML) {
+            //SET_BIT_BREN();          // Allow Host to read buffer
+        }
+    }while(1);
+}
+
+
+void ESDHCV2_module::interface_sd()
+{
+    if(cmd_issued)
+    {
+        //Host driver sent a new command to XFERTYP. We must execute it and
+        //recover reponses to correct registers.
+
+        sd_response resp = port->exec_cmd(CMDINX, CMDTYP, regs[CMDARG/4]);
+        //Stores response
+        regs[CMDRSP0] = resp.response[0];
+        regs[CMDRSP1] = resp.response[1];
+        regs[CMDRSP2] = resp.response[2];
+
+        if(CICEN || CCCEN)
+            printf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
+
+        cmd_issued = false;
+    }
+}
+
 

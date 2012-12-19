@@ -30,49 +30,30 @@
 
 // More info about this module:
 //
+// This model does not simulate SD protocol. That could be a future feature. this
+// only acts as a backend flat memory for ESDHCv2 requests.
+
 
 using namespace std;
+
+typedef struct {
+    uint32_t response[3];
+}sd_response;
+
+
 
 class sd_card : public sc_module{
 
 private:
     void *data;
+    int blocklen;
 
-  // Fast read/write don't implement error checking. The bus (or other caller)
-  // must ensure the address is valid.
-  // Invalid read/writes are treated as no-ops.
-  // Unaligned addresses have undefined behavior
-    unsigned fast_read(unsigned address);
-    void fast_write(unsigned address, unsigned datum, unsigned offset);
+    sd_response cmd16_handler(uint32_t arg);
 
 public:
-    //Wrappers to call fast_read/write with correct parameters
-    unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
-    void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum, offset); }
 
-    sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
-    {
-        if(dataPath == NULL) ///Case no SD provided
-            return;
-
-        int dataFile = open(dataPath, O_LARGEFILE);
-        if(dataFile == -1){
-            printf("Unable to load SD card file %s", dataPath);
-            exit(1);
-        }
-        printf("ArchC: Loading SD card file: %s\n",dataPath);
-
-        struct stat st;
-        stat(dataPath, &st);
-        size_t size = st.st_size;
-        data = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, dataFile, 0);
-        if(data == MAP_FAILED){
-            printf("Unable to map SD card file  %s", dataPath);
-            exit(1);
-        }
-        close(dataFile);
-    };
-
+    sd_response exec_cmd(short cmd_index, short cmd_type, uint32_t arg);
+    sd_card (sc_module_name name_, const char* dataPath);
     ~sd_card();
 };
 

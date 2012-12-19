@@ -50,6 +50,7 @@ const char *archc_options="-abi ";
 #include "mmu.h"
 #include "sd.h"
 #include "defines.H"
+#include "esdhcv2.h"
 
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
@@ -173,11 +174,14 @@ int sc_main(int ac, char *av[])
     ram_module  iram   ("iRAM",    tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF, (uint32_t) 0x0001FFFF);// Internal RAM
 
 #ifdef iMX53_MODEL
-    rom_module bootmem ("bootMem", tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
-    sd_card    card ("microSD", SDCARD);
-    ram_module ddr1 ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
-    ram_module ddr2 ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
-    imx53_bus dmaBus  ("DMA_bus");  // DMA Bus
+    rom_module bootmem ("bootMem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
+    ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
+    ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
+    ESDHCV2_module esdhc1 ("ESDHCv2",tzic, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
+    sd_card    card    ("microSD", SDCARD);
+
+    esdhc1.connect_card(card);
+
 #else
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
 #endif
@@ -190,6 +194,7 @@ int sc_main(int ac, char *av[])
     mainBus.connectDevice(&uart);
     mainBus.connectDevice(&ddr1);
     mainBus.connectDevice(&ddr2);
+    mainBus.connectDevice(&esdhc1);
 
     //--- Coprocessors ----
     CP[15] = new cp15();

@@ -12,12 +12,12 @@
 
 # Variable that points to SystemC installation path
 # Change this with your path
-SYSTEMC :=  /usr/local/systemc-2.2/
-TLM := /usr/local/tlm/
+SYSTEMC :=  /home/gabriel/unicamp/ic/systemc/build-systemc-2.3.0/
+TLM := /home/gabriel/unicamp/ic/systemc/TLM-2009-07-15
 
 # Variable that points to ArchC installation path
 # Change this with your path
-ARCHC := /home/gabriel/desktop/Iniciacao/archc_installs/teste
+ARCHC := /home/gabriel/unicamp/ic/archc/build-archc/build
 
 # Target Arch used by SystemC
 TARGET_ARCH :=  linux64
@@ -37,7 +37,7 @@ LIB_DIR := -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L$(ARCHC_LIB)
 LIB_SYSTEMC := -lsystemc
 LIBS := $(LIB_SYSTEMC) -lm $(EXTRA_LIBS) -larchc
 CC :=   g++-4.6
-
+#CC := g++
 OPT :=   -O0
 
 DEBUG :=   -g

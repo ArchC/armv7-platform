@@ -12,11 +12,13 @@
 #include "tzic.h"
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
+#include "sd.h"
 
 //
 //
-class ESDHCV2_module : public sc_module, public peripheral, public dma_device {
+class ESDHCV2_module : public sc_module, public peripheral {
 private:
+
     void do_reset(bool hard_reset=true) {
         // Initial values
         regs[DSADR/4]   = 0x0;
@@ -85,7 +87,7 @@ private:
         RSTC    = false;
         RSTA    = false;
         DTOCV   = false;
-        SDCLKFS = 0x8;
+        SDCLKFS = 0x08;
         DVS     = false;
         SDCLKEN = true;
         PEREN   = false;
@@ -105,14 +107,18 @@ private:
         regs[MMCBOOT/4]     = 0x0;
         regs[HOSTVER/4]    = 0x00001201;
         //--
+
+        cmd_issued;
     }
-  
+
+    // State flags
+    bool cmd_issued;
     bool data_transfer;
 
-    static const uint32_t DSADR      = 0x0;  // ESDHCv2 DMA System Address
-    static const uint32_t BLKATTR    = 0x4;  // ESDHCv2 Block attribute
-    static const uint32_t CMDARG     = 0x8;  // ESDHCv2 Command Argument
-    static const uint32_t XFERTYP    = 0xC;  // ESDHCv2 Command Transfer type
+    static const uint32_t DSADR      = 0x00; // ESDHCv2 DMA System Address
+    static const uint32_t BLKATTR    = 0x04; // ESDHCv2 Block attribute
+    static const uint32_t CMDARG     = 0x08; // ESDHCv2 Command Argument
+    static const uint32_t XFERTYP    = 0x0C; // ESDHCv2 Command Transfer type
     static const uint32_t CMDRSP0    = 0x10; // ESDHCv2 Command Response 0
     static const uint32_t CMDRSP1    = 0x14; // ESDHCv2 Command Response 1
     static const uint32_t CMDRSP2    = 0x18; // ESDHCv2 Command Response 2
@@ -215,6 +221,9 @@ private:
 
     static const int ESDHCV2_1_IRQ = 1;
 
+    sd_card* port;
+    uint32_t ibuffer;
+
     // This port is used to send interrupts to the processor
     tzic_module &tzic;
 
@@ -225,6 +234,9 @@ private:
     unsigned fast_read(unsigned address);
     void fast_write(unsigned address, unsigned datum);
 
+    void interface_sd();
+    
+    
 public:
 
     //Wrappers to call fast_read/write with correct parameters
@@ -238,9 +250,10 @@ public:
     SC_HAS_PROCESS( ESDHCV2_module );
     ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
                    uint32_t start_add,          //Core Bus memory address space
-                   uint32_t end_add,            //
-                   uint32_t dma_address_start,  // DMA bus address space
-                   uint32_t dma_address_end);
+                   uint32_t end_add);           //
+
+    void connect_card(sd_card & card);
+
     ~ESDHCV2_module();
 };
 #endif
