@@ -60,7 +60,6 @@ public:
   ac_reg<armv5e_parms::ac_word> R10_fiq;
   ac_reg<armv5e_parms::ac_word> R9_fiq;
   ac_reg<armv5e_parms::ac_word> R8_fiq;
-  ac_regbank<11, armv5e_parms::ac_word, armv5e_parms::ac_Dword> CP15_SCC;
  
 
   //!Constructor.

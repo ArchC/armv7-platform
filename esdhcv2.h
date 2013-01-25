@@ -14,102 +14,11 @@
 #include <ac_tlm_protocol.H>
 #include "sd.h"
 
+#include <queue>
 //
 //
 class ESDHCV2_module : public sc_module, public peripheral {
 private:
-
-    void do_reset(bool hard_reset=true) {
-        // Initial values
-        regs[DSADR/4]   = 0x0;
-        regs[BLKATTR/4] = 0x0;
-        regs[CMDARG/4]  = 0x0;
-
-        //XFERTYP
-        DMAEN  = false;
-        BCEN   = false;
-        AC12EN = false;
-        DTDSEL = false;
-        MSBSEL = false;
-        RSPTYP = 0;
-        CCCEN  = false;
-        CICEN  = false;
-        DPSEL  = false;
-        CMDTYP = 0;
-        CMDINX = 0;
-        //--
-
-        regs[CMDRSP0/4] = 0;
-        regs[CMDRSP1/4] = 0;
-        regs[CMDRSP2/4] = 0;
-        regs[DATPORT/4] = 0;
-
-        //Present State = 0x0
-        DLSL   = 0;
-        CLSL   = false;
-        WPSPL  = false;
-        CDPL   = false;
-        CINS   = false;
-        BREN   = false;
-        BWEN   = false;
-        RTA    = false;
-        WTA    = false;
-        SDOFF  = false;
-        PEROFF = false;
-        HCKOFF = false;
-        IPGOFF = false;
-        SDSTB  = false;
-        DLA    = false;
-        CDIHB  = false;
-        CIHB   = false;
-        //--
-
-        //Protocol control
-        WECRM   = false;
-        WECINS  = false;
-        WECINT  = false;
-        IABG    = false;
-        RWCTL   = false;
-        CREQ    = false;
-        SABGREQ = false;
-        DMAS[2] = false;
-        CDSS    = false;
-        CDTL    = false;
-        EMODE[2] = false;
-        D3CD    = false;
-        DTW[2]  = false;
-        LCTL    = false;
-        //--
-
-        //System Control 0x8008
-        INITA   = false;
-        RSTD    = false;
-        RSTC    = false;
-        RSTA    = false;
-        DTOCV   = false;
-        SDCLKFS = 0x08;
-        DVS     = false;
-        SDCLKEN = true;
-        PEREN   = false;
-        HCKEN   = false;
-        IPGEN   = false;
-        //--
-
-        regs[IRQSTAT/4]    = 0x0;
-        regs[IRQSTATEN/4]  = 0x117F013F;
-        regs[IRQSIGEN/4]   = 0x0;
-        regs[AUTOC12ERR/4] = 0x0;
-        regs[HOSTCAPBLT/4] = 0x07F30000;
-        regs[WML/4]        = 0x08100810;
-        regs[ADMAES/4]     = 0x0;
-        regs[ADSADDR/4]    = 0x0;
-        regs[VENDOR/4]     = 0x1;
-        regs[MMCBOOT/4]     = 0x0;
-        regs[HOSTVER/4]    = 0x00001201;
-        //--
-
-        cmd_issued;
-    }
 
     // State flags
     bool cmd_issued;
@@ -222,7 +131,7 @@ private:
     static const int ESDHCV2_1_IRQ = 1;
 
     sd_card* port;
-    uint32_t ibuffer;
+    queue<uint32_t> ibuffer;
 
     // This port is used to send interrupts to the processor
     tzic_module &tzic;
@@ -235,8 +144,7 @@ private:
     void fast_write(unsigned address, unsigned datum);
 
     void interface_sd();
-    
-    
+
 public:
 
     //Wrappers to call fast_read/write with correct parameters
@@ -255,5 +163,104 @@ public:
     void connect_card(sd_card & card);
 
     ~ESDHCV2_module();
+
+
+private:
+    void do_reset(bool hard_reset=true) {
+        // Initial values
+        regs[DSADR/4]   = 0x0;
+        regs[BLKATTR/4] = 0x0;
+        regs[CMDARG/4]  = 0x0;
+
+        //XFERTYP
+        DMAEN  = false;
+        BCEN   = false;
+        AC12EN = false;
+        DTDSEL = false;
+        MSBSEL = false;
+        RSPTYP = 0;
+        CCCEN  = false;
+        CICEN  = false;
+        DPSEL  = false;
+        CMDTYP = 0;
+        CMDINX = 0;
+        //--
+
+        regs[CMDRSP0/4] = 0;
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[DATPORT/4] = 0;
+
+        //Present State = 0x0
+        DLSL   = 0;
+        CLSL   = false;
+        WPSPL  = false;
+        CDPL   = false;
+        CINS   = false;
+        BREN   = false;
+        BWEN   = false;
+        RTA    = false;
+        WTA    = false;
+        SDOFF  = false;
+        PEROFF = false;
+        HCKOFF = false;
+        IPGOFF = false;
+        SDSTB  = false;
+        DLA    = false;
+        CDIHB  = false;
+        CIHB   = false;
+        //--
+
+        //Protocol control
+        WECRM   = false;
+        WECINS  = false;
+        WECINT  = false;
+        IABG    = false;
+        RWCTL   = false;
+        CREQ    = false;
+        SABGREQ = false;
+        DMAS[2] = false;
+        CDSS    = false;
+        CDTL    = false;
+        EMODE[2] = false;
+        D3CD    = false;
+        DTW[2]  = false;
+        LCTL    = false;
+        //--
+
+        //System Control 0x8008
+        INITA   = false;
+        RSTD    = false;
+        RSTC    = false;
+        RSTA    = false;
+        DTOCV   = false;
+        SDCLKFS = 0x08;
+        DVS     = false;
+        SDCLKEN = true;
+        PEREN   = false;
+        HCKEN   = false;
+        IPGEN   = false;
+        //--
+        regs[WML/4]        = 0x08100810;
+        WR_BRST_LEN = 0x8;
+        WR_WML      = 0x10;
+        RD_BRST_LEN = 0x8;
+        RD_WML      = 0x10;
+        
+        regs[IRQSTAT/4]    = 0x0;
+        regs[IRQSTATEN/4]  = 0x117F013F;
+        regs[IRQSIGEN/4]   = 0x0;
+        regs[AUTOC12ERR/4] = 0x0;
+        regs[HOSTCAPBLT/4] = 0x07F30000;
+        regs[ADMAES/4]     = 0x0;
+        regs[ADSADDR/4]    = 0x0;
+        regs[VENDOR/4]     = 0x1;
+        regs[MMCBOOT/4]     = 0x0;
+        regs[HOSTVER/4]    = 0x00001201;
+        //--
+
+        cmd_issued = false;
+    }
+
 };
 #endif

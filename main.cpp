@@ -99,8 +99,10 @@ void process_params(int ac, char *av[]) {
             DEBUG_CP15 = true;
         } else if (strcmp(cur, "-debug-mmu")   == 0) {
             DEBUG_MMU = true;
-        }else if (strcmp(cur, "-debug-esdhcv2")   == 0) {
+        }else if (strcmp(cur, "-debug-esdhc")   == 0) {
             DEBUG_ESDHCV2 = true;
+        }else if (strcmp(cur, "-debug-sd")   == 0) {
+            DEBUG_SD = true;
         } else if (strncmp(cur, "-cycles=", 8) == 0) {
             char buf[20];
             const char *src = cur + 8;
@@ -161,20 +163,20 @@ int sc_main(int ac, char *av[])
     // If CP pointers arent initialized as NULL,
     // we might get Segmentation Fault
     // when executing CP instructions.
-
         process_params(ac, av);
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
-    armv5e armv5e_proc1 ("armv5e");   // Core
-    imx53_bus mainBus  ("imx53bus");  // Core Bus
+    armv5e armv5e_proc1 ("armv5e");    // Core
+    imx53_bus ip_bus  ("iMX_IP_bus");  // Core Bus
     tzic_module tzic   ("tzic",          (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF); // TZIC
     gpt_module  gpt    ("gpt" ,    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF); // GPT1
     uart_module uart   ("uart",    tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF); // UART1
     ram_module  iram   ("iRAM",    tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF, (uint32_t) 0x0001FFFF);// Internal RAM
 
 #ifdef iMX53_MODEL
-    rom_module bootmem ("bootMem",tzic, BOOTCODE, (uint32_t) 0x0, (uint32_t)0xFFFFF);             // Boot Memory
+
+    rom_module bootmem ("bootMem",   tzic,  BOOTCODE, (uint32_t) 0x0, (uint32_t) 0xFFFFF);   // Boot Memory
     ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
     ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
     ESDHCV2_module esdhc1 ("ESDHCv2",tzic, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
@@ -182,25 +184,28 @@ int sc_main(int ac, char *av[])
 
     esdhc1.connect_card(card);
 
+    ip_bus.connectDevice(&ddr1);
+    ip_bus.connectDevice(&ddr2);
+    ip_bus.connectDevice(&esdhc1);
+
+
 #else
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
+    ip_bus.connectDevice(&bootmem);
 #endif
 
     //--- Connect devices to Core bus ----
-    mainBus.connectDevice(&bootmem);
-    mainBus.connectDevice(&iram);
-    mainBus.connectDevice(&tzic);
-    mainBus.connectDevice(&gpt );
-    mainBus.connectDevice(&uart);
-    mainBus.connectDevice(&ddr1);
-    mainBus.connectDevice(&ddr2);
-    mainBus.connectDevice(&esdhc1);
-
+    ip_bus.connectDevice(&bootmem);
+    ip_bus.connectDevice(&iram);
+    ip_bus.connectDevice(&tzic);
+    ip_bus.connectDevice(&gpt );
+    ip_bus.connectDevice(&uart);
+    
     //--- Coprocessors ----
     CP[15] = new cp15();
 
     //---Memory Management Unit ----
-    mmu = new MMU("MMU", *((cp15*)CP[15]), mainBus);
+    mmu = new MMU("MMU", *((cp15*)CP[15]), ip_bus);
 
 #ifdef AC_DEBUG
     ac_trace("armv5e_proc1.trace");
@@ -210,7 +215,7 @@ int sc_main(int ac, char *av[])
     armv5e_proc1.set_instr_batch_size(BATCH_SIZE);
 
     tzic.proc_port(armv5e_proc1.inta);
-    mainBus.proc_port(armv5e_proc1.inta);
+    ip_bus.proc_port(armv5e_proc1.inta);
     armv5e_proc1.MEM_port(*mmu);
 
 #ifndef iMX53_MODEL

@@ -14,25 +14,25 @@
 
 
 # Variable that points to SystemC installation path
-SYSTEMC :=  /usr/local/systemc-2.2/
+SYSTEMC :=  /home/gabriel/unicamp/ic/systemc/build-systemc-2.3.0
 
 
 
 # Variable that points to ArchC installation path
-ARCHC := /usr/local/bin
+ARCHC := /home/gabriel/unicamp/ic/archc/build-archc/build/bin
 
 # Target Arch used by SystemC
-TARGET_ARCH :=  linux
+TARGET_ARCH :=  linux64
 
 
 
-INC_DIR := -I. -I/usr/local/include/archc -I$(SYSTEMC)/include -I /usr/local/tlm
+INC_DIR := -I. -I/home/gabriel/unicamp/ic/archc/build-archc/build/include/archc -I$(SYSTEMC)/include -I /home/gabriel/unicamp/ic/systemc/TLM-2009-07-15
 
-LIB_DIR := -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L/usr/local/lib
+LIB_DIR := -L. -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L/home/gabriel/unicamp/ic/archc/build-archc/build/lib
 
 LIB_SYSTEMC := -lsystemc
 LIBS := $(LIB_SYSTEMC) -lm $(EXTRA_LIBS) -larchc
-CC :=   g++-4.5
+CC :=   g++
 
 OPT :=   -O3
 
@@ -75,7 +75,7 @@ EXE := $(MODULE).x
 
 .SUFFIXES: .cc .cpp .o .x
 
-all: $(addprefix /usr/local/include/archc/, $(ACFILESHEAD)) $(ACHEAD) $(ACFILES) $(EXE)
+all: $(addprefix /home/gabriel/unicamp/ic/archc/build-archc/build/include/archc/, $(ACFILESHEAD)) $(ACHEAD) $(ACFILES) $(EXE)
 
 $(EXE): $(OBJS) $(SYSTEMC)/lib-$(TARGET_ARCH)/libsystemc.a
 	$(CC) $(CFLAGS) $(INC_DIR) $(LIB_DIR) -o $@ $(OBJS) $(LIBS) 2>&1 | c++filt

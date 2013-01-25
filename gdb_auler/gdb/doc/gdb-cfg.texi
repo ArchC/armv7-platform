@@ -1,0 +1,1 @@
+../../../../gdb-6.4/gdb/doc/all-cfg.texi

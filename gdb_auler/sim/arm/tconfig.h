@@ -1,0 +1,1 @@
+../../../../gdb-6.4/sim/arm/tconfig.in

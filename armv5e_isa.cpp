@@ -90,16 +90,16 @@ static reg_t OP1;
 static reg_t OP2;
 
 // #ifdef SYSTEM_MODEL
-//   #define RB_write       bypass_write
-//   #define RB_read        bypass_read
+   #define RB_write       bypass_write
+   #define RB_read        bypass_read
 //   #define MEM_read       bypass_MEM_read_Word
 //   #define MEM_read_byte  bypass_MEM_read_Byte
 //   #define MEM_write      bypass_MEM_write_Word
 //   #define MEM_write_half bypass_MEM_write_Half
 //   #define MEM_write_byte bypass_MEM_write_Byte
 // #else
-  #define RB_write       RB.write
-  #define RB_read        RB.read
+//  #define RB_write       RB.write
+//  #define RB_read        RB.read
   #define MEM_read       MEM.read
   #define MEM_read_byte  MEM.read_byte
   #define MEM_write      MEM.write
