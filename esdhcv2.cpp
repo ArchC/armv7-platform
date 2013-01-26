@@ -243,7 +243,7 @@ void ESDHCV2_module::prc_ESDHCV2() {
 
 void ESDHCV2_module::interface_sd()
 {
-    wait(1, SC_NS);
+o    wait(1, SC_NS);
 
     if(cmd_issued)
     {
