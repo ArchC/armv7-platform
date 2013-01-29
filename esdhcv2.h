@@ -128,6 +128,13 @@ private:
     char ADMAES;
     //--
 
+    //BLKATTR
+    uint16_t BLKCNT;
+    uint16_t BLKCNT_BKP; //Since we must restore BLKCNT value after a MCD12 is issued
+    
+    uint16_t BLKSIZE;
+    
+
     static const int ESDHCV2_1_IRQ = 1;
 
     sd_card* port;

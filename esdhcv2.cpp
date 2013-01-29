@@ -18,7 +18,7 @@ ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
     do_reset();
 
     // A SystemC thread never finishes execution, but transfers control back
-    // to SystemC kernel via wait() calls.
+    // to SystemC kernel via wait() calls
     SC_THREAD(prc_ESDHCV2);
 }
 
@@ -37,6 +37,10 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
     uint32_t datum;
     switch(address)
     {
+    case BLKATTR:
+        return
+            ((BLKCNT << 16) |
+             (BLKSIZE & 0x1fff));
     case XFERTYP:
         return
             (((CMDINX & 0b111111) << 24) |
@@ -130,9 +134,6 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
     case DSADR:
         regs[DSADR/4]   = datum & ~(0b11);
         break;
-    case BLKATTR:
-        regs[BLKATTR/4] = datum & ~((0b111)<< 13);
-        break;
     case CMDARG:
         if(!CIHB){
             regs[CMDARG/4] = datum;
@@ -168,7 +169,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         DMAS[1] = isBitSet(datum, 9);
         DMAS[0] = isBitSet(datum, 8);
         CDSS    = isBitSet(datum, 7);
-        CDTL   = isBitSet(datum, 6);
+        CDTL    = isBitSet(datum, 6);
         EMODE[1]= isBitSet(datum, 5);
         EMODE[0]= isBitSet(datum, 4);
         D3CD    = isBitSet(datum, 3);
@@ -183,7 +184,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         RSTA   = isBitSet(datum, 24);
         DTOCV  = (datum >> 16) & 0b1111;
         SDCLKFS = (datum >> 8) & 0xFF;
-        DVS    = (datum >> 4)  & 0x1111;
+        DVS     = (datum >> 4)  & 0x1111;
         SDCLKEN = isBitSet(datum,3);
         PEREN = isBitSet(datum, 2);
         HCKEN = isBitSet(datum, 1);
@@ -215,6 +216,12 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         break;
     case MMCBOOT:
         regs[MMCBOOT/4]  = datum & 0xFF0F;
+
+    case BLKATTR:
+        BLKCNT = datum >> 16;
+        BLKCNT_BKP = BLKCNT;
+        BLKSIZE = datum & 0x1FF;
+        break;
     default:
         dprintf("ignored");
         break; //ignore write
@@ -243,7 +250,7 @@ void ESDHCV2_module::prc_ESDHCV2() {
 
 void ESDHCV2_module::interface_sd()
 {
-o    wait(1, SC_NS);
+    wait(1, SC_NS);
 
     if(cmd_issued)
     {
@@ -269,10 +276,19 @@ o    wait(1, SC_NS);
     if(port->data_line_busy)
     {
         uint32_t aux;
-        port->read_dataline(&aux, regs[BLKATTR/4] & 0x1FFF);
+        port->read_dataline(&aux, BLKSIZE);
         ibuffer.push(aux); //Corrigir isso! blocksize só pode ser <=  size of uint32
+
+        //If necessary reduce blkcnt and issue AUTOCMD12
+        if(BCEN == true && MSBSEL == true)
+        {
+            BLKCNT -= 1;
+            if(BLKCNT == 0 && AC12EN == true)
+            {
+                //Stop transfer by issuing an CMD12 to device
+                port->exec_cmd(12, 0b11, regs[CMDARG/4]);
+                BLKCNT = BLKCNT_BKP;
+            }
+        }
     }
-
 }
-
-

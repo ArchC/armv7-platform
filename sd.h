@@ -45,13 +45,7 @@ typedef struct {
 
 class sd_card : public sc_module{
 
-    typedef enum {
-        READ_SINGLE,
-        READ_MULTIPLE,
-        WRITE_SINGLE,
-        WRITE_MULTIPLE,
-        IDLE
-    } state;
+    typedef enum { IDLE, READ, READ_SINGLE, WRITE } state;
 
 private:
 
@@ -65,8 +59,11 @@ private:
     void send_block_to_dataline(uint32_t offset);
 
     // -- Command Handlers --
+    sd_response cmd12_handler(uint32_t arg);  // Suspend transfer
     sd_response cmd16_handler(uint32_t arg);  // Set_BlockLen
     sd_response cmd17_handler(uint32_t arg);  // Read Single Block
+    sd_response cmd18_handler(uint32_t arg);  // Read Multiple Block
+
     // --
 
 public:
