@@ -1,6 +1,6 @@
 #include "sd.h"
 #include "arm_interrupts.h"
-#include "sys/mman.h"
+
 
 extern bool DEBUG_SD;
 #define dprintf(args...) if(DEBUG_SD){fprintf(stderr,args);}
@@ -20,8 +20,9 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
 
     struct stat st;
     stat(dataPath, &st);
-    size_t size = st.st_size;
-    data = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_PRIVATE, dataFile, 0);
+    data_size = st.st_size;
+
+    data = mmap(NULL, data_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, dataFile, 0);
     if(data == MAP_FAILED){
         printf("Unable to map SD card file  %s", dataPath);
         exit(1);
@@ -37,7 +38,13 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
 };
 
 sd_card::~sd_card()
-{
+{ //munmap: free data allocated by mmap
+    if(munmap(data,data_size) != 0)
+    {
+        printf("Unable to free SD mmapped memory");
+    }
+
+
 }
 
 // This function is used to copy a block from the storage device to data line bus
@@ -80,12 +87,14 @@ void sd_card::prc_sdcard()
 
 // This function is used by external controllers to read the sd card IO buffer
 // It doesn't check any data integrity.
-bool sd_card::read_dataline(void *buffer, uint32_t len)
+bool sd_card::read_dataline(queue<unsigned char> & buffer, uint32_t len)
 {
     if(data_line_busy)
     {
-        memcpy(buffer, data_line, len);
-        data_line_busy = false;
+        for(int i=0; i < blocklen; i++)
+            buffer.push(data_line[i]);
+
+        data_line_busy = false; //Dataline is cleared for new data.
         return true;
     }
     return false;

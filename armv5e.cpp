@@ -15,11 +15,14 @@
 
 #include  "armv5e.H"
 #include  "armv5e_isa.cpp"
+extern bool  DEBUG_SD;
+extern bool DEBUG_MMU;
+extern bool DEBUG_BUS;
+
 
 void armv5e::behavior() {
 
   unsigned ins_id;
-  cache_item_t* ins_cache;
   if (has_delayed_load) {
     APP_MEM->load(delayed_load_program);
     ac_pc = ac_start_addr;
@@ -29,28 +32,45 @@ void armv5e::behavior() {
   for (;;) {
 
   bhv_pc = ac_pc;
-  if( bhv_pc >= dec_cache_size){
-    cerr << "ArchC: Address out of bounds (pc=0x" << hex << bhv_pc << ")." << endl;
-    stop();
-    return;
+  if(ac_pc > 0x77000000)   // GAmbiarra para facilitar log de instruções do bootloader
+  {
+      DEBUG_CORE = true;
+//      DEBUG_MMU  = true;
+      DEBUG_BUS = true;
+      
+     
+
+
   }
-  else {
+
+  
+  if(ac_pc >= 0x7781eadc)   // GAmbiarra para facilitar log de instruções do bootloader
+  {
+//      exit(0);
+      DEBUG_CORE = true;
+      DEBUG_SD= false;
+  }
+
+
+//  if( bhv_pc >= APP_MEM->get_size()){
+  //    cerr << "ArchC: Address out of bounds (pc=0x" << hex << bhv_pc << ")." << endl;
+  //stop();
+  //return;
+  //}
+  //else {
+  {
+
     if( start_up ){
       decode_pc = ac_pc;
       start_up=0;
-      init_dec_cache();
     }
-    else{ 
+    else{
       decode_pc = bhv_pc;
     }
  
-      ins_cache = (DEC_CACHE+decode_pc);
-      if ( !ins_cache->valid ){
         quant = 0;
-        ins_cache->instr_p = new ac_instr<armv5e_parms::AC_DEC_FIELD_NUMBER>((ISA.decoder)->Decode(reinterpret_cast<unsigned char*>(buffer), quant));
-        ins_cache->valid = 1;
-      }
-      instr_vec = ins_cache->instr_p;
+      instr_dec = (ISA.decoder)->Decode(reinterpret_cast<unsigned char*>(buffer), quant);
+      instr_vec = new ac_instr<armv5e_parms::AC_DEC_FIELD_NUMBER>( instr_dec);
       ins_id = instr_vec->get(IDENT);
 
       if( ins_id == 0 ) {
@@ -492,6 +512,7 @@ void armv5e::behavior() {
       if (!ac_annul_sig) ISA.behavior_dsmulw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
       break;
     } // switch (ins_id)
+    delete instr_vec;
     if ((!ac_wait_sig) && (!ac_annul_sig)) ac_instr_counter+=1;
     ac_annul_sig = 0;
   }

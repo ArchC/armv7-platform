@@ -58,7 +58,7 @@ ac_tlm_rsp imx53_bus::transport(const ac_tlm_req& req){
         }
     }
 
-    dprintf(" <--> BUS TRANSACTION: WRITE 0x%X @0x%X (*NOT MAPPED*)\n",
+    dprintf(" <--> BUS TRANSACTION: FAILED ACCESS data: 0x%X to 0x%X (*NOT MAPPED*)\n",
             req.data, addr);
 
     // Fail - warn core about failure

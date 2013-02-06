@@ -51,6 +51,7 @@ private:
 
     state current_state;           // Handles a minimal finite state machine
     void *data;                    // Main pointer to SD memory on RAM
+    size_t data_size;              // Size of SD card bin file
     int blocklen;                  // Block Length defined by cmd16
     uint32_t current_address;      // Current accessed address
 
@@ -79,7 +80,7 @@ public:
 
 // This function is used by external controllers to read the sd card IO buffer
 // It doesn't check any data integrity.
-    bool read_dataline(void *buffer, uint32_t len);
+    bool read_dataline(queue<unsigned char> & buffer, uint32_t len);
     bool data_line_busy;           // Semaphor for data_line
 };
 

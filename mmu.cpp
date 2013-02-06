@@ -218,10 +218,10 @@ ac_tlm_rsp MMU::transport(const ac_tlm_req& req)
 {
     dprintf("|| MMU Operation: <> MMU is: ");
     if(!isActive()){
-        dprintf("OFF (bypassing: Physical Address(PA) matches Virtual Address(VA)");
+        dprintf("OFF (bypassing: Physical Address(PA) matches Virtual Address(VA)\n");
         return talk_to_bus(req); //Ignores MMU, route request directly to bus
     }
-    dprintf("ON: VirtualAddress=0x%X");
+    dprintf("ON: VirtualAddress=0x%X\n");
     uint32_t pAdd = translateAddress(req.addr);
     return talk_to_bus(req.type, pAdd, req.data);
 }

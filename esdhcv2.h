@@ -131,14 +131,13 @@ private:
     //BLKATTR
     uint16_t BLKCNT;
     uint16_t BLKCNT_BKP; //Since we must restore BLKCNT value after a MCD12 is issued
-    
+
     uint16_t BLKSIZE;
-    
 
     static const int ESDHCV2_1_IRQ = 1;
 
     sd_card* port;
-    queue<uint32_t> ibuffer;
+    queue<unsigned char> ibuffer;
 
     // This port is used to send interrupts to the processor
     tzic_module &tzic;

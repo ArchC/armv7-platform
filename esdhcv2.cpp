@@ -10,13 +10,12 @@ extern bool DEBUG_ESDHCV2;
 
 ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
                                uint32_t start_add, uint32_t end_add):
-
     sc_module(name_),
     peripheral(start_add, end_add),
     tzic(tzic_)
 {
     do_reset();
-
+    cmd_issued = false;
     // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls
     SC_THREAD(prc_ESDHCV2);
@@ -33,7 +32,7 @@ void ESDHCV2_module::connect_card(sd_card & card) {
 
 unsigned ESDHCV2_module::fast_read(unsigned address) {
 
-    dprintf("ESDHCv2 READ address: 0x%X\n", address);
+//    dprintf("ESDHCv2 READ address:");
     uint32_t datum;
     switch(address)
     {
@@ -117,9 +116,15 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
              (ADMAES  & 0b11));
         break;
     case DATPORT:
-        if(ibuffer.empty()) return 0;
-        datum = ibuffer.front();
-        ibuffer.pop();
+
+        BREN = false;
+        datum = 0;
+        for(int i=0; i < 4 && ibuffer.empty() == false; i++)
+        {
+            datum |= (ibuffer.front() << (8*i));
+            ibuffer.pop();
+        }
+        dprintf("DATAPORT: 0x%X\n", datum);
         return datum;
         break;
     default:
@@ -154,7 +159,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
             CMDTYP = ((datum & (0b11<<22)) >> 22);
 
             cmd_issued = true;  //Tell ESDHC to send this command to SD
-            CIHB = true; // Prevent further commands to be send before this one
+            CIHB = true; // Prevent further commands to be sent before this one
                  // is processed
         }
         break;
@@ -178,17 +183,17 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         LCTL    = isBitSet(datum, 0);
         break;
     case SYSCTL:
-        INITA  = isBitSet(datum,27);
-        RSTD   = isBitSet(datum,26);
-        RSTC   = isBitSet(datum,25);
-        RSTA   = isBitSet(datum, 24);
-        DTOCV  = (datum >> 16) & 0b1111;
+        INITA   = isBitSet(datum,27);
+        RSTD    = isBitSet(datum,26);
+        RSTC    = isBitSet(datum,25);
+        RSTA    = isBitSet(datum, 24);
+        DTOCV   = (datum >> 16) & 0b1111;
         SDCLKFS = (datum >> 8) & 0xFF;
         DVS     = (datum >> 4)  & 0x1111;
         SDCLKEN = isBitSet(datum,3);
-        PEREN = isBitSet(datum, 2);
-        HCKEN = isBitSet(datum, 1);
-        IPGEN = isBitSet(datum, 0);
+        PEREN   = isBitSet(datum, 2);
+        HCKEN   = isBitSet(datum, 1);
+        IPGEN   = isBitSet(datum, 0);
     case IRQSTAT:
         datum = datum & 0x117F01FE;
         regs[IRQSTAT/4] &= ~datum;
@@ -240,8 +245,8 @@ void ESDHCV2_module::prc_ESDHCV2() {
         interface_sd();
 
         // Host Protocol
-        if(ibuffer.size() >= RD_WML/4) {   //RD_WML must be divided by sizeof struct contained
-                                           // in ibuffer. gambiarra
+        if(ibuffer.size() >= RD_WML) {   //RD_WML must be divided by sizeof struct contained
+                                         // in ibuffer. gambiarra
             BREN=true;
         }
     }while(1);
@@ -276,8 +281,7 @@ void ESDHCV2_module::interface_sd()
     if(port->data_line_busy)
     {
         uint32_t aux;
-        port->read_dataline(&aux, BLKSIZE);
-        ibuffer.push(aux); //Corrigir isso! blocksize só pode ser <=  size of uint32
+        port->read_dataline(ibuffer, BLKSIZE);
 
         //If necessary reduce blkcnt and issue AUTOCMD12
         if(BCEN == true && MSBSEL == true)

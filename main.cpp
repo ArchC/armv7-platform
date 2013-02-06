@@ -73,6 +73,7 @@ static char* SYSCODE = 0;
 static char* BOOTCODE = 0;
 static char* SDCARD = 0;
 
+
 coprocessor *CP[16];
 MMU *mmu;
 
@@ -156,14 +157,14 @@ void process_params(int ac, char *av[]) {
         }
     }
 }
-
+#define iMX53_MODEL
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
     // If CP pointers arent initialized as NULL,
     // we might get Segmentation Fault
     // when executing CP instructions.
-        process_params(ac, av);
+    process_params(ac, av);
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
     //--- Devices -----
@@ -188,7 +189,6 @@ int sc_main(int ac, char *av[])
     ip_bus.connectDevice(&ddr2);
     ip_bus.connectDevice(&esdhc1);
 
-
 #else
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
     ip_bus.connectDevice(&bootmem);
@@ -200,7 +200,7 @@ int sc_main(int ac, char *av[])
     ip_bus.connectDevice(&tzic);
     ip_bus.connectDevice(&gpt );
     ip_bus.connectDevice(&uart);
-    
+
     //--- Coprocessors ----
     CP[15] = new cp15();
 
@@ -236,9 +236,9 @@ int sc_main(int ac, char *av[])
         duration = -1.0;
 
 #ifdef iMX53_MODEL
-        armv5e_proc1.ac_start_addr = 0;
-        armv5e_proc1.ac_heap_ptr = 10485700;
-        armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
+//        armv5e_proc1.ac_start_addr = 0;
+//        armv5e_proc1.ac_heap_ptr = 10485700;
+//        armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
 #else
     if (SYSCODE != 0) {
         armv5e_proc1.ac_start_addr = 0;
@@ -246,7 +246,6 @@ int sc_main(int ac, char *av[])
         armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
     }
 #endif
-
     sc_start(duration, SC_NS);
 
     armv5e_proc1.PrintStat();

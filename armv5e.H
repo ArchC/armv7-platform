@@ -44,8 +44,6 @@ public:
   armv5e_inta_handler inta_hnd;
   ac_tlm_intr_port inta;
 
-  cache_item_t* DEC_CACHE;
-
   unsigned id;
 
   bool start_up;
@@ -71,9 +69,6 @@ public:
 
     gdbstub = new AC_GDB<armv5e_parms::ac_word>(this, armv5e_parms::GDB_PORT_NUM);
 
-  }
-  void init_dec_cache() {
-    DEC_CACHE = (cache_item_t*) calloc(sizeof(cache_item_t),dec_cache_size);
   }
   /***********
    * GDB Support - user supplied methods
