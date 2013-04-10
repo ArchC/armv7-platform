@@ -160,7 +160,7 @@ class uart_module : public sc_module, public peripheral {
   void update_flags();
 
   void do_reset(bool hard_reset=true) {
-    // Initial values 
+    // Initial values]
     if (hard_reset) {
       uart_enabled = false;
       rxd_enabled = false;
@@ -272,6 +272,8 @@ class uart_module : public sc_module, public peripheral {
   // This port is used to send interrupts to the processor
   tzic_module &tzic;
 
+
+  
   // Fast read/write don't implement error checking. The bus (or other caller)
   // must ensure the address is valid.
   // Invalid read/writes are treated as no-ops.

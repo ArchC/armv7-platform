@@ -6,7 +6,7 @@
 
 namespace arm_impl {
 
-        enum PrivilegeLevel { PL0=0, PL1};
+    enum PrivilegeLevel { PL0=0, PL1};
 
     class processor_mode {
     public:

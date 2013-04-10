@@ -1,13 +1,14 @@
-#include "ram.h"
+#include "dpllc.h"
 #include "arm_interrupts.h"
 
 
-extern bool DEBUG_RAM;
+extern bool DEBUG_DPLLC;
 
 #include <stdarg.h>
+
 static inline int dprintf(const char *format, ...) {
   int ret;
-  if (DEBUG_RAM) {
+  if (DEBUG_DPLLC) {
     va_list args;
     va_start(args, format);
     ret = vfprintf(ac_err, format, args);
@@ -16,32 +17,51 @@ static inline int dprintf(const char *format, ...) {
   return ret;
 }
 
-ram_module::~ram_module()
+
+void dpllc_module::reset()
 {
-    delete [] memory;
+    regs[CTL/4]    = 0x00AA0223;
+    regs[CONFIG/4] = 0x00AA0006;
 }
 
-unsigned ram_module::fast_read(unsigned address)
+
+
+dpllc_module::dpllc_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
+                            uint32_t end_add):
+    sc_module(name_), peripheral(start_add, end_add),tzic(tzic_)
+
 {
-    unsigned data = *(memory + (address/4) );
-    dprintf("READ from %s local address: 0x%X Content: 0x%X\n",
-            this->name(), GetMemoryBegin(),address, data);
-    return data;
+    reset();
+}
+
+
+dpllc_module::~dpllc_module()
+{
 
 }
-void ram_module::fast_write(unsigned address, unsigned datum, unsigned offset)
+
+unsigned dpllc_module::fast_read(unsigned address)
 {
-    dprintf("WRITE to %s local address: 0x%X (offset: 0x%X) Content: 0x%X\n",
+    dprintf("DPLLC READ from  %s local address: 0x%X\n", this->name(), address);
+    return regs[address/4];
+}
+void dpllc_module::fast_write(unsigned address, unsigned datum, unsigned offset)
+{
+    dprintf("DPLLC WRITE to %s local address: 0x%X (offset: 0x%X) Content: 0x%X\n",
             this->name(), address, offset, datum);
 
-    unsigned old_data = 0;
-    if(offset){
-        old_data = fast_read(address);
-        old_data &= (0xFFFFFFFF << (32 - offset)) >> (32 - offset);
-        old_data |= ((datum << offset) >> offset) << offset;
-        *(memory + address/4) = old_data;
-    } else {
-        *(memory + address/4) = datum;
+    switch(address)
+    {
+    case CTL:
+        regs[CTL/4] = datum | 0x1;   //Already locks CTL. Mimic an executed
+                                         //action behaviour.
+        break;
+    default:
+        regs[address/4] = datum;
+        break;
     }
+
+
+
 }
 

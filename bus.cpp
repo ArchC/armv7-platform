@@ -58,8 +58,16 @@ ac_tlm_rsp imx53_bus::transport(const ac_tlm_req& req){
         }
     }
 
-    dprintf(" <--> BUS TRANSACTION: FAILED ACCESS data: 0x%X to 0x%X (*NOT MAPPED*)\n",
-            req.data, addr);
+
+//     if(req.type == WRITE){
+// //        printf(" <--> BUS TRANSACTION: FAILED WRITE address: 0x%X content:0x%X (*NOT MAPPED*)\n", addr,req.data);
+//         fflush(stdout);
+//         //abort();
+//     }
+//     else /* READ */
+//         //      printf(" <--> BUS TRANSACTION: FAILED READ address: 0x%X (*NOT MAPPED*)\n", addr);
+
+// //    if((req.addr &0xFFFF0000) == 0x63FC0000) abort();
 
     // Fail - warn core about failure
     ac_tlm_req abrt_req;
@@ -68,7 +76,8 @@ ac_tlm_rsp imx53_bus::transport(const ac_tlm_req& req){
     abrt_req.addr = 0;
     abrt_req.data = arm_impl::EXCEPTION_DATA_ABORT;
     proc_port->transport(abrt_req);
-
     ans.status = ERROR;
+
+
     return ans;
 }

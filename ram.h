@@ -50,7 +50,8 @@ private:
 
   }
   ~ram_module();
-
+  int populate(char *data_filepath, unsigned start_address);
+  
 
 };
 

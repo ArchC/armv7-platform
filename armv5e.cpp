@@ -11,13 +11,14 @@
  * IC-UNICAMP                                         *
  * http://www.lsc.ic.unicamp.br                       *
  ******************************************************/
- 
+
 
 #include  "armv5e.H"
 #include  "armv5e_isa.cpp"
 extern bool  DEBUG_SD;
 extern bool DEBUG_MMU;
 extern bool DEBUG_BUS;
+extern bool DEBUG_UART;
 
 
 void armv5e::behavior() {
@@ -32,24 +33,16 @@ void armv5e::behavior() {
   for (;;) {
 
   bhv_pc = ac_pc;
-  if(ac_pc > 0x77000000)   // GAmbiarra para facilitar log de instruções do bootloader
-  {
-      DEBUG_CORE = true;
-//      DEBUG_MMU  = true;
-      DEBUG_BUS = true;
-      
-     
+//  if(ac_pc >= 0x77800000 ) {DEBUG_CORE = true; }//DEBUG_BUS=true; }
 
 
-  }
+  if(ac_pc == 0x7780de2c)   // GAmbiarra para facilitar log de instruções do bootloader
+   {
 
-  
-  if(ac_pc >= 0x7781eadc)   // GAmbiarra para facilitar log de instruções do bootloader
-  {
-//      exit(0);
-      DEBUG_CORE = true;
-      DEBUG_SD= false;
-  }
+//       DEBUG_CORE = true;
+       
+   }
+
 
 
 //  if( bhv_pc >= APP_MEM->get_size()){
@@ -536,7 +529,7 @@ void armv5e::behavior() {
 } // for (;;)
 } // behavior()
 
- 
+
 #include <ac_sighandlers.H>
 
 void armv5e::init() {

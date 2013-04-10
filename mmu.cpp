@@ -10,10 +10,6 @@ extern bool DEBUG_MMU;
 #define HALF 2
 #define BYTE 1
 
-//FD
-
-uint32_t getL2TableIndex(uint32_t va);
-
 // ---------------------------------------------------------------------------
 // Structs and functions to easily describe first level translation.
 namespace L1
@@ -61,6 +57,7 @@ namespace L1
         }data;
     } tableEntry;
 
+
     uint32_t getTableIndex(int n, uint32_t va)
     {
         int msb = 31-n;
@@ -69,18 +66,24 @@ namespace L1
         for(int i = msb; i >= lsb; i--) setBit(mask, i);
         return (va & mask) >> lsb;
     }
+
+
     tableEntry tableWalk(MMU & mmu, uint32_t FLA)
     {
         ac_tlm_rsp rsp = mmu.talk_to_bus(READ,FLA, 0); //Read First level entry
         uint32_t data = rsp.data;
-
         L1::tableEntry entry;
+
+        dprintf("Performing First-level table walk: FLA = 0x%X, FLD=0x%X. FLD is type ", FLA, data);
         switch(data & 0b11){  //Extract type bits[1:0]
         case 0:
             //FAULT
             entry.type = L1::fault;
+            dprintf("[DATA FAULT]\n");
+            break;
         case 1:
             //Page Table
+            dprintf("[PAGE TABLE]\n");
             entry.type = L1::page_table;
             entry.data.page.baseAddress = (data & 0xFFFFFC00) >> 10;
             entry.data.page.SBZ = isBitSet(data, 4);
@@ -92,6 +95,7 @@ namespace L1
             break;
         case 2: case 3:
             if(isBitSet(data, 18)) {
+                dprintf("[SUPERSECTION]\n");
                 //Supersection
                 entry.type                      = L1::supersection;
                 entry.data.super.BaseAddress    = (data & 0xFF000000) >> 24;
@@ -109,6 +113,7 @@ namespace L1
                 entry.data.super.B         = isBitSet(data, 2);
             }else {
                 //Section
+                dprintf("[SECTION]\n");
                 entry.type = L1::section;
                 entry.data.section.baseAddress = (data & 0xFFF00000) >> 20;
                 entry.data.section.NS          = isBitSet(data,19);
@@ -132,18 +137,45 @@ namespace L1
         return entry;
     }
 }
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 // Structs and functions to easily describe second level translation.
 namespace L2
 {
-    typedef enum  {small, large} Type;
+    typedef enum  {fault, small, large} Type;
+    typedef struct{
+        uint32_t baseAdd;
+        bool nG;
+        bool s;
+        bool ap[3];
+        bool tex[3];
+        bool c;
+        bool b;
+        bool xn;
+    }smallPage;
+
+    typedef struct{
+        uint32_t baseAdd;
+        bool xn;
+        bool tex[3];
+        bool nG;
+        bool s;
+        bool ap[3];
+        bool sbz[3];
+        bool c;
+        bool b;
+    }largePage;
+
+
     typedef struct {
         Type type;
-        union{
-            uint32_t properties;
+        union {
+            smallPage smallpage;
+            largePage largepage;
         }data;
-    }table_entry;
-
+    }tableEntry;
 
     uint32_t getTableIndex(uint32_t va)
     {
@@ -153,10 +185,63 @@ namespace L2
         for(int i = msb; i >= lsb; i--) setBit(mask, i);
         return (va & mask) >> lsb;
     }
+
+    tableEntry tableWalk(MMU & mmu, uint32_t SLA)
+    {
+        ac_tlm_rsp rsp = mmu.talk_to_bus(READ,SLA, 0); //Read Second level entry
+        uint32_t data = rsp.data;
+
+        L2::tableEntry entry;
+
+        dprintf("Performing second-level table walk: SLA = 0x%X, FLD=0x%X. page is type ", SLA, data);
+        switch(data & 0b11)
+        {
+        case 0:
+            entry.type = fault;
+            dprintf("[DATA FAULT]\n");
+            break;
+        case 1:
+            dprintf("[LARGE PAGE]\n");
+            entry.type = large;
+            entry.data.largepage.baseAdd = ((data & 0xFFFF0000) >> 16);
+            entry.data.largepage.xn     = isBitSet(data, 15);
+            entry.data.largepage.tex[2] = isBitSet(data, 14);
+            entry.data.largepage.tex[1] = isBitSet(data, 13);
+            entry.data.largepage.tex[0] = isBitSet(data, 12);
+            entry.data.largepage.nG     = isBitSet(data, 11);
+            entry.data.largepage.s      = isBitSet(data, 10);
+            entry.data.largepage.ap[2]  = isBitSet(data, 9);
+            entry.data.largepage.sbz[2] = isBitSet(data, 8);
+            entry.data.largepage.sbz[1] = isBitSet(data, 7);
+            entry.data.largepage.sbz[0] = isBitSet(data, 6);
+            entry.data.largepage.ap[1]  = isBitSet(data, 5);
+            entry.data.largepage.ap[0]  = isBitSet(data, 4);
+            entry.data.largepage.c      = isBitSet(data, 3);
+            entry.data.largepage.b      = isBitSet(data, 2);
+            break;
+        case 2: case 3:
+            dprintf("[SMALL PAGE]\n");
+            entry.type = small;
+            entry.data.smallpage.baseAdd = ((data & 0xFFFFF000) >> 12);
+            entry.data.smallpage.nG     = isBitSet(data, 11);
+            entry.data.smallpage.s      = isBitSet(data, 10);
+            entry.data.smallpage.ap[2]  = isBitSet(data, 9);
+            entry.data.smallpage.tex[2] = isBitSet(data, 8);
+            entry.data.smallpage.tex[1] = isBitSet(data, 7);
+            entry.data.smallpage.tex[1] = isBitSet(data, 6);
+            entry.data.smallpage.ap[1]  = isBitSet(data, 5);
+            entry.data.smallpage.ap[0]  = isBitSet(data, 4);
+            entry.data.smallpage.c      = isBitSet(data, 3);
+            entry.data.smallpage.b      = isBitSet(data, 2);
+            entry.data.smallpage.xn     = isBitSet(data, 0);
+            break;
+        }
+        return entry;
+    }
 }
 
 
-
+// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 inline bool MMU::isActive()
 {
@@ -165,9 +250,12 @@ inline bool MMU::isActive()
 }
 
 // This function returns the Translation Table Base address. It
-// automatically chooses between TTBR0 and TTBR1 based upon TTBCR.N bit
-uint32_t MMU::getTTBAddress(uint32_t va)
+//  chooses between TTBR0 and TTBR1 based upon TTBCR.N bit
+// On TTBAdd buffer it returns the TTB address an its return is wich
+// TTB was used
+int MMU::getTTB(uint32_t *TTBAdd, uint32_t va)
 {
+    int used = 0;
     uint32_t ttb =0;
     int n = cop.MMU_RB[TTB_CTR].value & 0b111;   // Read TTBCR.N
 
@@ -183,6 +271,7 @@ uint32_t MMU::getTTBAddress(uint32_t va)
         for(int i=31; i >= 32-n;i--){
             if(isBitSet(va, i) == 1){
                 ttb = cop.MMU_RB[TTB_1].value;
+                used = 1;
                 break;
             }
         }
@@ -192,10 +281,12 @@ uint32_t MMU::getTTBAddress(uint32_t va)
     int lsb = 14 - n;
     uint32_t mask = 0;
     for(int i = msb; i >= lsb; i--) setBit(mask, i);
-    return (ttb & mask);
+
+    *TTBAdd = (ttb & mask);
+    return used;
 }
 
-// ---------------------------------------------------------------------------
+
 //! Bus connection functions
 ac_tlm_rsp MMU::talk_to_bus(const ac_tlm_req& req)
 {
@@ -222,6 +313,7 @@ ac_tlm_rsp MMU::transport(const ac_tlm_req& req)
         return talk_to_bus(req); //Ignores MMU, route request directly to bus
     }
     dprintf("ON: VirtualAddress=0x%X\n");
+
     uint32_t pAdd = translateAddress(req.addr);
     return talk_to_bus(req.type, pAdd, req.data);
 }
@@ -231,16 +323,33 @@ ac_tlm_rsp MMU::transport(const ac_tlm_req& req)
 
 uint32_t MMU::translateAddress(uint32_t va)
 {
-    int n = cop.MMU_RB[TTB_CTR].value & 0b111;   // Read TTBCR.N
-    uint32_t ttb = getTTBAddress(va);
+    dprintf("MMU translating address: 0x%X\n", va);
+    uint32_t ttb;
+
+    int n = 0;
+    if(getTTB(&ttb, va) == 0)   // Else N = 0
+    {
+        n= cop.MMU_RB[TTB_CTR].value & 0b111;   // Read TTBCR.N
+        dprintf("TTB0 used | TTB address=0x%x | N == TTBCR.N == %d\n", ttb, n) ;
+    }
+    else {
+        n = 0;
+        dprintf("TTB1 used | TTB address=0x%x | N == %d\n", ttb, n) ;
+    }
 
     //Prepare First Level Address (FLA)
     uint32_t l1_index = L1::getTableIndex(n,va);
     uint32_t FLA = ttb | (l1_index << 2);
     L1::tableEntry l1 = L1::tableWalk(*this, FLA);
 
-    if(l1.type == L1::section || l1.type == L1::supersection){
-        printf("This model does not support SuperSection/Section tables.");
+    uint32_t pAdd = 0x0;
+
+    if(l1.type == L1::section){
+        pAdd = (l1.data.section.baseAddress << 20) | (va & 0xFFFFF);
+    }
+    else if( l1.type == L1::supersection){
+        printf("This model does not support SuperSection tables.\n");
+        exit(0);
         return va;
     }
     else if(l1.type == L1::fault){
@@ -249,33 +358,33 @@ uint32_t MMU::translateAddress(uint32_t va)
     }
     else if(l1.type == L1::reserved)
     {
-        printf("Unexpected page entry type. Reserved.");
+        printf("Unexpected page entry type. Reserved.\n");
         return va;
     }
     else if(l1.type == L1::page_table)
     {
         //Prepare Second Level Address (SLA)
-        uint32_t l2_index = getL2TableIndex(va);
+        uint32_t l2_index = L2::getTableIndex(va);
         uint32_t SLA = ((l1.data.page.baseAddress << 8) | l2_index) << 2;
-        //L2_entry l2  = L2_tableWalk(SLA);
+        L2::tableEntry l2 = L2::tableWalk(*this,SLA);
+
+        if(l2.type == L2::small)
+        {
+            pAdd = (l2.data.smallpage.baseAdd << 12) | (va & 0xFFF);
+        }
+        else if(l2.type == L2::large)
+        {
+            pAdd = (l2.data.largepage.baseAdd << 16) | (va & 0xFFFF);
+        }
+        else   /* Second Level page fault*/
+        {
+            // Exception?
+        }
     }
-    return 0;
+
+    dprintf("End of translation. vAdd=0x%X ==>> pAdd = 0x%X\n", va, pAdd);
+    return pAdd;
 }
 // ---------------------------------------------------------------------------
 
-//! Second Level (L2)
-// This function, given a Virtual Address, extracts L2
-// Table Index
-uint32_t getL2TableIndex(uint32_t va)
-{
-    int msb = 31-19;
-    int lsb = 12;
-    uint32_t mask = 0;
-    for(int i = msb; i >= lsb; i--) setBit(mask, i);
-    return (va & mask) >> lsb;
-}
 
-//L2::tableEntry MMU::L2_tableWalk(uint32_t SLA)
-//{
-
-//}

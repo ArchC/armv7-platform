@@ -83,7 +83,7 @@ void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type) {
 #endif
     break;
   case arm_impl::EXCEPTION_DATA_ABORT:
-    ref.R14_abt = ref.ac_pc + 4;  // remember ac_pc is pc+4 at each end of 
+    ref.R14_abt = ref.ac_pc + 4;  // remember ac_pc is pc+4 at each end of
                                   // cycle data aborts sets R14_abt to pc+8
     ref.SPSR_abt = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;

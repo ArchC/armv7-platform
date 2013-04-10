@@ -1,6 +1,6 @@
 #include "sd.h"
 #include "arm_interrupts.h"
-
+#include <errno.h>
 
 extern bool DEBUG_SD;
 #define dprintf(args...) if(DEBUG_SD){fprintf(stderr,args);}
@@ -13,7 +13,7 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
 
     int dataFile = open(dataPath, O_LARGEFILE);
     if(dataFile == -1){
-        printf("Unable to load SD card file %s", dataPath);
+        printf("Unable to load SD card file %s. Error: ", dataPath, strerror(errno));
         exit(1);
     }
     printf("ArchC: Loading SD card file: %s\n",dataPath);
@@ -24,7 +24,7 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
 
     data = mmap(NULL, data_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, dataFile, 0);
     if(data == MAP_FAILED){
-        printf("Unable to map SD card file  %s", dataPath);
+        printf("Unable to map SD card file  %s. Error: %s\n", dataPath, strerror(errno) );
         exit(1);
     }
     close(dataFile);

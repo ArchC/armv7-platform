@@ -15,7 +15,7 @@ private:
     cp15 & cop;          //System and MMU Control Coprocessor
     sc_port<ac_tlm_transport_if> bus_port; //output TLM port
 
-    uint32_t getTTBAddress(uint32_t va);
+    int getTTB(uint32_t *TTBAdd, uint32_t va);
     uint32_t translateAddress(uint32_t va);
     bool isActive();
 public:

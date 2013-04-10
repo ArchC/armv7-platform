@@ -74,7 +74,7 @@ void uart_module::update_flags() {
   }
   if (rxd_pointer > rxtl) {
     rrdy = true;
-  } else { 
+  } else {
     rrdy = false;
   }
   if (txd_pointer == 0) {
@@ -93,10 +93,10 @@ void uart_module::update_flags() {
 
 void uart_module::prc_uart() {
   do {
-    wait(1, SC_NS);
+      wait(1, SC_NS);
 
-    if (!uart_enabled)
-      continue;
+      if (!uart_enabled)
+          continue;
 
     dprintf("-------------------- UART -------------------- \n");
 
@@ -280,7 +280,8 @@ void uart_module::fast_write(unsigned address, unsigned datum) {
     aten     = (datum >> 3) & 1;
     txd_enabled = (datum >> 2) & 1;
     rxd_enabled = (datum >> 1) & 1;
-    *(regs + address/4) = datum & 0xFFFE;
+    *(regs + address/4) = (datum & 0xFFFE) | 0x1; //Reset was done but this would overwrite
+                                                  //reset status bit
     break;
   case UART_UCR3:
     dpec     = static_cast<dtr_edge_t>((datum >> 14) & 3);
@@ -329,7 +330,7 @@ void uart_module::fast_write(unsigned address, unsigned datum) {
     escf &= ~((datum >> 11) & 0x1);
     framerr &= ~((datum >> 10) & 0x1);
     // rrdy writes are ignored
-    agtim &= ~((datum >> 8) & 0x1);   
+    agtim &= ~((datum >> 8) & 0x1);  
     dtrd &= ~((datum >> 7) & 0x1);
     // rxds writes are ignored
     airint &= ~((datum >> 5) & 0x1);
@@ -359,4 +360,3 @@ void uart_module::fast_write(unsigned address, unsigned datum) {
     *(regs + address/4) = datum;
   }
 }
-

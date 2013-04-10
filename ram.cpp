@@ -45,3 +45,21 @@ void ram_module::fast_write(unsigned address, unsigned datum, unsigned offset)
     }
 }
 
+int ram_module::populate(char *data_filepath, unsigned start_address)
+{
+    printf("ArchC: Populating device %s with %s starting at: 0x%X: %s\n",
+           this->name(), data_filepath, start_address);
+
+        int dataFile = open(data_filepath, O_RDONLY);
+        if(dataFile == -1){
+            printf("Unable to load data file %s", data_filepath);
+            exit(1);
+        }
+        struct stat st;
+        stat(data_filepath, &st);
+        size_t size = st.st_size;
+
+        read(dataFile,memory+(start_address/4), st.st_size);
+        close(dataFile);
+
+}

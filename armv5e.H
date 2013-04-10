@@ -62,8 +62,8 @@ public:
   armv5e( sc_module_name name_ ): ac_module(name_), armv5e_arch(), ISA(*this), inta_hnd(*this), inta("inta", inta_hnd) {
 
     SC_THREAD( behavior );
-    bhv_pc = 0; 
-    has_delayed_load = false; 
+    bhv_pc = 0;
+    has_delayed_load = false;
     start_up=1;
     id = 1;
 
