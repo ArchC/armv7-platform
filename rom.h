@@ -60,7 +60,7 @@ public:
     {
 
         printf("ArchC: Reading flat binary file: %s\n",dataPath);
-        
+
         int dataFile = open(dataPath, O_RDONLY);
         if(dataFile == -1){
             printf("Unable to load boot file %s", dataPath);
