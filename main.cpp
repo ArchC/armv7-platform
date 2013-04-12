@@ -174,7 +174,7 @@ void process_params(int ac, char *av[]) {
         }
     }
 }
-#define iMX53_MODEL
+//#define iMX53_MODEL
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
@@ -219,8 +219,8 @@ int sc_main(int ac, char *av[])
     ip_bus.connectDevice(&dpllc3);
     ip_bus.connectDevice(&dpllc4);
     ip_bus.connectDevice(&ccm);
-
-#else
+#endif
+#ifndef iMX53_MODEL
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
     ip_bus.connectDevice(&bootmem);
 #endif
