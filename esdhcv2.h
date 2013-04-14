@@ -21,7 +21,6 @@ class ESDHCV2_module : public sc_module, public peripheral {
 private:
 
     // State flags
-    bool cmd_issued;
     bool data_transfer;
 
     static const uint32_t DSADR      = 0x00; // ESDHCv2 DMA System Address
@@ -131,8 +130,27 @@ private:
     //BLKATTR
     uint16_t BLKCNT;
     uint16_t BLKCNT_BKP; //Since we must restore BLKCNT value after a MCD12 is issued
-
     uint16_t BLKSIZE;
+
+    //Interrupt Status Register
+    bool DMAE;
+    bool AC12E;
+    bool DEBE;
+    bool DCE;
+    bool DTOE;
+    bool CIE;
+    bool CEBE;
+    bool CCE;
+    bool CTOE;
+    bool CINT;
+    bool CRM;
+    bool CINS_int;
+    bool BRR;
+    bool BWR;
+    bool DINT;
+    bool BGE;
+    bool TC;
+    bool CC;
 
     static const int ESDHCV2_1_IRQ = 1;
 
@@ -154,7 +172,11 @@ private:
 public:
 
     //Wrappers to call fast_read/write with correct parameters
-    unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
+    unsigned read_signal(unsigned address, unsigned offset) {
+        uint32_t ret = fast_read(address);
+        printf("data: 0x%X\n", ret);
+        return ret;
+    }
     void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
 
     // This is the main process to simulate the IP behavior
@@ -252,8 +274,26 @@ private:
         WR_WML      = 0x10;
         RD_BRST_LEN = 0x8;
         RD_WML      = 0x10;
-        
-        regs[IRQSTAT/4]    = 0x0;
+
+        DMAE  = false;
+        AC12E = false;
+        DEBE  = false;
+        DCE   = false;
+        DTOE  = false;
+        CIE   = false;
+        CEBE  = false;
+        CCE   = false;
+        CTOE  = false;
+        CINT  = false;
+        CRM   = false;
+        CINS_int = false;
+        BRR  = false;
+        BWR  = false;
+        DINT  = false;
+        BGE   = false;
+        TC    = false;
+        CC    = false;
+
         regs[IRQSTATEN/4]  = 0x117F013F;
         regs[IRQSIGEN/4]   = 0x0;
         regs[AUTOC12ERR/4] = 0x0;
@@ -264,9 +304,13 @@ private:
         regs[MMCBOOT/4]     = 0x0;
         regs[HOSTVER/4]    = 0x00001201;
         //--
-
-        cmd_issued = false;
     }
+
+void stabilize_clk();
+void initialization_active();
+void reset_DAT_line();
+void SET_BWEN();
+void SET_BREN();
 
 };
 #endif

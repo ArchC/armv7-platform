@@ -8,14 +8,67 @@ extern bool DEBUG_ESDHCV2;
 #define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
 
 
+
+inline void ESDHCV2_module::SET_BREN()
+{/* Small macro that sets BREN and remember to activate related interrupt bit */
+    BREN = true;
+    BRR = true;
+}
+
+inline void ESDHCV2_module::SET_BWEN()
+{/* Small macro that sets BWEN and remember to activate related interrupt bit */
+    BWEN = true;
+    BWR = true;
+}
+
+inline void ESDHCV2_module::stabilize_clk()
+{
+    SDSTB = true; //Signals that clock is stable.
+}
+
+inline void ESDHCV2_module::initialization_active()
+{/*
+  * This is a dumb function. It only pretends that sent 80clks for a
+  * device.  This would be a necessary step to initialize a real SD
+  * card.  Therefore, there is no need to actually do that in a
+  * simulated environment.
+  */
+    INITA = false; //Signals end of 80clk cycle.
+}
+inline void ESDHCV2_module::reset_DAT_line()
+{/*
+  * Performs a DAT line reset, erasing any remains of a data transfers.
+  * Might be activated by high RSTD bit assertion.
+  */
+
+    BREN = false;
+    BWEN = false;
+    RTA  = false;
+    WTA  = false;
+    DLA  = false;
+    CDIHB = false;
+    CREQ = false;
+    SABGREQ = false;
+    BRR = false;
+    BWR = false;
+    DINT = false;
+    BGE = false;
+    TC = false;
+
+    //Clear data port
+    while(ibuffer.size() > 0)
+        ibuffer.pop();
+}
+
+
+
 ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
                                uint32_t start_add, uint32_t end_add):
-    sc_module(name_),
-    peripheral(start_add, end_add),
-    tzic(tzic_)
+    sc_module(name_), peripheral(start_add, end_add), tzic(tzic_)
 {
     do_reset();
-    cmd_issued = false;
+    CIHB = false; //Ready to receive first command!
+
     // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls
     SC_THREAD(prc_ESDHCV2);
@@ -31,8 +84,7 @@ void ESDHCV2_module::connect_card(sd_card & card) {
 }
 
 unsigned ESDHCV2_module::fast_read(unsigned address) {
-
-//    dprintf("ESDHCv2 READ address:");
+    printf("ESDHCv2 READ address: register: 0x%X ", address);
     uint32_t datum;
     switch(address)
     {
@@ -116,7 +168,6 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
              (ADMAES  & 0b11));
         break;
     case DATPORT:
-
         BREN = false;
         datum = 0;
         for(int i=0; i < 4 && ibuffer.empty() == false; i++)
@@ -127,13 +178,34 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
         dprintf("DATAPORT: 0x%X\n", datum);
         return datum;
         break;
+    case IRQSTAT:
+        return
+            ((DMAE  << 28) |
+             (AC12E << 27) |
+             (DEBE  << 22) |
+             (DCE   << 21) |
+             (DTOE  << 20) |
+             (CIE   << 19) |
+             (CEBE  << 18) |
+             (CCE   << 17) |
+             (CTOE  << 16) |
+             (CINT  <<  8) |
+             (CRM   <<  7) |
+             (CINS_int <<  6) |
+             (BRR  <<  5) |
+             (BWR  <<  4) |
+             (DINT  <<  3) |
+             (BGE   <<  2) |
+             (TC    <<  1) |
+             (CC    <<  0));
+        break;
     default:
         return regs[address/4];
     }
 }
 
 void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
-    dprintf("ESDHCv2 WRITE2 address: 0x%X data:0x%X", address, datum);
+    printf("ESDHCv2 WRITE address: 0x%X data:0x%X\n", address, datum);
     switch(address)
     {
     case DSADR:
@@ -144,6 +216,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
             regs[CMDARG/4] = datum;
         }
         break;
+
     case XFERTYP:
         if(!CIHB)
         {
@@ -158,11 +231,12 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
             RSPTYP = ((datum & (0b11<<16)) >> 16);
             CMDTYP = ((datum & (0b11<<22)) >> 22);
 
-            cmd_issued = true;  //Tell ESDHC to send this command to SD
-            CIHB = true; // Prevent further commands to be sent before this one
-                 // is processed
+            //Tell ESDHC to send this command to SD Prevent
+            // further commands to be sent before this one is processed
+            CIHB = true;
         }
         break;
+
     case PROCTL:
         WECRM   = isBitSet(datum, 26);
         WECINS  = isBitSet(datum, 25);
@@ -182,6 +256,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         DTW[0]  = isBitSet(datum, 1);
         LCTL    = isBitSet(datum, 0);
         break;
+
     case SYSCTL:
         INITA   = isBitSet(datum,27);
         RSTD    = isBitSet(datum,26);
@@ -194,31 +269,59 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         PEREN   = isBitSet(datum, 2);
         HCKEN   = isBitSet(datum, 1);
         IPGEN   = isBitSet(datum, 0);
-    case IRQSTAT:
-        datum = datum & 0x117F01FE;
-        regs[IRQSTAT/4] &= ~datum;
+        if(INITA) initialization_active(); // Send 80clk to card.
+        if(RSTA) do_reset(false); //Software reset.
+        stabilize_clk();  // Make clock Stable after a change to SDCLKEN.
         break;
+
+    case IRQSTAT:
+        DMAE  = isBitSet(datum,28);
+        AC12E = isBitSet(datum,27);
+        DEBE  = isBitSet(datum,22);
+        DCE   = isBitSet(datum, 21);
+        DTOE  = isBitSet(datum, 20);
+        CIE   = isBitSet(datum, 19);
+        CEBE  = isBitSet(datum,18);
+        CCE   = isBitSet(datum, 17);
+        CTOE  = isBitSet(datum, 16);
+        CINT  = isBitSet(datum,  8);
+        CRM   = isBitSet(datum,  7);
+        CINS_int = isBitSet(datum,  6);
+        BRR  = isBitSet(datum,  5) ;
+        BWR  = isBitSet(datum,  4);
+        DINT  = isBitSet(datum,  3);
+        BGE   = isBitSet(datum,  2);
+        TC    = isBitSet(datum,  1);
+        CC    = isBitSet(datum,  0);
+        break;
+
     case IRQSTATEN:
         regs[IRQSTATEN/4] = (1<<28) | (datum & 0x17F01FE);
         break;
+
     case IRQSIGEN:
         regs[IRQSTATEN/4] = (datum & 0x117F01FE);
         break;
+
     case WML:
         WR_BRST_LEN = (datum >> 24) & 0b11111;
         WR_WML      = (datum >> 16) & 0xFF;
         RD_BRST_LEN = (datum >>  8) & 0b11111;
         RD_WML      = (datum & 0xFF);
         break;
+
     case FEVT:
         regs[IRQSTAT/4] = regs[IRQSTATEN/4] & datum;
         break;
+
     case ADSADDR:
         regs[ADSADDR/4] = datum & 0xFE;
         break;
+
     case VENDOR:
         regs[VENDOR/4]  = datum & 0xFFF0003;
         break;
+
     case MMCBOOT:
         regs[MMCBOOT/4]  = datum & 0xFF0F;
 
@@ -227,6 +330,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         BLKCNT_BKP = BLKCNT;
         BLKSIZE = datum & 0x1FF;
         break;
+
     default:
         dprintf("ignored");
         break; //ignore write
@@ -247,7 +351,7 @@ void ESDHCV2_module::prc_ESDHCV2() {
         // Host Protocol
         if(ibuffer.size() >= RD_WML) {   //RD_WML must be divided by sizeof struct contained
                                          // in ibuffer. gambiarra
-            BREN=true;
+            SET_BREN();
         }
     }while(1);
 }
@@ -257,28 +361,22 @@ void ESDHCV2_module::interface_sd()
 {
     wait(1, SC_NS);
 
-    if(cmd_issued)
+    if(CIHB) //Unhandled command issued
     {
         //Host driver sent a new command to XFERTYP. We must execute it and
         //recover reponses to correct registers.
-
         sd_response resp = port->exec_cmd(CMDINX, CMDTYP, regs[CMDARG/4]);
-        //Stores response
-        regs[CMDRSP0] = resp.response[0];
+        regs[CMDRSP0] = resp.response[0]; //Stores response
         regs[CMDRSP1] = resp.response[1];
         regs[CMDRSP2] = resp.response[2];
 
         if(CICEN || CCCEN)
-            printf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
+            dprintf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
 
-        cmd_issued = false;
         CIHB = false;
-
     }
 
-    // Recover data send by the card to SD dataline
-
-    if(port->data_line_busy)
+    if(port->data_line_busy) // Recover data send by the card to SD dataline
     {
         uint32_t aux;
         port->read_dataline(ibuffer, BLKSIZE);
@@ -296,3 +394,5 @@ void ESDHCV2_module::interface_sd()
         }
     }
 }
+
+
