@@ -52,7 +52,9 @@ const char *archc_options="-abi ";
 #include "defines.H"
 #include "esdhcv2.h"
 #include "dpllc.h"
+#include "src.h"
 #include "ccm.h"
+#include "pins.h"
 
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
@@ -69,6 +71,7 @@ bool DEBUG_ESDHCV2 = false;
 bool DEBUG_DPLLC = false;
 bool DEBUG_CCM   = false;
 bool DEBUG_FLOW  = false;
+bool DEBUG_SRC   = false;
 
 static unsigned CYCLES = 0;
 static unsigned BATCH_SIZE = 100;
@@ -77,7 +80,6 @@ static bool ENABLE_GDB = false;
 static char* SYSCODE = 0;
 static char* BOOTCODE = 0;
 static char* SDCARD = 0;
-
 
 coprocessor *CP[16];
 MMU *mmu;
@@ -174,13 +176,26 @@ void process_params(int ac, char *av[]) {
         }
     }
 }
-//#define iMX53_MODEL
+#define iMX53_MODEL
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
     // If CP pointers arent initialized as NULL,
     // we might get Segmentation Fault
     // when executing CP instructions.
+
+    //Set pins for boot. THis might come as arguments or maybe a descriptor file
+    // in near future :-)
+    MODEPINS pins;
+    pins.TEST_MODE[0] = pins.TEST_MODE[1] = pins.TEST_MODE[2] =  false;
+    pins.BT_FUSE_SEL = false; //We control boot trough eFUSE directly. No need for GPIO here.
+    pins.BMOD[1] = true;
+    pins.BMOD[0] = false; //Its eFUSE here man!
+    pins.BOOT_CFG[0] = 0x40; //SD and
+    pins.BOOT_CFG[1] = 0x00;
+    pins.BOOT_CFG[2] = 0x00;
+    //--
+
     process_params(ac, av);
     for(int i = 0; i < 16; i++) CP[i] = NULL;
 
@@ -197,30 +212,28 @@ int sc_main(int ac, char *av[])
     rom_module bootmem ("bootMem",   tzic,  BOOTCODE, (uint32_t) 0x0, (uint32_t) 0xFFFFF);   // Boot Memory
     ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
     ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
-//    ESDHCV2_module esdhc1 ("ESDHCv2",tzic, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
+    ESDHCV2_module esdhc1 ("ESDHCv2",tzic, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
     dpllc_module dpllc1 ("DPLLC1",   tzic, (uint32_t) 0x63F80000, (uint32_t) 0x63f83FFF);
     dpllc_module dpllc2 ("DPLLC2",   tzic, (uint32_t) 0x63F84000, (uint32_t) 0x63f87FFF);
     dpllc_module dpllc3 ("DPLLC3",   tzic, (uint32_t) 0x63F88000, (uint32_t) 0x63f8bFFF);
     dpllc_module dpllc4 ("DPLLC4",   tzic, (uint32_t) 0x63F8C000, (uint32_t) 0x63f8FFFF);
+    src_module src      ("SCR",      tzic, &pins, (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
     ccm_module ccm      ("CCM",      tzic, (uint32_t) 0x53FD4000, (uint32_t) 0x53FD7FFF);
-//    sd_card    card    ("microSD", SDCARD);
+    sd_card    card    ("microSD", SDCARD);
 
-    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot.bin", 0x7800000);
-    //ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/kernel_board/sd.img",   0x7800000);
-
-
-//    esdhc1.connect_card(card);
-
+    esdhc1.connect_card(card);
     ip_bus.connectDevice(&ddr1);
     ip_bus.connectDevice(&ddr2);
-    //  ip_bus.connectDevice(&esdhc1);
+    ip_bus.connectDevice(&esdhc1);
     ip_bus.connectDevice(&dpllc1);
     ip_bus.connectDevice(&dpllc2);
     ip_bus.connectDevice(&dpllc3);
     ip_bus.connectDevice(&dpllc4);
+    ip_bus.connectDevice(&src);
     ip_bus.connectDevice(&ccm);
-#endif
-#ifndef iMX53_MODEL
+
+    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot.bin", 0x7800000);
+#else
     ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
     ip_bus.connectDevice(&bootmem);
 #endif
