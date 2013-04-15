@@ -41,7 +41,7 @@ sd_card::~sd_card()
 { //munmap: free data allocated by mmap
     if(munmap(data,data_size) != 0)
     {
-        printf("Unable to free SD mmapped memory");
+        printf("Unable to free SD mmapped memory (Run to the hills!)");
     }
 
 
