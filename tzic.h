@@ -135,9 +135,8 @@ class tzic_module : public sc_module, public peripheral {
 
   SC_HAS_PROCESS( tzic_module );
 
-  tzic_module (sc_module_name name_, uint32_t start_add,uint32_t end_add)
-      :  sc_module(name_),peripheral(start_add, end_add) {
-    // A SystemC thread never finishes execution, but transfers control back
+  tzic_module (sc_module_name name_):  sc_module(name_){
+      // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls.
     SC_THREAD(prc_tzic);
 

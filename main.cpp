@@ -4,15 +4,7 @@
 
  This project uses ArchC to generate code to mimic ARM
  core behavior. This is a functional model of the
- platform, no cycle accuracy is intended. Currently
- off-core IPs modeled are:
-
- - TZIC, the interrupt control IP for the iMX53 SoC
- - General Purpose Timer
- - UART-1
- - Generic RAM/ROM devices
- - System control coprocessor - CP15
- - Memory Management Unit
+ platform, no cycle accuracy is intended.
 
  In this platform design, the ARM core runs one instruction, possibly
  interacting with external modules via the bus functional model.
@@ -27,7 +19,6 @@
           Gabriel Krisman Bertazi, 10/08/2012
 ******************************************************/
 
-
 const char *project_name="armv5e";
 const char *project_file="armv5e.ac";
 const char *archc_version="2.1";
@@ -37,7 +28,7 @@ const char *archc_options="-abi ";
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
-//#include  "armv5e_isa.cpp"
+
 #include "armv5e.H"
 #include "gpt.h"
 #include "tzic.h"
@@ -84,7 +75,7 @@ static char* SDCARD = 0;
 coprocessor *CP[16];
 MMU *mmu;
 
-void process_params(int ac, char *av[]) {
+static void process_params(int ac, char *av[]) {
     for (int i = 0, e = ac; i != e; ++i) {
         const char * cur = av[i];
         if (strcmp(cur, "-enable-gdb") == 0) {
@@ -180,70 +171,69 @@ void process_params(int ac, char *av[]) {
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
-    // If CP pointers arent initialized as NULL,
-    // we might get Segmentation Fault
-    // when executing CP instructions.
 
-    //Set pins for boot. THis might come as arguments or maybe a descriptor file
+    //Set pins for boot. This might come as arguments or maybe a descriptor file
     // in near future :-)
     MODEPINS pins;
     pins.TEST_MODE[0] = pins.TEST_MODE[1] = pins.TEST_MODE[2] =  false;
     pins.BT_FUSE_SEL = false; //We control boot trough eFUSE directly. No need for GPIO here.
     pins.BMOD[1] = true;
     pins.BMOD[0] = false; //Its eFUSE here man!
-    pins.BOOT_CFG[0] = 0x40; //SD and
+    pins.BOOT_CFG[0] = 0x40; //SD7
     pins.BOOT_CFG[1] = 0x00;
     pins.BOOT_CFG[2] = 0x00;
     //--
 
     process_params(ac, av);
-    for(int i = 0; i < 16; i++) CP[i] = NULL;
+
+    memset(CP, 0, (16 * sizeof(coprocessor *)));
 
     //--- Devices -----
     armv5e armv5e_proc1 ("armv5e");    // Core
     imx53_bus ip_bus  ("iMX_IP_bus");  // Core Bus
-    tzic_module tzic   ("tzic",          (uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF); // TZIC
-    gpt_module  gpt    ("gpt" ,    tzic, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF); // GPT1
-    uart_module uart   ("uart",    tzic, (uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF); // UART1
-    ram_module  iram   ("iRAM",    tzic, (uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF, (uint32_t) 0x0001FFFF);// Internal RAM
+    tzic_module tzic   ("tzic"); // TZIC
+    gpt_module  gpt    ("gpt", tzic); // GPT1
+    uart_module uart   ("uart", tzic); // UART1
+    ram_module  iram   ("iRAM", tzic, (uint32_t) 0x0001FFFF);// Internal RAM
+
+    ip_bus.connect_device(&tzic,(uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);
+    ip_bus.connect_device(&gpt, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);
+    ip_bus.connect_device(&uart,(uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);
+    ip_bus.connect_device(&iram,(uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF);
 
 #ifdef iMX53_MODEL
+    rom_module bootmem ("bootMem",   tzic,  BOOTCODE);   // Boot Memory
+    ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x3FFFFFFF); //DDR1
+    ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0x3FFFFFFF); //DDR2
+    dpllc_module dpllc1 ("DPLLC1",   tzic);
+    dpllc_module dpllc2 ("DPLLC2",   tzic);
+    dpllc_module dpllc3 ("DPLLC3",   tzic);
+    dpllc_module dpllc4 ("DPLLC4",   tzic);
+    //src_module src      ("SCR", tzic, &pins);
+    //ip_bus.connect_device(&src,    (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
+    ccm_module ccm      ("CCM",      tzic);
+     ESDHCV2_module esdhc1 ("ESDHCv2",tzic);
+    // sd_card    card    ("microSD", SDCARD);
+    // esdhc1.connect_card(card);
 
-    rom_module bootmem ("bootMem",   tzic,  BOOTCODE, (uint32_t) 0x0, (uint32_t) 0xFFFFF);   // Boot Memory
-    ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR1
-    ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF, (uint32_t) 0x3FFFFFFF); //DDR2
-    ESDHCV2_module esdhc1 ("ESDHCv2",tzic, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
-    dpllc_module dpllc1 ("DPLLC1",   tzic, (uint32_t) 0x63F80000, (uint32_t) 0x63f83FFF);
-    dpllc_module dpllc2 ("DPLLC2",   tzic, (uint32_t) 0x63F84000, (uint32_t) 0x63f87FFF);
-    dpllc_module dpllc3 ("DPLLC3",   tzic, (uint32_t) 0x63F88000, (uint32_t) 0x63f8bFFF);
-    dpllc_module dpllc4 ("DPLLC4",   tzic, (uint32_t) 0x63F8C000, (uint32_t) 0x63f8FFFF);
-    src_module src      ("SCR",      tzic, &pins, (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
-    ccm_module ccm      ("CCM",      tzic, (uint32_t) 0x53FD4000, (uint32_t) 0x53FD7FFF);
-    sd_card    card    ("microSD", SDCARD);
+    ip_bus.connect_device(&bootmem, (uint32_t) 0x0, (uint32_t) 0xFFFFF);
+    ip_bus.connect_device(&ddr1,   (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF);
+    ip_bus.connect_device(&ddr2,   (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF);
+    ip_bus.connect_device(&esdhc1, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
+    ip_bus.connect_device(&dpllc1, (uint32_t) 0x63F80000, (uint32_t) 0x63f83FFF);
+    ip_bus.connect_device(&dpllc2, (uint32_t) 0x63F84000, (uint32_t) 0x63f87FFF);
+    ip_bus.connect_device(&dpllc3, (uint32_t) 0x63F88000, (uint32_t) 0x63f8bFFF);
+    ip_bus.connect_device(&dpllc4, (uint32_t) 0x63F8C000, (uint32_t) 0x63f8FFFF);
 
-    esdhc1.connect_card(card);
-    ip_bus.connectDevice(&ddr1);
-    ip_bus.connectDevice(&ddr2);
-    ip_bus.connectDevice(&esdhc1);
-    ip_bus.connectDevice(&dpllc1);
-    ip_bus.connectDevice(&dpllc2);
-    ip_bus.connectDevice(&dpllc3);
-    ip_bus.connectDevice(&dpllc4);
-    ip_bus.connectDevice(&src);
-    ip_bus.connectDevice(&ccm);
+    ip_bus.connect_device(&ccm,    (uint32_t) 0x53FD4000, (uint32_t) 0x53FD7FFF);
 
-    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot.bin", 0x7800000);
-#else
-    ram_module  bootmem ("mainMem",tzic, (uint32_t) 0x0, (uint32_t)0xFFFFF, (uint32_t)0x1000000);  //Main Memory
-    ip_bus.connectDevice(&bootmem);
-#endif
+    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot_DEBUG.bin", 0x7800000);
 
-    //--- Connect devices to Core bus ----
-    ip_bus.connectDevice(&bootmem);
-    ip_bus.connectDevice(&iram);
-    ip_bus.connectDevice(&tzic);
-    ip_bus.connectDevice(&gpt );
-    ip_bus.connectDevice(&uart);
+#else /* iMX53_MODEL.  */
+    ram_module  bootmem ("mainMem",tzic, (uint32_t)0x1000000);  //Main Memory
+    ip_bus.connect_device(&bootmem, (uint32_t) 0x0, (uint32_t) 0xFFFFF);
+
+#endif /* !iMX_MODEL.  */
 
     //--- Coprocessors ----
     CP[15] = new cp15();

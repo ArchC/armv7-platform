@@ -26,7 +26,7 @@ inline bool writePermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
 
 void cp15::reset()
 {
-    dprintf("CP15 reseted to default values");
+    dprintf("CP15 reseted to default values\n");
 
     //SCC
     //Control

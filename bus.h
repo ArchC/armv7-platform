@@ -27,8 +27,30 @@
 // address. It does the comparison via fast hardwired IFs tailored for this
 // platform.
 class imx53_bus: public sc_module, public ac_tlm_transport_if {
+
 private:
-    deque<peripheral*> devices;
+
+    /* Representation of a device attached to bus. Holds information of
+       the bus connection to the peripheral device.  */
+
+    struct mapped_device
+    {
+        /* Pointer to this device.  */
+
+        peripheral *device;
+
+        /* Device's address space begin address.  */
+
+        uint32_t start_address;
+
+        /* Device's address space end address.  */
+
+        uint32_t end_address;
+    };
+
+    /* Data structure to hold every device attached to bus.  */
+
+    std::deque<struct mapped_device> devices;
 
 public:
 
@@ -38,7 +60,9 @@ public:
     imx53_bus(sc_module_name name_): sc_module(name_){};
     ~imx53_bus();
 
-    void connectDevice(peripheral* device);
+    void connect_device(peripheral *device,
+                       uint32_t start_address, uint32_t end_address);
+
     ac_tlm_rsp transport(const ac_tlm_req& req);
 };
 

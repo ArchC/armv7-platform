@@ -20,6 +20,28 @@
 class ESDHCV2_module : public sc_module, public peripheral {
 private:
 
+    typedef enum
+    {
+        irq_DMAE  = 28,
+        irq_AC12E = 27,
+        irq_DEBE  = 22,
+        irq_DCE    = 21,
+        irq_DTOE   = 20,
+        irq_CIE    = 19,
+        irq_CEBE   = 18,
+        irq_CCE    = 17,
+        irq_CTOE   = 16,
+        irq_CINT   = 8,
+        irq_CRM    =  7,
+        irq_CINS_int  = 6,
+        irq_BRR    = 5,
+        irq_BWR    = 4,
+        irq_DINT   = 3,
+        irq_BGE    = 2,
+        irq_TC     = 1,
+        irq_CC     = 0
+    }irqstat;
+
     // State flags
     bool data_transfer;
 
@@ -155,7 +177,7 @@ private:
     static const int ESDHCV2_1_IRQ = 1;
 
     sd_card* port;
-    queue<unsigned char> ibuffer;
+    std::queue<unsigned char> ibuffer;
 
     // This port is used to send interrupts to the processor
     tzic_module &tzic;
@@ -174,7 +196,7 @@ public:
     //Wrappers to call fast_read/write with correct parameters
     unsigned read_signal(unsigned address, unsigned offset) {
         uint32_t ret = fast_read(address);
-        printf("data: 0x%X\n", ret);
+//        printf("data: 0x%X\n", ret);
         return ret;
     }
     void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
@@ -184,9 +206,7 @@ public:
 
     // -- External signals
     SC_HAS_PROCESS( ESDHCV2_module );
-    ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
-                   uint32_t start_add,          //Core Bus memory address space
-                   uint32_t end_add);           //
+    ESDHCV2_module(sc_module_name name_, tzic_module &tzic_);
 
     void connect_card(sd_card & card);
 
@@ -311,6 +331,18 @@ void initialization_active();
 void reset_DAT_line();
 void SET_BWEN();
 void SET_BREN();
+void SET_RTA(bool x);
+void SET_DLA(bool x);
+
+
+/*This function handles every type of outgoing ESDHC interruption.  It
+ * is responsable for checking if that kind of interruption
+ * can be asserted and if so, sets IRQSTAT, and service_interrupt()
+ * as necessary.
+ * It is controlled by IRQSTATEN and IRQSIGEN
+ */
+ void generate_signal(irqstat irqnum);
+
 
 };
 #endif

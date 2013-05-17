@@ -59,7 +59,7 @@ void sd_card::prc_sdcard()
 {
     do{
         wait(1, SC_NS);
-        dprintf("-------------------- SD CARD -------------------- \n");
+//        dprintf("-------------------- SD CARD -------------------- \n");
         if(current_state == IDLE)
             continue;
         else if(current_state == READ || current_state == READ_SINGLE)
@@ -87,7 +87,7 @@ void sd_card::prc_sdcard()
 
 // This function is used by external controllers to read the sd card IO buffer
 // It doesn't check any data integrity.
-bool sd_card::read_dataline(queue<unsigned char> & buffer, uint32_t len)
+bool sd_card::read_dataline(std::queue<unsigned char> & buffer, uint32_t len)
 {
     if(data_line_busy)
     {
@@ -109,24 +109,41 @@ bool sd_card::read_dataline(queue<unsigned char> & buffer, uint32_t len)
 sd_response sd_card::exec_cmd(short cmd_index, short cmd_type, uint32_t arg)
 {
     //Routes each command to its handler
+    // if(cmd_index <= 18 && cmd_index >= 0)
+    //     if(handlers[cmd_index] != NULL)
+    //     {
+    //         return (handlers[cmd_index])(arg);
+    //     }
+    //     else
+    //     {
+    //         printf("SD CARD: CMD%d not supported/implemented in this model");
+    //         exit(1);
+    //     }
+
     switch(cmd_index){
-    case 12:
-        return cmd12_handler(arg);
-        break;
-    case 16:
-        return cmd16_handler(arg);
-        break;
-    case 17:
-        return cmd17_handler(arg);
-    case 18:
-        return cmd18_handler(arg);
-        break;
+    case 0:  return cmd0_handler(arg);
+    case 12: return cmd12_handler(arg);
+    case 16: return cmd16_handler(arg);
+    case 17: return cmd17_handler(arg);
+    case 18: return cmd18_handler(arg);
     default:
         printf("SD CARD: CMD%d not supported/implemented in this model");
         exit(1);
     }
 }
 
+// CMD0 ==>  SET_CARD_TO_IDLE
+sd_response sd_card::cmd0_handler(uint32_t arg)
+{
+    dprintf("SD_CARD CMD0: arg=NOARG");
+    current_state = IDLE;
+    data_line_busy = false;
+
+    sd_response aux;
+    return aux;
+}
+
+// CMD12 ==>  STOP_MULTIBLK READ
 sd_response sd_card::cmd12_handler(uint32_t arg)
 {
     dprintf("SD_CARD CMD12: arg=NOARG");

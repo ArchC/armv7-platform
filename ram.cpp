@@ -1,65 +1,78 @@
 #include "ram.h"
 #include "arm_interrupts.h"
-
-
+#include <string>
 extern bool DEBUG_RAM;
+#define dprintf(args...) if(DEBUG_RAM){fprintf(stderr,args);}
 
-#include <stdarg.h>
-static inline int dprintf(const char *format, ...) {
-  int ret;
-  if (DEBUG_RAM) {
-    va_list args;
-    va_start(args, format);
-    ret = vfprintf(ac_err, format, args);
-    va_end(args);
-  }
-  return ret;
+ram_module::ram_module (const sc_module_name name_, tzic_module &tzic_,
+                        const uint32_t blockNumber_):sc_module(name_),
+                                                     tzic(tzic_),
+                                                     blockNumber(blockNumber_)
+{
+    /* Allocate memory space.  */
+    memory = new unsigned[blockNumber/4];
 }
 
-ram_module::~ram_module()
-{
-    delete [] memory;
+ram_module::~ram_module(){
+
+  delete [] memory;
 }
 
 unsigned ram_module::fast_read(unsigned address)
 {
-    unsigned data = *(memory + (address/4) );
-    dprintf("READ from %s local address: 0x%X Content: 0x%X\n",
-            this->name(), GetMemoryBegin(),address, data);
-    return data;
+    unsigned int data = *(memory + (address/4));
 
+    dprintf("READ from %s local address: 0x%X Content: 0x%X\n",
+            this->name(), address, data);
+    return data;
 }
+
 void ram_module::fast_write(unsigned address, unsigned datum, unsigned offset)
 {
     dprintf("WRITE to %s local address: 0x%X (offset: 0x%X) Content: 0x%X\n",
             this->name(), address, offset, datum);
 
     unsigned old_data = 0;
+
     if(offset){
+        /* Missaligned read.  */
         old_data = fast_read(address);
         old_data &= (0xFFFFFFFF << (32 - offset)) >> (32 - offset);
         old_data |= ((datum << offset) >> offset) << offset;
         *(memory + address/4) = old_data;
-    } else {
+    }
+    else {
         *(memory + address/4) = datum;
     }
 }
 
-int ram_module::populate(char *data_filepath, unsigned start_address)
+int ram_module::populate (char *file, unsigned start_address)
 {
-    printf("ArchC: Populating device %s with %s starting at: 0x%X: %s\n",
-           this->name(), data_filepath, start_address);
+    FILE *fd;
+    struct stat st;
 
-        int dataFile = open(data_filepath, O_RDONLY);
-        if(dataFile == -1){
-            printf("Unable to load data file %s", data_filepath);
-            exit(1);
-        }
-        struct stat st;
-        stat(data_filepath, &st);
-        size_t size = st.st_size;
+    printf ("ArchC: Populating device %s with %s. Starting at: 0x%X\n",
+           this->name (), file, start_address);
 
-        read(dataFile,memory+(start_address/4), st.st_size);
-        close(dataFile);
+    fd = fopen (file, "rb");
+    if(fd < 0){
+        fprintf (stderr, "ArchC: File: %s: %s",
+                file, strerror (errno));
+        exit (1);
+    }
 
+    if (stat (file, &st) < 0)
+    {
+        fprintf (stderr, "ArchC: File: %s, %s",
+                file, strerror (errno));
+        exit (1);
+    }
+
+    if (fread((memory+(start_address/4)), st.st_size, 1, fd) < 1)
+    {
+        fprintf (stderr, "ArchC: File: %s, %s",
+                 file, strerror (errno));
+        exit (1);
+    }
+    fclose (fd);
 }

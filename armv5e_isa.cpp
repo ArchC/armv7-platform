@@ -29,6 +29,7 @@
 #include "coprocessor.h"
 #include "mmu.h"
 #include <assert.h>
+
 using namespace armv5e_parms;
 
 extern bool DEBUG_FLOW;
@@ -359,7 +360,7 @@ void writeCPSR(unsigned value) {
     arm_proc_mode.irq = getBit(CPSR.entire,7)? true : false;
     arm_proc_mode.mode = value & arm_impl::processor_mode::MODE_MASK;
 
-    assert(arm_proc_mode.fiq  && arm_proc_mode.irq
+    assert(arm_proc_mode.fiq && arm_proc_mode.irq
            && "Interruptions must be disabled");
 }
 
@@ -405,6 +406,8 @@ void writeSPSR(unsigned value) {
         ref->SPSR_und = value;
         break;
     }
+    assert(arm_proc_mode.fiq && arm_proc_mode.irq
+           && "Interruptions must be disabled");
 }
 
 unsigned readSPSR() {

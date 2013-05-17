@@ -53,10 +53,8 @@ public:
     unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
     void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum, offset); }
 
-    rom_module (sc_module_name name_, tzic_module &tzic_, const char* dataPath,
-                uint32_t start_add,
-                uint32_t end_add): sc_module(name_),
-        peripheral(start_add, end_add), tzic(tzic_)
+    rom_module (sc_module_name name_, tzic_module &tzic_,
+                const char* dataPath): sc_module(name_), tzic(tzic_)
     {
 
         printf("ArchC: Reading flat binary file: %s\n",dataPath);

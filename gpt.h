@@ -137,16 +137,15 @@ class gpt_module : public sc_module, public peripheral {
 
   SC_HAS_PROCESS( gpt_module );
 
-  gpt_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
-              uint32_t end_add): sc_module(name_),
-      peripheral(start_add, end_add), tzic(tzic_) {
+  gpt_module (sc_module_name name_, tzic_module &tzic_):
+  sc_module(name_), tzic(tzic_) {
 
       // A SystemC thread never finishes execution, but transfers control back
       // to SystemC kernel via wait() calls.
       SC_THREAD(prc_gpt);
 
       do_reset();
-    }
+  }
 
 
 };

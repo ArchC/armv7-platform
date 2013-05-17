@@ -14,7 +14,7 @@ unsigned rom_module::fast_read(unsigned address)
 {
     unsigned datum = *((unsigned*)(((char*)data) + (address)));
     dprintf("READ from %s local address: 0x%X Content: 0x%X\n",
-            this->name(), GetMemoryBegin()+address, datum);
+            this->name(), address, datum);
     return datum;
 }
 

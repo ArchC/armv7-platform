@@ -41,9 +41,8 @@ public:
     unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
     void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum, offset); }
 
-    dpllc_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
-                  uint32_t end_add);
-    
+    dpllc_module (sc_module_name name_, tzic_module &tzic_);
+
 //    sc_module(name_), peripheral(start_add, end_add),tzic(tzic_);
     ~dpllc_module();
 

@@ -39,9 +39,8 @@ static void set_raw_terminal_mode()
   //tcsetattr(0, TCSANOW, &new_termios);
 }
 
-uart_module::uart_module (sc_module_name name_, tzic_module &tzic_,
-                          uint32_t start_add, uint32_t end_add):
-    sc_module(name_), peripheral(start_add, end_add), tzic(tzic_)
+uart_module::uart_module (sc_module_name name_, tzic_module &tzic_):
+    sc_module(name_), tzic(tzic_)
 {
   // A SystemC thread never finishes execution, but transfers control back
   // to SystemC kernel via wait() calls.

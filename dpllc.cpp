@@ -26,10 +26,8 @@ void dpllc_module::reset()
 
 
 
-dpllc_module::dpllc_module (sc_module_name name_, tzic_module &tzic_,uint32_t start_add,
-                            uint32_t end_add):
-    sc_module(name_), peripheral(start_add, end_add),tzic(tzic_)
-
+dpllc_module::dpllc_module (sc_module_name name_, tzic_module &tzic_):
+    sc_module(name_), tzic(tzic_)
 {
     reset();
 }

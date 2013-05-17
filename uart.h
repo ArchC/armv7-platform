@@ -294,8 +294,7 @@ public:
 
   SC_HAS_PROCESS( uart_module );
 
-  uart_module(sc_module_name name_, tzic_module &tzic_,
-              uint32_t start_add, uint32_t end_add);
+  uart_module(sc_module_name name_, tzic_module &tzic_);
   ~uart_module();
 };
 

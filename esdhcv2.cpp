@@ -8,17 +8,61 @@ extern bool DEBUG_ESDHCV2;
 #define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
 
 
+/* Macros for bit flipping.  As a general rule, several important things
+ * must happen when bit from some registers flip. This set of macros
+ * provides programmers with a simple interface to flip a bit and
+ * propagate its effects
+ */
+
+
+#define signal_startRead() SET_RTA(1)
+#define signal_endRead()   SET_RTA(0)
+
+inline void ESDHCV2_module::SET_DLA(bool x)
+{
+    if(x)
+    {
+        DLA   = true;
+        CDIHB = true; //Let's block any further data commands cause
+                      //bus is getting busy.
+    } else {
+        if(DLA)
+        {
+            DLA   = false;
+            CDIHB = false;
+        }
+    }
+}
+
+inline void ESDHCV2_module::SET_RTA(bool x)
+{
+//This sets RTA bit. It causes a serie of other bits to change.
+    if(x)
+    {
+        RTA = true;
+        SET_DLA(1);
+    } else { //End of a transfer.
+        if(RTA) //We were i na  transfer
+        {
+            RTA = false;
+            SET_DLA(0);
+            generate_signal(irq_TC);
+        }
+    }
+}
+
+
 
 inline void ESDHCV2_module::SET_BREN()
-{/* Small macro that sets BREN and remember to activate related interrupt bit */
+{/* Small macroas that sets BREN and remember to activate related interrupt bit */
     BREN = true;
-    BRR = true;
+    generate_signal(irq_BRR);
 }
 
 inline void ESDHCV2_module::SET_BWEN()
 {/* Small macro that sets BWEN and remember to activate related interrupt bit */
     BWEN = true;
-    BWR = true;
+    generate_signal(irq_BWR);
 }
 
 inline void ESDHCV2_module::stabilize_clk()
@@ -40,7 +84,6 @@ inline void ESDHCV2_module::reset_DAT_line()
   * Performs a DAT line reset, erasing any remains of a data transfers.
   * Might be activated by high RSTD bit assertion.
   */
-
     BREN = false;
     BWEN = false;
     RTA  = false;
@@ -60,11 +103,8 @@ inline void ESDHCV2_module::reset_DAT_line()
         ibuffer.pop();
 }
 
-
-
-ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_,
-                               uint32_t start_add, uint32_t end_add):
-    sc_module(name_), peripheral(start_add, end_add), tzic(tzic_)
+ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_):
+    sc_module(name_), tzic(tzic_)
 {
     do_reset();
     CIHB = false; //Ready to receive first command!
@@ -84,7 +124,7 @@ void ESDHCV2_module::connect_card(sd_card & card) {
 }
 
 unsigned ESDHCV2_module::fast_read(unsigned address) {
-    printf("ESDHCv2 READ address: register: 0x%X ", address);
+    dprintf("ESDHCv2 READ address: register: 0x%X ", address);
     uint32_t datum;
     switch(address)
     {
@@ -205,7 +245,7 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
 }
 
 void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
-    printf("ESDHCv2 WRITE address: 0x%X data:0x%X\n", address, datum);
+    dprintf("ESDHCv2 WRITE address: 0x%X data:0x%X\n", address, datum);
     switch(address)
     {
     case DSADR:
@@ -286,8 +326,8 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         CTOE  = isBitSet(datum, 16);
         CINT  = isBitSet(datum,  8);
         CRM   = isBitSet(datum,  7);
-        CINS_int = isBitSet(datum,  6);
-        BRR  = isBitSet(datum,  5) ;
+        CINS_int = isBitSet(datum, 6);
+        BRR  = isBitSet(datum,  5);
         BWR  = isBitSet(datum,  4);
         DINT  = isBitSet(datum,  3);
         BGE   = isBitSet(datum,  2);
@@ -338,8 +378,6 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
     dprintf("\n");
 }
 
-//#define SET_BIT_BREN() {BREN=true; regs[IRQSTAT/4] |= ((1 << 5) & (reg[IRQSIGEN/4] & 0b10000);}
-
 void ESDHCV2_module::prc_ESDHCV2() {
     do{
         dprintf("-------------------- ESDHCV2 -------------------- \n");
@@ -350,17 +388,15 @@ void ESDHCV2_module::prc_ESDHCV2() {
 
         // Host Protocol
         if(ibuffer.size() >= RD_WML) {   //RD_WML must be divided by sizeof struct contained
-                                         // in ibuffer. gambiarra
-            SET_BREN();
-        }
+            SET_BREN();                  // in ibuffer. gambiarra 
+       }
     }while(1);
 }
 
 
 void ESDHCV2_module::interface_sd()
 {
-    wait(1, SC_NS);
-
+    // EXECUTE COMAND
     if(CIHB) //Unhandled command issued
     {
         //Host driver sent a new command to XFERTYP. We must execute it and
@@ -373,26 +409,81 @@ void ESDHCV2_module::interface_sd()
         if(CICEN || CCCEN)
             dprintf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
 
-        CIHB = false;
+        if(DPSEL) //Command issued requires data transfer
+        {
+            CDIHB = true; //Let's block any further data commands cause
+                          //bus is getting busy.
+
+            if(DTDSEL == true)  //READ
+                signal_startRead();    //change internal FSM to READ mode.
+            else //WRITE
+            {
+                printf("WRITE não foi implementada");
+                //>>>>> TODO:Gotta change internal FSM to WRITE mode. <<<<
+            }
+        }
+        CIHB = false; //Ok, can wait for the next command.
     }
 
-    if(port->data_line_busy) // Recover data send by the card to SD dataline
+// FETCH DATA FROM HOST
+    if(RTA == true) // If we are on a read from SD process
     {
-        uint32_t aux;
-        port->read_dataline(ibuffer, BLKSIZE);
-
-        //If necessary reduce blkcnt and issue AUTOCMD12
-        if(BCEN == true && MSBSEL == true)
+        if(port->data_line_busy) // Recover data send by the card to SD dataline
         {
-            BLKCNT -= 1;
-            if(BLKCNT == 0 && AC12EN == true)
+            uint32_t aux;
+            port->read_dataline(ibuffer, BLKSIZE);
+
+            //If necessary reduce blkcnt and issue AUTOCMD12
+            if(BCEN == true && MSBSEL == true)
             {
-                //Stop transfer by issuing an CMD12 to device
-                port->exec_cmd(12, 0b11, regs[CMDARG/4]);
-                BLKCNT = BLKCNT_BKP;
+                BLKCNT -= 1;
+                if(BLKCNT == 0 && AC12EN == true)
+                {
+                    //Stop transfer by issuing an CMD12 to device
+                    port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Isue a AC12EN to card.
+                    BLKCNT = BLKCNT_BKP;
+                    signal_endRead(); //Signals to host end of transfer.
+                }
             }
         }
     }
+
+// HANDLE PUSH DATA TO HOST
+    if(WTA)
+    {
+        //>>>>> TODO: Implement internal FSM  WRITE mode. <<<<
+    }
 }
 
+void ESDHCV2_module::generate_signal(irqstat irqnum)
+{
+    uint32_t irq = (1<<irqnum);
+
+    if(regs[IRQSTATEN/4] & irq)
+    {
+        //Can assert IRQSTAT
+        if(irqnum == irq_DMAE ) DMAE   = true;
+        else if(irqnum == irq_AC12E) AC12E  = true;
+        else if(irqnum == irq_DEBE ) DEBE   = true;
+        else if(irqnum == irq_DCE  ) DCE    = true;
+        else if(irqnum == irq_DTOE ) DTOE   = true;
+        else if(irqnum == irq_CIE  ) CIE    = true;
+        else if(irqnum == irq_CEBE ) CEBE   = true;
+        else if(irqnum == irq_CCE  ) CCE    = true;
+        else if(irqnum == irq_CTOE ) CTOE   = true;
+        else if(irqnum == irq_CINT ) CINT   = true;
+        else if(irqnum == irq_CRM  ) CRM    = true;
+        else if(irqnum == irq_CINS_int)CINS_int  = true;
+        else if(irqnum == irq_BRR  ) BRR    = true;
+        else if(irqnum == irq_BWR  ) BWR    = true;
+        else if(irqnum == irq_DINT ) DINT   = true;
+        else if(irqnum == irq_BGE  ) BGE    = true;
+        else if(irqnum == irq_TC   ) TC     = true;
+        else if(irqnum == irq_CC   ) CC     = true;
+    }
+    if(regs[IRQSIGEN/4] & irq)
+    { //Can generate interruption
+        tzic.interrupt(ESDHCV2_1_IRQ, /*deassert=*/true);
+    }
+}
 
