@@ -4,15 +4,13 @@
 extern bool DEBUG_SRC;
 #define dprintf(args...) if (DEBUG_SRC){fprintf(stderr,args);}
 
-src_module::src_module (sc_module_name name_, tzic_module &tzic_, MODEPINS *pins_):
-    sc_module(name_), tzic(tzic_), pins(pins_) {
+src_module::src_module (sc_module_name name_, tzic_module &tzic_):
+    sc_module(name_), tzic(tzic_) {
 
     reset(true);
 }
 
-src_module::~src_module()
-{
-}
+src_module::~src_module(){}
 
 unsigned src_module::fast_read(unsigned address)
 {
@@ -21,20 +19,16 @@ unsigned src_module::fast_read(unsigned address)
     switch(address)
         {
         case SRC_SBMR:
-            if(!pins){
-                printf("SRC: No MODEPIN loaded. Sending default 0x0");
-                return 0x00;
-            }
             return
-                ((pins->TEST_MODE[2] << 29) |
-                 (pins->TEST_MODE[1] << 28) |
-                 (pins->TEST_MODE[0] << 27) |
-                 (pins->BT_FUSE_SEL  << 26) |
-                 (pins->BMOD[1]      << 25) |
-                 (pins->BMOD[0]      << 24) |
-                 (pins->BOOT_CFG[2]  << 16) |
-                 (pins->BOOT_CFG[1]  <<  8) |
-                 (pins->BOOT_CFG[0]  <<  0));
+                ((PINS::TEST_MODE[2] << 29) |
+                 (PINS::TEST_MODE[1] << 28) |
+                 (PINS::TEST_MODE[0] << 27) |
+                 (PINS::BT_FUSE_SEL  << 26) |
+                 (PINS::BMOD[1]      << 25) |
+                 (PINS::BMOD[0]      << 24) |
+                 (PINS::BOOT_CFG[2]  << 16) |
+                 (PINS::BOOT_CFG[1]  <<  8) |
+                 (PINS::BOOT_CFG[0]  <<  0));
             break;
         default:
             return regs[address/4];
