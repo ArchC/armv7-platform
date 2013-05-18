@@ -6,8 +6,8 @@
 //
 //
 // Author : Gabriel Krisman Bertazi   Date: Fev 08,  2013
-#ifndef __CCM_H__
-#define __CCM_H__
+#ifndef CCM_H
+#define CCM_H
 
 #include "peripheral.h"
 
@@ -39,7 +39,6 @@ private:
     static const uint32_t CSCDR4  = 0x40;
     static const uint32_t CDHIPR  = 0x48;
     static const uint32_t LAST_ADDR = 0x4C;
-
 
     uint32_t regs[LAST_ADDR/4];
 

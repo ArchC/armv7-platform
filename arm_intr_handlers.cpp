@@ -1,11 +1,11 @@
 #include "arm_interrupts.h"
 
 #include "ac_intr_handler.H"
-#include "armv5e_intr_handlers.H"
-#include "armv5e_ih_bhv_macros.H"
+#include "arm_intr_handlers.H"
+#include "arm_ih_bhv_macros.H"
 
-//!'using namespace' statement to allow access to all armv5e-specific datatypes
-using namespace armv5e_parms;
+//!'using namespace' statement to allow access to all arm-specific datatypes
+using namespace arm_parms;
 
 // Whoever calls this interrupt, it must enforce correct exception priority,
 // since we can't enforce this here. We simply service the first one to call

@@ -319,7 +319,7 @@ cp15_reg * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigne
 }
 
 
-void cp15::MCR(armv5e_arch_ref *core,
+void cp15::MCR(arm_arch_ref *core,
                arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2,
                unsigned crn, unsigned crm, unsigned rt_value){
     dprintf("\nCP15 operation MCR: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X, RegVal=0x%X\n", opc1, opc2, crn, crm, rt_value);
@@ -347,7 +347,7 @@ void cp15::MCR(armv5e_arch_ref *core,
     return;
 }
 
-uint32_t cp15::MRC(armv5e_arch_ref *core,
+uint32_t cp15::MRC(arm_arch_ref *core,
                    arm_impl::PrivilegeLevel pl, unsigned opc1,
                    unsigned opc2, unsigned crn, unsigned crm){
     dprintf("CP15 operation MRC: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n", opc1, opc2, crn, crm);

@@ -16,16 +16,16 @@
 #ifndef _ARMV5E_ISA_H
 #define _ARMV5E_ISA_H
 
-#include "armv5e_parms.H"
+#include "arm_parms.H"
 #include "ac_instr.H"
 #include "ac_decoder_rt.H"
 #include "ac_instr_info.H"
-#include "armv5e_arch.H"
-#include "armv5e_arch_ref.H"
+#include "arm_arch.H"
+#include "arm_arch_ref.H"
 
-namespace armv5e_parms
+namespace arm_parms
 {
-class armv5e_isa: public armv5e_arch_ref {
+class arm_isa: public arm_arch_ref {
 private:
 typedef ac_instr<AC_DEC_FIELD_NUMBER> ac_instr_t;
 
@@ -41,9 +41,9 @@ public:
   int cur_instr_id;
 
   //!Constructor.
-  armv5e_isa(armv5e_arch& ref) : armv5e_arch_ref(ref)  {
+  arm_isa(arm_arch& ref) : arm_arch_ref(ref)  {
     //!Building Decoder.
-    decoder = ac_decoder_full::CreateDecoder(armv5e_isa::formats, armv5e_isa::instructions, &ref);
+    decoder = ac_decoder_full::CreateDecoder(arm_isa::formats, arm_isa::instructions, &ref);
   }
 
   inline const char* get_name() { return instr_table[cur_instr_id].ac_instr_name; }
@@ -58,30 +58,30 @@ public:
   void _behavior_begin();
   void _behavior_end();
 
-  void _behavior_armv5e_Type_DPI1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_DPI2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int shift, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_DPI3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
-  void _behavior_armv5e_Type_DPI4(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
-  void _behavior_armv5e_Type_DPI5(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_BTM1(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
-  void _behavior_armv5e_Type_BBL(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
-  void _behavior_armv5e_Type_BBLT(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
-  void _behavior_armv5e_Type_MBXBLX(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_MULT1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_MULT2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rdhi, unsigned int rdlo, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_LSI(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int b, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int imm12);
-  void _behavior_armv5e_Type_LSR(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int b, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_LSE(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int i, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int addr1, unsigned int subop2, unsigned int ss, unsigned int hh, unsigned int subop1, unsigned int addr2);
-  void _behavior_armv5e_Type_LSM(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int r, unsigned int w, unsigned int l, unsigned int rn, unsigned int rlist);
-  void _behavior_armv5e_Type_CDP(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int funcc1, unsigned int crn, unsigned int crd, unsigned int cp_num, unsigned int funcc3, unsigned int subop1, unsigned int crm);
-  void _behavior_armv5e_Type_CRT(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int funcc2, unsigned int l, unsigned int crn, unsigned int rd, unsigned int cp_num, unsigned int funcc3, unsigned int subop1, unsigned int crm);
-  void _behavior_armv5e_Type_CLS(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int n, unsigned int w, unsigned int l, unsigned int rn, unsigned int crd, unsigned int cp_num, unsigned int imm8);
-  void _behavior_armv5e_Type_MBKPT(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int immediate, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_MSWI(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int swinumber);
-  void _behavior_armv5e_Type_MCLZ(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int rd, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_MMSR1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
-  void _behavior_armv5e_Type_MMSR2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8);
-  void _behavior_armv5e_Type_DSPSM(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_DPI1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_DPI2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int shift, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_DPI3(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rotate, unsigned int imm8);
+  void _behavior_arm_Type_DPI4(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
+  void _behavior_arm_Type_DPI5(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_BTM1(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
+  void _behavior_arm_Type_BBL(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
+  void _behavior_arm_Type_BBLT(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
+  void _behavior_arm_Type_MBXBLX(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_MULT1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_MULT2(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rdhi, unsigned int rdlo, unsigned int rs, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_LSI(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int b, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int imm12);
+  void _behavior_arm_Type_LSR(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int b, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_LSE(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int i, unsigned int w, unsigned int l, unsigned int rn, unsigned int rd, unsigned int addr1, unsigned int subop2, unsigned int ss, unsigned int hh, unsigned int subop1, unsigned int addr2);
+  void _behavior_arm_Type_LSM(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int r, unsigned int w, unsigned int l, unsigned int rn, unsigned int rlist);
+  void _behavior_arm_Type_CDP(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int funcc1, unsigned int crn, unsigned int crd, unsigned int cp_num, unsigned int funcc3, unsigned int subop1, unsigned int crm);
+  void _behavior_arm_Type_CRT(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int funcc2, unsigned int l, unsigned int crn, unsigned int rd, unsigned int cp_num, unsigned int funcc3, unsigned int subop1, unsigned int crm);
+  void _behavior_arm_Type_CLS(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int n, unsigned int w, unsigned int l, unsigned int rn, unsigned int crd, unsigned int cp_num, unsigned int imm8);
+  void _behavior_arm_Type_MBKPT(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int immediate, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_MSWI(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int swinumber);
+  void _behavior_arm_Type_MCLZ(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int rd, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_MMSR1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
+  void _behavior_arm_Type_MMSR2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8);
+  void _behavior_arm_Type_DSPSM(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm);
 
   void behavior_and1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);
   void behavior_eor1(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int shift, unsigned int subop1, unsigned int rm);

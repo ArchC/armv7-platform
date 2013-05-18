@@ -19,19 +19,19 @@
 #include "systemc.h"
 #include "ac_module.H"
 #include "ac_utils.H"
-#include "armv5e_parms.H"
-#include "armv5e_arch.H"
-#include "armv5e_isa.H"
+#include "arm_parms.H"
+#include "arm_arch.H"
+#include "arm_isa.H"
 #include "ac_tlm_intr_port.H"
-#include "armv5e_intr_handlers.H"
+#include "arm_intr_handlers.H"
 #include "ac_gdb_interface.H"
 #include "ac_gdb.H"
 
 
-class armv5e: public ac_module, public armv5e_arch, public AC_GDB_Interface<armv5e_parms::ac_word> {
+class arm: public ac_module, public arm_arch, public AC_GDB_Interface<arm_parms::ac_word> {
 private:
-  typedef cache_item<armv5e_parms::AC_DEC_FIELD_NUMBER> cache_item_t;
-  typedef ac_instr<armv5e_parms::AC_DEC_FIELD_NUMBER> ac_instr_t;
+  typedef cache_item<arm_parms::AC_DEC_FIELD_NUMBER> cache_item_t;
+  typedef ac_instr<arm_parms::AC_DEC_FIELD_NUMBER> ac_instr_t;
 public:
 
   unsigned bhv_pc;
@@ -40,8 +40,8 @@ public:
   bool has_delayed_load;
   char* delayed_load_program;
 
-  armv5e_parms::armv5e_isa ISA;
-  armv5e_inta_handler inta_hnd;
+  arm_parms::arm_isa ISA;
+  arm_inta_handler inta_hnd;
   ac_tlm_intr_port inta;
 
   unsigned id;
@@ -50,16 +50,16 @@ public:
   unsigned* instr_dec;
   ac_instr_t* instr_vec;
 
-  AC_GDB<armv5e_parms::ac_word>* gdbstub;
+  AC_GDB<arm_parms::ac_word>* gdbstub;
 
   //!Behavior execution method.
   void behavior();
 
  
-  SC_HAS_PROCESS( armv5e );
+  SC_HAS_PROCESS( arm );
 
   //!Constructor.
-  armv5e( sc_module_name name_ ): ac_module(name_), armv5e_arch(), ISA(*this), inta_hnd(*this), inta("inta", inta_hnd) {
+  arm( sc_module_name name_ ): ac_module(name_), arm_arch(), ISA(*this), inta_hnd(*this), inta("inta", inta_hnd) {
 
     SC_THREAD( behavior );
     bhv_pc = 0;
@@ -67,7 +67,7 @@ public:
     start_up=1;
     id = 1;
 
-    gdbstub = new AC_GDB<armv5e_parms::ac_word>(this, armv5e_parms::GDB_PORT_NUM);
+    gdbstub = new AC_GDB<arm_parms::ac_word>(this, arm_parms::GDB_PORT_NUM);
 
   }
   /***********
@@ -82,13 +82,13 @@ public:
 
   /* Register access */
   int nRegs(void);
-  armv5e_parms::ac_word reg_read(int reg);
-  void reg_write( int reg, armv5e_parms::ac_word value );
+  arm_parms::ac_word reg_read(int reg);
+  void reg_write( int reg, arm_parms::ac_word value );
   /* Memory access */
   unsigned char mem_read( unsigned int address );
   void mem_write( unsigned int address, unsigned char byte );
   /* GDB stub access */
-  AC_GDB<armv5e_parms::ac_word>* get_gdbstub();
+  AC_GDB<arm_parms::ac_word>* get_gdbstub();
 
   unsigned get_ac_pc();
 
@@ -108,7 +108,7 @@ public:
 
   void enable_gdb(int port = 5000);
 
-  virtual ~armv5e() {};
+  virtual ~arm() {};
 
 };
 #endif  //_ARMV5E_H

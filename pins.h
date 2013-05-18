@@ -1,6 +1,6 @@
 
-#ifndef __PINS_H__
-#define __PINS_H__
+#ifndef PINS_H
+#define PINS_H
 
 
 typedef struct

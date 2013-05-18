@@ -16,7 +16,7 @@
 #ifndef  _ARMV5E_ARCH_REF_H
 #define  _ARMV5E_ARCH_REF_H
 
-#include  "armv5e_parms.H"
+#include  "arm_parms.H"
 #include  "ac_arch_ref.H"
 #include  "ac_memport.H"
 #include  "ac_reg.H"
@@ -24,41 +24,41 @@
 #include  "ac_tlm_intr_port.H"
 
 //!Forward class declaration, needed to compile.
-class armv5e_arch;
+class arm_arch;
 
 //!ArchC class for model-specific architectural resources.
-class armv5e_arch_ref : public ac_arch_ref<armv5e_parms::ac_word, armv5e_parms::ac_Hword> {
+class arm_arch_ref : public ac_arch_ref<arm_parms::ac_word, arm_parms::ac_Hword> {
 public:
  
   //!Program Counter.
   ac_reg<unsigned>& ac_pc;
 
   //!Storage Devices.
-  ac_memport<armv5e_parms::ac_word, armv5e_parms::ac_Hword>& MEM;
-  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB;
-  ac_reg<armv5e_parms::ac_word>& R14_irq;
-  ac_reg<armv5e_parms::ac_word>& R14_fiq;
-  ac_reg<armv5e_parms::ac_word>& R14_svc;
-  ac_reg<armv5e_parms::ac_word>& R14_abt;
-  ac_reg<armv5e_parms::ac_word>& R14_und;
-  ac_reg<armv5e_parms::ac_word>& R13_irq;
-  ac_reg<armv5e_parms::ac_word>& R13_svc;
-  ac_reg<armv5e_parms::ac_word>& R13_abt;
-  ac_reg<armv5e_parms::ac_word>& R13_und;
-  ac_reg<armv5e_parms::ac_word>& R13_fiq;
-  ac_reg<armv5e_parms::ac_word>& SPSR_irq;
-  ac_reg<armv5e_parms::ac_word>& SPSR_fiq;
-  ac_reg<armv5e_parms::ac_word>& SPSR_svc;
-  ac_reg<armv5e_parms::ac_word>& SPSR_abt;
-  ac_reg<armv5e_parms::ac_word>& SPSR_und;
-  ac_reg<armv5e_parms::ac_word>& R12_fiq;
-  ac_reg<armv5e_parms::ac_word>& R11_fiq;
-  ac_reg<armv5e_parms::ac_word>& R10_fiq;
-  ac_reg<armv5e_parms::ac_word>& R9_fiq;
-  ac_reg<armv5e_parms::ac_word>& R8_fiq;
+  ac_memport<arm_parms::ac_word, arm_parms::ac_Hword>& MEM;
+  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB;
+  ac_reg<arm_parms::ac_word>& R14_irq;
+  ac_reg<arm_parms::ac_word>& R14_fiq;
+  ac_reg<arm_parms::ac_word>& R14_svc;
+  ac_reg<arm_parms::ac_word>& R14_abt;
+  ac_reg<arm_parms::ac_word>& R14_und;
+  ac_reg<arm_parms::ac_word>& R13_irq;
+  ac_reg<arm_parms::ac_word>& R13_svc;
+  ac_reg<arm_parms::ac_word>& R13_abt;
+  ac_reg<arm_parms::ac_word>& R13_und;
+  ac_reg<arm_parms::ac_word>& R13_fiq;
+  ac_reg<arm_parms::ac_word>& SPSR_irq;
+  ac_reg<arm_parms::ac_word>& SPSR_fiq;
+  ac_reg<arm_parms::ac_word>& SPSR_svc;
+  ac_reg<arm_parms::ac_word>& SPSR_abt;
+  ac_reg<arm_parms::ac_word>& SPSR_und;
+  ac_reg<arm_parms::ac_word>& R12_fiq;
+  ac_reg<arm_parms::ac_word>& R11_fiq;
+  ac_reg<arm_parms::ac_word>& R10_fiq;
+  ac_reg<arm_parms::ac_word>& R9_fiq;
+  ac_reg<arm_parms::ac_word>& R8_fiq;
 
   //!Constructor.
-   armv5e_arch_ref(armv5e_arch& arch);
+   arm_arch_ref(arm_arch& arch);
 
 };
 

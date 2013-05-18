@@ -17,17 +17,17 @@
 #define _ARMV5E_INTR_HANDLERS_H
 
 #include "ac_intr_handler.H"
-#include "armv5e_parms.H"
-#include "armv5e_arch.H"
-#include "armv5e_arch_ref.H"
+#include "arm_parms.H"
+#include "arm_arch.H"
+#include "arm_arch_ref.H"
 
-class armv5e_inta_handler :
+class arm_inta_handler :
   public ac_intr_handler,
-  public armv5e_arch_ref
+  public arm_arch_ref
 {
  public:
 
-  explicit armv5e_inta_handler(armv5e_arch& ref) : armv5e_arch_ref(ref) {}
+  explicit arm_inta_handler(arm_arch& ref) : arm_arch_ref(ref) {}
 
   void handle(uint32_t value);
 

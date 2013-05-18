@@ -1,7 +1,7 @@
 #ifndef __ARM_INTERRUPTS_H__
 #define __ARM_INTERRUPTS_H__
 
-#include "armv5e_arch_ref.H"
+#include "arm_arch_ref.H"
 
 
 namespace arm_impl {
@@ -56,7 +56,7 @@ namespace arm_impl {
 //                SWI (sync)
 
 // Interrupt handler behavior for interrupt port inta.
-void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type);
+void service_interrupt(arm_arch_ref& ref, unsigned excep_type);
 
 #endif
 

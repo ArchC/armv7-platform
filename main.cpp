@@ -19,8 +19,8 @@
           Gabriel Krisman Bertazi, 10/08/2012
 ******************************************************/
 
-const char *project_name="armv5e";
-const char *project_file="armv5e.ac";
+const char *project_name="arm";
+const char *project_file="arm.ac";
 const char *archc_version="2.1";
 const char *archc_options="-abi ";
 
@@ -29,7 +29,7 @@ const char *archc_options="-abi ";
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
 
-#include "armv5e.H"
+#include "arm.H"
 #include "gpt.h"
 #include "tzic.h"
 #include "ram.h"
@@ -189,7 +189,7 @@ int sc_main(int ac, char *av[])
     memset(CP, 0, (16 * sizeof(coprocessor *)));
 
     //--- Devices -----
-    armv5e armv5e_proc1 ("armv5e");    // Core
+    arm arm_proc1 ("arm");    // Core
     imx53_bus ip_bus  ("iMX_IP_bus");  // Core Bus
     tzic_module tzic   ("tzic"); // TZIC
     gpt_module  gpt    ("gpt", tzic); // GPT1
@@ -209,8 +209,8 @@ int sc_main(int ac, char *av[])
     dpllc_module dpllc2 ("DPLLC2",   tzic);
     dpllc_module dpllc3 ("DPLLC3",   tzic);
     dpllc_module dpllc4 ("DPLLC4",   tzic);
-    //src_module src      ("SCR", tzic, &pins);
-    //ip_bus.connect_device(&src,    (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
+    //  src_module src ("SCR", tzic, &pins);
+
     ccm_module ccm      ("CCM",      tzic);
      ESDHCV2_module esdhc1 ("ESDHCv2",tzic);
     // sd_card    card    ("microSD", SDCARD);
@@ -224,7 +224,7 @@ int sc_main(int ac, char *av[])
     ip_bus.connect_device(&dpllc2, (uint32_t) 0x63F84000, (uint32_t) 0x63f87FFF);
     ip_bus.connect_device(&dpllc3, (uint32_t) 0x63F88000, (uint32_t) 0x63f8bFFF);
     ip_bus.connect_device(&dpllc4, (uint32_t) 0x63F8C000, (uint32_t) 0x63f8FFFF);
-
+//    ip_bus.connect_device(&src,    (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
     ip_bus.connect_device(&ccm,    (uint32_t) 0x53FD4000, (uint32_t) 0x53FD7FFF);
 
     ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot_DEBUG.bin", 0x7800000);
@@ -233,7 +233,7 @@ int sc_main(int ac, char *av[])
     ram_module  bootmem ("mainMem",tzic, (uint32_t)0x1000000);  //Main Memory
     ip_bus.connect_device(&bootmem, (uint32_t) 0x0, (uint32_t) 0xFFFFF);
 
-#endif /* !iMX_MODEL.  */
+#endif /* !iMX53_MODEL.  */
 
     //--- Coprocessors ----
     CP[15] = new cp15();
@@ -242,27 +242,26 @@ int sc_main(int ac, char *av[])
     mmu = new MMU("MMU", *((cp15*)CP[15]), ip_bus);
 
 #ifdef AC_DEBUG
-    ac_trace("armv5e_proc1.trace");
+    ac_trace("arm_proc1.trace");
 #endif
 
+    arm_proc1.set_instr_batch_size(BATCH_SIZE);
 
-    armv5e_proc1.set_instr_batch_size(BATCH_SIZE);
-
-    tzic.proc_port(armv5e_proc1.inta);
-    ip_bus.proc_port(armv5e_proc1.inta);
-    armv5e_proc1.MEM_port(*mmu);
+    tzic.proc_port(arm_proc1.inta);
+    ip_bus.proc_port(arm_proc1.inta);
+    arm_proc1.MEM_port(*mmu);
 
 #ifndef iMX53_MODEL
     if (SYSCODE != 0) {
         std::cout << "Loading system kernel: " << SYSCODE << std::endl;
-        armv5e_proc1.APP_MEM->load(SYSCODE);
+        arm_proc1.APP_MEM->load(SYSCODE);
     }
 #endif
 
     if (ENABLE_GDB) {
-        armv5e_proc1.enable_gdb(GDB_PORT);
+        arm_proc1.enable_gdb(GDB_PORT);
     }
-    armv5e_proc1.init(ac, av);
+    arm_proc1.init(ac, av);
     cerr << endl;
 
     double duration = CYCLES;
@@ -270,19 +269,19 @@ int sc_main(int ac, char *av[])
         duration = -1.0;
 
 #ifdef iMX53_MODEL
-//        armv5e_proc1.ac_start_addr = 0;
-//        armv5e_proc1.ac_heap_ptr = 10485700;
-//        armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
+//        arm_proc1.ac_start_addr = 0;
+//        arm_proc1.ac_heap_ptr = 10485700;
+//        arm_proc1.dec_cache_size = arm_proc1.ac_heap_ptr;
 #else
     if (SYSCODE != 0) {
-        armv5e_proc1.ac_start_addr = 0;
-        // armv5e_proc1.ac_heap_ptr = 10485700;
-        armv5e_proc1.dec_cache_size = armv5e_proc1.ac_heap_ptr;
+        arm_proc1.ac_start_addr = 0;
+        // arm_proc1.ac_heap_ptr = 10485700;
+        arm_proc1.dec_cache_size = arm_proc1.ac_heap_ptr;
     }
 #endif
     sc_start(duration, SC_NS);
 
-    armv5e_proc1.PrintStat();
+    arm_proc1.PrintStat();
     cerr << endl;
 
 #ifdef AC_STATS
@@ -295,5 +294,5 @@ int sc_main(int ac, char *av[])
     if (SYSCODE != 0)
         free(SYSCODE);
 
-    return armv5e_proc1.ac_exit_status;
+    return arm_proc1.ac_exit_status;
 }

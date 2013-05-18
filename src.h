@@ -4,11 +4,10 @@
 // Freescale iMX35.
 //
 // Author : Gabriel Krisman Bertazi   Date: Apr, 2013
-#ifndef __SRC_H__
-#define __SRC_H__
+#ifndef SRC_H
+#define SRC_H
 
 #include "peripheral.h"
-
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
 #include "tzic.h"
@@ -45,17 +44,12 @@ private:
     void fast_write(unsigned address, unsigned datum);
 
  public:
-
     //Wrappers to call fast_read/write with correct parameters
-    unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
-    void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
+    unsigned read_signal (unsigned address, unsigned offset) { return fast_read(address); }
+    void write_signal (unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum); }
 
-    src_module (sc_module_name name_, tzic_module &tzic_, MODEPINS *pins_):
-    sc_module(name_), tzic(tzic_), pins(pins_) {
-        reset(true);
-    }
-
-  ~src_module();
+    src_module (sc_module_name name_, tzic_module &tzic_, MODEPINS *pins_);
+    ~src_module();
 
 };
 

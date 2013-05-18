@@ -1,5 +1,5 @@
 #include "arm_interrupts.h"
-#include "armv5e_arch_ref.H"
+#include "arm_arch_ref.H"
 #include <cassert>
 
 // Exception vector addresses
@@ -21,7 +21,7 @@ static const unsigned int FIQ_ADDR_HI            = 0xffff001c;
 unsigned readCPSR();
 void writeCPSR(unsigned);
 
-void service_interrupt(armv5e_arch_ref& ref, unsigned excep_type) {
+void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
   unsigned cpsr = readCPSR();
 
   // FIQ disabled?

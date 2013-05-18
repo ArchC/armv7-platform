@@ -1,14 +1,18 @@
 #include "src.h"
 #include "arm_interrupts.h"
 
-
 extern bool DEBUG_SRC;
-#define dprintf(args...) if(DEBUG_SRC){fprintf(stderr,args);}
+#define dprintf(args...) if (DEBUG_SRC){fprintf(stderr,args);}
+
+src_module::src_module (sc_module_name name_, tzic_module &tzic_, MODEPINS *pins_):
+    sc_module(name_), tzic(tzic_), pins(pins_) {
+
+    reset(true);
+}
 
 src_module::~src_module()
 {
 }
-
 
 unsigned src_module::fast_read(unsigned address)
 {
@@ -58,7 +62,6 @@ void src_module::fast_write(unsigned address, unsigned datum)
         regs[address/4] = regs[address/4] | (datum & 0x0F);
 
     default:
-        break; //One cannot simply write to SBMR, SISR
+        break; //One cannot simply write to SBMR or SISR
     }
 }
-

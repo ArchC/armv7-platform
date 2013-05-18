@@ -6,7 +6,7 @@ class coprocessor
 {
     virtual void reset()=0;
 public:
-    virtual void MCR(armv5e_arch_ref *core,
+    virtual void MCR(arm_arch_ref *core,
                      arm_impl::PrivilegeLevel pl,
                      unsigned opc1,
                      unsigned opc2,
@@ -14,7 +14,7 @@ public:
                      unsigned crm,
                      unsigned rt_value)=0;
 
-    virtual unsigned MRC(armv5e_arch_ref *core,
+    virtual unsigned MRC(arm_arch_ref *core,
                          arm_impl::PrivilegeLevel pl,
                          unsigned opc1,
                          unsigned opc2,

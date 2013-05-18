@@ -2,12 +2,12 @@
 #define __MMU_H__
 
 #include <cp15.h>
-#include "armv5e_bhv_macros.H"
+#include "arm_bhv_macros.H"
 #include <stdarg.h>
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
-#include "armv5e.H"
+#include "arm.H"
 #include "bus.h"
 
 class MMU: public sc_module, public ac_tlm_transport_if {

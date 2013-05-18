@@ -1,5 +1,5 @@
 /**
- * @file      armv5e_isa.ac
+ * @file      arm_isa.ac
  * @author    Danilo Marcolin Caravana
  *            Rafael Auler (acasm information)
  *
@@ -19,7 +19,7 @@
  *
  */
 
-AC_ISA(armv5e) {
+AC_ISA(arm) {
 
   /* Instrucoes de processamento de dados - ULA */
   ac_format Type_DPI1 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 %shiftamount:5 %shift:2 %subop1:1 %rm:4";

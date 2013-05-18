@@ -1,5 +1,5 @@
 /**
-   * @file      armv5e_isa.cpp
+   * @file      arm_isa.cpp
    * @author    Danilo Marcolin Caravana
    *            Rafael Auler
    *            Gabriel Krisman Bertazi
@@ -20,9 +20,9 @@
    *
    */
 
-#include "armv5e_isa.H"
-#include "armv5e_isa_init.cpp"
-#include "armv5e_bhv_macros.H"
+#include "arm_isa.H"
+#include "arm_isa_init.cpp"
+#include "arm_bhv_macros.H"
 #include "arm_interrupts.h"
 #include "debug_backtrace.h"
 #include <stdint.h> // define types uint32_t, etc
@@ -30,7 +30,7 @@
 #include "mmu.h"
 #include <assert.h>
 
-using namespace armv5e_parms;
+using namespace arm_parms;
 
 extern bool DEBUG_FLOW;
 extern bool DEBUG_CORE;
@@ -60,7 +60,7 @@ extern MMU *mmu;
 #define BYTE 1
 
 arm_impl::processor_mode arm_proc_mode;
-static armv5e_arch_ref *ref = 0;
+static arm_arch_ref *ref = 0;
 
 //! Useful abstract data types defining ARM flags and register access
 typedef struct flag_s {
@@ -1209,7 +1209,7 @@ void ac_behavior( Type_DSPSM ){
 
 //------------------------------------------------------
 inline void ADC(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -1242,7 +1242,7 @@ inline void ADC(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void ADD(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -1280,7 +1280,7 @@ inline void ADD(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void AND(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -1313,7 +1313,7 @@ inline void AND(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void B(int h, int offset,
-              ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+              ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
               ac_reg<unsigned>& ac_pc) {
 
     uint32_t mem_pos, s_extend;
@@ -1342,7 +1342,7 @@ inline void B(int h, int offset,
 
 //------------------------------------------------------
 inline void BX(int rm,
-               ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+               ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                ac_reg<unsigned>& ac_pc) {
 
     dprintf("Instruction: BX\n");
@@ -1361,7 +1361,7 @@ inline void BX(int rm,
 
 //------------------------------------------------------
 inline void BFI(int rd, int rn, int lsb, int msb,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     uint32_t dest = RB_read(rd);
@@ -1390,7 +1390,7 @@ inline void BFI(int rd, int rn, int lsb, int msb,
 
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -1429,7 +1429,7 @@ inline void CDP(){
 
 //------------------------------------------------------
 inline void CLZ(int rd, int rm,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RM2;
@@ -1464,7 +1464,7 @@ inline void CLZ(int rd, int rm,
 
 //------------------------------------------------------
 inline void CMN(int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RN2, alu_out;
@@ -1488,7 +1488,7 @@ inline void CMN(int rn,
 
 //------------------------------------------------------
 inline void CMP(int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RN2, alu_out, neg_shiftop;
@@ -1513,7 +1513,7 @@ inline void CMP(int rn,
 
 //------------------------------------------------------
 inline void EOR(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -1552,7 +1552,7 @@ inline void LDC(){
 
 //------------------------------------------------------
 inline void LDM(int rlist, bool r,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     // todo special cases
@@ -1608,7 +1608,7 @@ inline void LDM(int rlist, bool r,
 
 //------------------------------------------------------
 inline void LDR(int rd, int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     int32_t value;
@@ -1656,7 +1656,7 @@ inline void LDR(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRB(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
     uint8_t value;
 
@@ -1676,7 +1676,7 @@ inline void LDRB(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRBT(int rd, int rn,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     uint8_t value;
@@ -1697,7 +1697,7 @@ inline void LDRBT(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRD(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
     uint32_t value1, value2;
 
@@ -1728,7 +1728,7 @@ inline void LDRD(int rd, int rn,
 }
 //------------------------------------------------------
 inline void LDRH(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
     uint32_t value;
 
@@ -1754,7 +1754,7 @@ inline void LDRH(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRSB(int rd, int rn,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     uint32_t data;
@@ -1775,7 +1775,7 @@ inline void LDRSB(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRSH(int rd, int rn,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc, ac_memory& MEM){
 
     uint32_t data;
@@ -1803,7 +1803,7 @@ inline void LDRSH(int rd, int rn,
 
 //------------------------------------------------------
 inline void LDRT(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     int addr10;
@@ -1848,7 +1848,7 @@ inline void LDRT(int rd, int rn,
 //------------------------------------------------------
 
 inline void MLA(int rd, int rn, int rm, int rs, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2, RM2, RS2;
@@ -1880,7 +1880,7 @@ inline void MLA(int rd, int rn, int rm, int rs, bool s,
 
 //------------------------------------------------------
 inline void MOV(int rd, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     dprintf("Instruction: MOV\n");
@@ -1909,7 +1909,7 @@ inline void MOV(int rd, bool s,
 
 //------------------------------------------------------
 inline void MOVT(int rd, bool s,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc) {
 
     //Concatenate imm16 with current low part of Rd
@@ -1920,7 +1920,7 @@ inline void MOVT(int rd, bool s,
 
 //------------------------------------------------------
 inline void MCR(unsigned cp_num,int funcc2,int funcc3, int crn,int crm,
-                unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                unsigned rd, ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     dprintf("Instruction: MCR: crn=%d crm=%d opc1=%d opc2=%d <= (R%d=0x%X)\n", crn, crm,
@@ -1949,7 +1949,7 @@ inline void MCR(unsigned cp_num,int funcc2,int funcc3, int crn,int crm,
 }
 //------------------------------------------------------
 inline void MRC(unsigned cp_num,int funcc2,int funcc3, int crn,
-                int crm,unsigned rd, ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                int crm,unsigned rd, ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
 
@@ -1985,7 +1985,7 @@ inline void MRC(unsigned cp_num,int funcc2,int funcc3, int crn,
 //------------------------------------------------------
 
 inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, int rm, int field,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     unsigned res;
@@ -2021,7 +2021,7 @@ inline void MRS(int rd, bool r, int zero3, int subop2, int func2, int subop1, in
 
 //------------------------------------------------------
 inline void MUL(int rd, int rm, int rs, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RM2, RS2;
@@ -2052,7 +2052,7 @@ inline void MUL(int rd, int rm, int rs, bool s,
 
 //------------------------------------------------------
 inline void MLS(int rd, int ra, int rm, int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     //Special cases
@@ -2067,7 +2067,7 @@ inline void MLS(int rd, int ra, int rm, int rn,
 
 //------------------------------------------------------
 inline void MVN(int rd, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     dprintf("Instruction: MVN\n");
@@ -2096,7 +2096,7 @@ inline void MVN(int rd, bool s,
 
 //------------------------------------------------------
 inline void PKH(int rd, int rn, int rm, bool tb,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     uint32_t dest = 0;
@@ -2121,7 +2121,7 @@ inline void PKH(int rd, int rn, int rm, bool tb,
 
 //------------------------------------------------------
 inline void ORR(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -2154,7 +2154,7 @@ inline void ORR(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void RSB(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2, neg_RN2;
@@ -2191,7 +2191,7 @@ inline void RSB(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void RSC(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2, neg_RN2;
@@ -2230,7 +2230,7 @@ inline void RSC(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void SBC(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2, neg_shiftop;
@@ -2268,7 +2268,7 @@ inline void SBC(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void SMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
     r64bit_t result, acc;
@@ -2303,7 +2303,7 @@ inline void SMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
 
 //------------------------------------------------------
 inline void SMULL(int rdhi, int rdlo, int rm, int rs, bool s,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
     r64bit_t result;
@@ -2342,7 +2342,7 @@ inline void STC(){
 
 //------------------------------------------------------
 inline void STM(int rlist,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc, ac_memory& MEM, unsigned r) {
 
     // todo special cases
@@ -2380,7 +2380,7 @@ inline void STM(int rlist,
 
 //------------------------------------------------------
 inline void STR(int rd, int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     dprintf("Instruction: STR\n");
@@ -2397,7 +2397,7 @@ inline void STR(int rd, int rn,
 
 //------------------------------------------------------
 inline void STRB(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     reg_t RD2;
@@ -2416,7 +2416,7 @@ inline void STRB(int rd, int rn,
 
 //------------------------------------------------------
 inline void STRBT(int rd, int rn,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     reg_t RD2;
@@ -2435,7 +2435,7 @@ inline void STRBT(int rd, int rn,
 
 //------------------------------------------------------
 inline void STRD(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     dprintf("Instruction: STRD\n");
@@ -2463,7 +2463,7 @@ inline void STRD(int rd, int rn,
 
 //------------------------------------------------------
 inline void STRH(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     int16_t data;
@@ -2488,7 +2488,7 @@ inline void STRH(int rd, int rn,
 
 //------------------------------------------------------
 inline void STRT(int rd, int rn,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     dprintf("Instruction: STRT\n");
@@ -2505,7 +2505,7 @@ inline void STRT(int rd, int rn,
 
 //------------------------------------------------------
 inline void SUB(int rd, int rn, bool s,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2, neg_shiftop;
@@ -2547,7 +2547,7 @@ inline void SUB(int rd, int rn, bool s,
 
 //------------------------------------------------------
 inline void SWP(int rd, int rn, int rm,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     reg_t RN2, RM2, rtmp;
@@ -2595,7 +2595,7 @@ inline void SWP(int rd, int rn, int rm,
 
 //------------------------------------------------------
 inline void SWPB(int rd, int rn, int rm,
-                 ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                  ac_reg<unsigned>& ac_pc, ac_memory& MEM) {
 
     uint32_t tmp;
@@ -2624,7 +2624,7 @@ inline void SWPB(int rd, int rn, int rm,
 
 //------------------------------------------------------
 inline void TEQ(int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RN2, alu_out;
@@ -2645,7 +2645,7 @@ inline void TEQ(int rn,
 
 //------------------------------------------------------
 inline void TST(int rn,
-                ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                 ac_reg<unsigned>& ac_pc) {
 
     reg_t RN2, alu_out;
@@ -2668,7 +2668,7 @@ inline void TST(int rn,
 
 //------------------------------------------------------
 inline void UMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
     r64bit_t result, acc;
@@ -2705,7 +2705,7 @@ inline void UMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
 
 //------------------------------------------------------
 inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
 
@@ -2739,7 +2739,7 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
 
 //------------------------------------------------------
 inline void DSMLA(int rd, int rn,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2, RN2;
@@ -2760,7 +2760,7 @@ inline void DSMLA(int rd, int rn,
 
 //------------------------------------------------------
 inline void DSMUL(int rd,
-                  ac_regbank<31, armv5e_parms::ac_word, armv5e_parms::ac_Dword>& RB,
+                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
                   ac_reg<unsigned>& ac_pc) {
 
     reg_t RD2;

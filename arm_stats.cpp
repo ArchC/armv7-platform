@@ -13,13 +13,13 @@
  ******************************************************/
  
 
-#include "armv5e_stats.H"
+#include "arm_stats.H"
 
-AC_CONF_STAT_LIST(armv5e, INSTRUCTIONS, SYSCALLS);
-AC_CONF_INSTR_STAT_LIST(armv5e, COUNT);
+AC_CONF_STAT_LIST(arm, INSTRUCTIONS, SYSCALLS);
+AC_CONF_INSTR_STAT_LIST(arm, COUNT);
 
-armv5e_all_stats::armv5e_all_stats() :
-  stats("armv5e")
+arm_all_stats::arm_all_stats() :
+  stats("arm")
   , and1_istats("and1", stats)
   , eor1_istats("eor1", stats)
   , sub1_istats("sub1", stats)

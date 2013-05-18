@@ -13,7 +13,7 @@
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
-#include "armv5e.H"
+#include "arm.H"
 #include "gpt.h"
 #include "tzic.h"
 #include "ram.h"
@@ -36,15 +36,12 @@ private:
     struct mapped_device
     {
         /* Pointer to this device.  */
-
         peripheral *device;
 
         /* Device's address space begin address.  */
-
         uint32_t start_address;
 
         /* Device's address space end address.  */
-
         uint32_t end_address;
     };
 

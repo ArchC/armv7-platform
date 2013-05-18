@@ -54,8 +54,8 @@ private:
     cp15_reg *getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 public:
 
-    void MCR(armv5e_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
-    uint32_t MRC(armv5e_arch_ref *core, arm_impl::PrivilegeLevel pl,unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
+    void MCR(arm_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
+    uint32_t MRC(arm_arch_ref *core, arm_impl::PrivilegeLevel pl,unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 
     cp15();
     ~cp15();

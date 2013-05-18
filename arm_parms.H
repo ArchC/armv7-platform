@@ -16,7 +16,7 @@
 #ifndef  _ARMV5E_PARMS_H
 #define  _ARMV5E_PARMS_H
 
-namespace armv5e_parms {
+namespace arm_parms {
 
 
 static const unsigned int AC_DEC_FIELD_NUMBER = 229; 	 //!< Number of Fields used by decoder.
@@ -57,7 +57,7 @@ enum ac_stage_list {ST0};
 
 //!Create a compiler error if delay assignment is used without the -dy option
 #ifndef AC_DELAY
-extern armv5e_parms::ac_word ArchC_ERROR___PLEASE_USE_OPTION_DELAY_WHEN_CREATING_SIMULATOR___;
+extern arm_parms::ac_word ArchC_ERROR___PLEASE_USE_OPTION_DELAY_WHEN_CREATING_SIMULATOR___;
 #define delay(a,b) ArchC_ERROR___PLEASE_USE_OPTION_DELAY_WHEN_CREATING_SIMULATOR___
 #endif
 

@@ -1,5 +1,5 @@
 /**
- * @file      armv5e_gdb_funcs.cpp
+ * @file      arm_gdb_funcs.cpp
  * @author    Danilo Marcolin Caravana
  *
  *            The ArchC Team
@@ -18,20 +18,20 @@
  *
  */
 
-#include "armv5e.H"
+#include "arm.H"
 
-using namespace armv5e_parms;
+using namespace arm_parms;
 
 unsigned readCPSR();
 void writeCPSR(unsigned);
 unsigned bypass_read(unsigned address);
 void bypass_write(unsigned address, unsigned datum);
 
-int armv5e::nRegs(void) {
+int arm::nRegs(void) {
    return 17;
 }
 
-ac_word armv5e::reg_read( int reg ) {
+ac_word arm::reg_read( int reg ) {
   
   /* general purpose registers */
   if ( ( reg >= 0 ) && ( reg < 15 ) )
@@ -43,7 +43,7 @@ ac_word armv5e::reg_read( int reg ) {
   return 0;
 }
 
-void armv5e::reg_write( int reg, ac_word value ) {
+void arm::reg_write( int reg, ac_word value ) {
   /* general purpose registers */
   printf("Register is: %d, value is %x\n",reg,value);
   if ( ( reg >= 0 ) && ( reg < 15 ) )
@@ -55,11 +55,11 @@ void armv5e::reg_write( int reg, ac_word value ) {
     writeCPSR (value);
 }
 
-unsigned char armv5e::mem_read( unsigned int address ) {
+unsigned char arm::mem_read( unsigned int address ) {
   return MEM.read_byte(address);
 }
 
-void armv5e::mem_write( unsigned int address, unsigned char byte ) {
+void arm::mem_write( unsigned int address, unsigned char byte ) {
   MEM.write_byte( address, byte );
 }
 

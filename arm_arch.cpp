@@ -13,10 +13,10 @@
  ******************************************************/
  
 
-#include "armv5e_arch.H"
+#include "arm_arch.H"
 
-armv5e_arch::armv5e_arch() :
-  ac_arch_dec_if<armv5e_parms::ac_word, armv5e_parms::ac_Hword>(armv5e_parms::AC_MAX_BUFFER),
+arm_arch::arm_arch() :
+  ac_arch_dec_if<arm_parms::ac_word, arm_parms::ac_Hword>(arm_parms::AC_MAX_BUFFER),
   ac_pc("ac_pc", 0),
   MEM_port("MEM_port", 10485760U),
   MEM(*this, MEM_port),
@@ -42,8 +42,8 @@ armv5e_arch::armv5e_arch() :
   R9_fiq("R9_fiq", 0),
   R8_fiq("R8_fiq", 0) {
 
-  ac_mt_endian = armv5e_parms::AC_MATCH_ENDIAN;
-  ac_tgt_endian = armv5e_parms::AC_PROC_ENDIAN;
+  ac_mt_endian = arm_parms::AC_MATCH_ENDIAN;
+  ac_tgt_endian = arm_parms::AC_PROC_ENDIAN;
 
   IM = &MEM;
   APP_MEM = &MEM;
