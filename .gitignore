@@ -4,3 +4,5 @@
 arm-sim
 *.log*
 anotacoes.tx
+*.img
+*.bin
