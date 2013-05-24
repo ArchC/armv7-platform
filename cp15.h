@@ -13,8 +13,8 @@
  * Date:   05/10/2012
  **/
 
-#ifndef __CP15_H__
-#define __CP15_H__
+#ifndef CP15_H
+#define CP15_H
 #include "coprocessor.h"
 #include<stdint.h>
 #include <stdarg.h>
@@ -35,7 +35,6 @@ typedef enum {TLB_TYPE,TTB_0, TTB_1, TTB_CTR,DOMAIN_ACC_CTR, DFSR,
               CONTEXT_ID, FCSE_PID, TPID_RW,TPID_RO, TPID_PO,
               PRIMARY_REGION_REMAP,NORMAL_REGION_REMAP} MMU_regNAME;
 
-
 typedef struct{
     uint32_t value;
     unsigned char permissions[2];
@@ -49,18 +48,21 @@ private:
     cp15_reg SCC_RB[19];
     cp15_reg MMU_RB[18];
 
-    void TLB_operations(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
+    void TLB_operations(unsigned opc1, unsigned opc2, unsigned crn,
+                        unsigned crm, unsigned rt_value);
     void reset();
-    cp15_reg *getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
+    cp15_reg *getRegister(unsigned opc1, unsigned opc2,
+                          unsigned crn, unsigned crm);
 public:
 
-    void MCR(arm_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
-    uint32_t MRC(arm_arch_ref *core, arm_impl::PrivilegeLevel pl,unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
+    void MCR(arm_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1,
+             unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value);
+
+    uint32_t MRC(arm_arch_ref *core, arm_impl::PrivilegeLevel pl,
+                 unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 
     cp15();
     ~cp15();
 };
 
-#endif
-
-
+#endif /* CP15_H  */

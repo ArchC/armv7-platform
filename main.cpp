@@ -167,75 +167,94 @@ static void process_params(int ac, char *av[]) {
         }
     }
 }
+
 #define iMX53_MODEL
+
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
-
-    //Set pins for boot. This might come as arguments or maybe a descriptor file
-    // in near future :-)
-    MODEPINS pins;
-    pins.TEST_MODE[0] = pins.TEST_MODE[1] = pins.TEST_MODE[2] =  false;
-    pins.BT_FUSE_SEL = false; //We control boot trough eFUSE directly. No need for GPIO here.
-    pins.BMOD[1] = true;
-    pins.BMOD[0] = false; //Its eFUSE here man!
-    pins.BOOT_CFG[0] = 0x40; //SD7
-    pins.BOOT_CFG[1] = 0x00;
-    pins.BOOT_CFG[2] = 0x00;
-    //--
-
     process_params(ac, av);
-
-    memset(CP, 0, (16 * sizeof(coprocessor *)));
 
     //--- Devices -----
     arm arm_proc1 ("arm");    // Core
-    imx53_bus ip_bus  ("iMX_IP_bus");  // Core Bus
-    tzic_module tzic   ("tzic"); // TZIC
-    gpt_module  gpt    ("gpt", tzic); // GPT1
-    uart_module uart   ("uart", tzic); // UART1
-    ram_module  iram   ("iRAM", tzic, (uint32_t) 0x0001FFFF);// Internal RAM
-
-    ip_bus.connect_device(&tzic,(uint32_t) 0x0FFFC000, (uint32_t) 0x0FFFFFFF);
-    ip_bus.connect_device(&gpt, (uint32_t) 0x53FA0000, (uint32_t) 0x53FA3FFF);
-    ip_bus.connect_device(&uart,(uint32_t) 0x53FBC000, (uint32_t) 0x53FBFFFF);
-    ip_bus.connect_device(&iram,(uint32_t) 0xF8000000, (uint32_t) 0xF801FFFF);
+    imx53_bus ip_bus  ("ip_bus");  // Core Bus
 
 #ifdef iMX53_MODEL
-    rom_module bootmem ("bootMem",   tzic,  BOOTCODE);   // Boot Memory
-    ram_module ddr1    ("ram_DDR_1", tzic, (uint32_t) 0x3FFFFFFF); //DDR1
-    ram_module ddr2    ("ram_DDR_2", tzic, (uint32_t) 0x3FFFFFFF); //DDR2
-    dpllc_module dpllc1 ("DPLLC1",   tzic);
-    dpllc_module dpllc2 ("DPLLC2",   tzic);
-    dpllc_module dpllc3 ("DPLLC3",   tzic);
-    dpllc_module dpllc4 ("DPLLC4",   tzic);
-    //  src_module src ("SCR", tzic, &pins);
+    /* Trust zone interrupt control.  */
+    tzic_module tzic ("tzic");
 
-    ccm_module ccm      ("CCM",      tzic);
-     ESDHCV2_module esdhc1 ("ESDHCv2",tzic);
-    // sd_card    card    ("microSD", SDCARD);
-    // esdhc1.connect_card(card);
+    /* General Purpose timer.  */
+    gpt_module  gpt ("gpt", tzic);
 
-    ip_bus.connect_device(&bootmem, (uint32_t) 0x0, (uint32_t) 0xFFFFF);
-    ip_bus.connect_device(&ddr1,   (uint32_t) 0x70000000, (uint32_t) 0xAFFFFFFF);
-    ip_bus.connect_device(&ddr2,   (uint32_t) 0xB0000000, (uint32_t) 0xEFFFFFFF);
-    ip_bus.connect_device(&esdhc1, (uint32_t) 0x50004000, (uint32_t) 0x50007FFF);
-    ip_bus.connect_device(&dpllc1, (uint32_t) 0x63F80000, (uint32_t) 0x63f83FFF);
-    ip_bus.connect_device(&dpllc2, (uint32_t) 0x63F84000, (uint32_t) 0x63f87FFF);
-    ip_bus.connect_device(&dpllc3, (uint32_t) 0x63F88000, (uint32_t) 0x63f8bFFF);
-    ip_bus.connect_device(&dpllc4, (uint32_t) 0x63F8C000, (uint32_t) 0x63f8FFFF);
-//    ip_bus.connect_device(&src,    (uint32_t) 0x53FD0000, (uint32_t) 0x53FD3FFF);
-    ip_bus.connect_device(&ccm,    (uint32_t) 0x53FD4000, (uint32_t) 0x53FD7FFF);
+    /* Universal asynchronous receiver/transmitter.  */
+    uart_module uart ("uart", tzic);
 
+    /* Internal RAM.  */
+    ram_module  iram ("iram", tzic, 0x0001FFFF);
+
+    /* Bootstrap memory.  */
+    rom_module bootmem ("bootmem", tzic, BOOTCODE);
+
+    /* DDR_1 RAM Memory.  */
+    ram_module ddr1 ("ram_ddr_1", tzic, 0x3FFFFFFF);
     ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot_DEBUG.bin", 0x7800000);
 
+    /* DDR_1 RAM Memory.  */
+    ram_module ddr2 ("ram_ddr_2", tzic, 0x3FFFFFFF);
+
+    /* Enhanced Secured Digital Host Controller 1.  */
+    ESDHCV2_module esdhc1 ("esdhcv2_1",tzic);
+
+    /* Digital Phase-Locked Loop Control 1.  */
+    dpllc_module dpllc1 ("dpllc_1", tzic);
+
+    /* Digital Phase-Locked Loop Control 2.  */
+    dpllc_module dpllc2 ("dpllc_2", tzic);
+
+    /* Digital Phase-Locked Loop Control 3.  */
+    dpllc_module dpllc3 ("dpllc_3", tzic);
+
+    /* Digital Phase-Locked Loop Control 4.  */
+    dpllc_module dpllc4 ("dpllc_4", tzic);
+
+    /* System Reset Control.  */
+    src_module src ("SCR", tzic);
+
+    /* Clock Control Module.  */
+    ccm_module ccm ("ccm", tzic);
+
+    /* Primary boot SD card.  */
+    sd_card    card    ("microSD", SDCARD);
+    esdhc1.connect_card(card);
+
+    /* Device's connection to the bus.  */
+    /* Peripheral Memory Map.  */
+    ip_bus.connect_device (&bootmem, 0x00000000, 0x000FFFFF);
+    ip_bus.connect_device (&tzic,    0x0FFFC000, 0x0FFFFFFF);
+    ip_bus.connect_device (&esdhc1,  0x50004000, 0x50007FFF);
+    ip_bus.connect_device (&gpt,     0x53FA0000, 0x53FA3FFF);
+    ip_bus.connect_device (&uart,    0x53FBC000, 0x53FBFFFF);
+    ip_bus.connect_device (&src,     0x53FD0000, 0x53FD3FFF);
+    ip_bus.connect_device (&ccm,     0x53FD4000, 0x53FD7FFF);
+    ip_bus.connect_device (&dpllc1,  0x63F80000, 0x63F83FFF);
+    ip_bus.connect_device (&dpllc2,  0x63F84000, 0x63F87FFF);
+    ip_bus.connect_device (&dpllc3,  0x63F88000, 0x63F8bFFF);
+    ip_bus.connect_device (&dpllc4,  0x63F8C000, 0x63F8FFFF);
+    ip_bus.connect_device (&ddr1,    0x70000000, 0xAFFFFFFF);
+    ip_bus.connect_device (&ddr2,    0xB0000000, 0xEFFFFFFF);
+    ip_bus.connect_device (&iram,    0xF8000000, 0xF801FFFF);
+
 #else /* iMX53_MODEL.  */
-    ram_module  bootmem ("mainMem",tzic, (uint32_t)0x1000000);  //Main Memory
-    ip_bus.connect_device(&bootmem, (uint32_t) 0x0, (uint32_t) 0xFFFFF);
+
+    /* Main Memory.  */
+    ram_module  bootmem ("mainMem",tzic, 0x1000000);
+    ip_bus.connect_device(&bootmem, 0x0, 0xFFFFF);
 
 #endif /* !iMX53_MODEL.  */
 
     //--- Coprocessors ----
+    memset(CP, 0, (16 * sizeof(coprocessor *)));
+
     CP[15] = new cp15();
 
     //---Memory Management Unit ----

@@ -14,8 +14,10 @@ src_module::~src_module(){}
 
 unsigned src_module::fast_read(unsigned address)
 {
+    //Verify index out of range
     if(address > LAST_ADDRESS)
-        return 0;   //Index out of range
+        return 0;
+
     switch(address)
         {
         case SRC_SBMR:
@@ -41,21 +43,26 @@ void src_module::fast_write(unsigned address, unsigned datum)
     {
     case SRC_SCR:
         if(datum & 0b11110){
-            dprintf("SRC: Atempted to reset GPU/open_vg/IPU/VGU not implemented in this model\n");
+            dprintf("SRC: Atempted to reset"
+                    "GPU/open_vg/IPU/VGU not implemented in this model\n");
         }
 
         regs[address/4] = datum & 0xFFF ;
-        regs[address/4] =  regs[address/4] & (~0b11110); // Clear reset bit for unimplemented stuff.
+
+        /* Clear reset bit for unimplemented stuff.  */
+        regs[address/4] =  regs[address/4] & (~0b11110);
         break;
 
     case SRC_SRSR:
-        regs[address/4] = (regs[address/4] & ~datum); // Write 1 to clear
+        /* Write 1 to clear.  */
+        regs[address/4] = (regs[address/4] & ~datum);
         break;
 
     case SRC_SIMR:
         regs[address/4] = regs[address/4] | (datum & 0x0F);
 
     default:
-        break; //One cannot simply write to SBMR or SISR
+        /* One cannot simply write to SBMR or SISR.  */
+        break;
     }
 }

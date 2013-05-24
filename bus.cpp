@@ -3,7 +3,6 @@
 extern bool DEBUG_BUS;
 #define dprintf(args...) if(DEBUG_BUS){fprintf(stderr,args);}
 
-
 imx53_bus::~imx53_bus() {}
 
 //Include a new device to array.

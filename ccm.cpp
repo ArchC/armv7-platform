@@ -1,21 +1,9 @@
 #include "ccm.h"
 #include "arm_interrupts.h"
-
-
-extern bool DEBUG_CCM;
-
 #include <stdarg.h>
 
-static inline int dprintf(const char *format, ...) {
-  int ret;
-  if (DEBUG_CCM) {
-    va_list args;
-    va_start(args, format);
-    ret = vfprintf(ac_err, format, args);
-    va_end(args);
-  }
-  return ret;
-}
+extern bool DEBUG_CCM;
+#define dprintf(args...) if(DEBUG_CCM){fprintf(stderr,args);}
 
 void ccm_module::reset()
 {
@@ -40,18 +28,14 @@ void ccm_module::reset()
     regs[CDHIPR/4]  = 0x00000000;
 }
 
-
-
 ccm_module::ccm_module (sc_module_name name_, tzic_module &tzic_):
     sc_module(name_), tzic(tzic_)
 {
     reset();
 }
 
-
 ccm_module::~ccm_module()
 {
-
 }
 
 unsigned ccm_module::fast_read(unsigned address)
@@ -70,11 +54,7 @@ void ccm_module::fast_write(unsigned address, unsigned datum, unsigned offset)
         regs[CBCDR/4] = datum;
         break;
     default:
-        printf("Access to non-implemented CCM register: 0x%X\n", address);
-
+        dprintf("Access to non-implemented CCM register: 0x%X\n", address);
     }
-
-
-
 }
 

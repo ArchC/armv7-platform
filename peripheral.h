@@ -6,15 +6,16 @@
 
 #ifndef  PERIPHERAL_H
 #define  PERIPHERAL_H
+
 #include<stdint.h>
 
 class peripheral {
 
 public:
 
-    virtual unsigned read_signal(unsigned address, unsigned offset) = 0;
-    virtual void write_signal(unsigned address,
-                              unsigned datum, unsigned offset) = 0 ;
+    virtual uint32_t read_signal(uint32_t address, uint32_t offset) = 0;
+    virtual void write_signal(uint32_t address, uint32_t datum,
+                              uint32_t offset) = 0 ;
 };
 
 
