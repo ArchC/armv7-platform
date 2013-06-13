@@ -39,7 +39,6 @@ private:
     static const uint32_t CSCDR4  = 0x40;
     static const uint32_t CDHIPR  = 0x48;
     static const uint32_t LAST_ADDR = 0x4C;
-
     uint32_t regs[LAST_ADDR/4];
 
     void reset();
@@ -52,17 +51,17 @@ private:
     void fast_write(unsigned address, unsigned datum, unsigned offset);
 
 public:
-    //Wrappers to call fast_read/write with correct parameters
-    unsigned read_signal(unsigned address, unsigned offset) { return fast_read(address); }
-    void write_signal(unsigned address, unsigned datum, unsigned offset) {fast_write(address, datum, offset); }
-
     ccm_module (sc_module_name name_, tzic_module &tzic_);
-
-//    sc_module(name_), peripheral(start_add, end_add),tzic(tzic_);
     ~ccm_module();
 
+    unsigned read_signal(unsigned address, unsigned offset) {
+        return fast_read(address);
+    }
+
+    void write_signal(unsigned address, unsigned datum, unsigned offset) {
+        fast_write(address, datum, offset);
+    }
 
 };
-
 
 #endif

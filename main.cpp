@@ -197,7 +197,7 @@ int sc_main(int ac, char *av[])
 
     /* DDR_1 RAM Memory.  */
     ram_module ddr1 ("ram_ddr_1", tzic, 0x3FFFFFFF);
-    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot_DEBUG.bin", 0x7800000);
+    ddr1.populate("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot.bin", 0x7800000);
 
     /* DDR_1 RAM Memory.  */
     ram_module ddr2 ("ram_ddr_2", tzic, 0x3FFFFFFF);

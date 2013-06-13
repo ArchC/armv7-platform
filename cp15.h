@@ -1,26 +1,25 @@
-/**
- * CP15.h - System Control Coprocessor
- *
- * This file implements a general SC coprocessor,
- * named CP15.
- * For more information, please refer to
- * Arm Cortex-A8 r3p2 manual on Section. 3.2
- *
- * This model does not implement TLB instructions
- * and Secure access control
- *
- * Author: Gabriel Krisman Bertazi
- * Date:   05/10/2012
- **/
+/* CP15.h - System Control Coprocessor
+
+   This file implements a general SC coprocessor,
+   named CP15.
+   For more information, please refer to
+   Arm Cortex-A8 r3p2 manual on Section. 3.2
+
+   This model does not implement TLB instructions
+   and Secure access control
+
+   Author: Gabriel Krisman Bertazi
+   Date:   05/10/2012.  */
 
 #ifndef CP15_H
 #define CP15_H
-#include "coprocessor.h"
+
 #include<stdint.h>
 #include <stdarg.h>
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
+#include "coprocessor.h"
 
 
 typedef enum {CTR=0,AUX_CTR,SEC_CONF, SEC_DBG_ENABLE, NONSEC_ACC_CTR,
@@ -35,10 +34,11 @@ typedef enum {TLB_TYPE,TTB_0, TTB_1, TTB_CTR,DOMAIN_ACC_CTR, DFSR,
               CONTEXT_ID, FCSE_PID, TPID_RW,TPID_RO, TPID_PO,
               PRIMARY_REGION_REMAP,NORMAL_REGION_REMAP} MMU_regNAME;
 
-typedef struct{
+typedef struct
+  {
     uint32_t value;
     unsigned char permissions[2];
-}cp15_reg;
+  } cp15_reg;
 
 class cp15: public coprocessor{
 
@@ -48,11 +48,12 @@ private:
     cp15_reg SCC_RB[19];
     cp15_reg MMU_RB[18];
 
+    void reset();
     void TLB_operations(unsigned opc1, unsigned opc2, unsigned crn,
                         unsigned crm, unsigned rt_value);
-    void reset();
-    cp15_reg *getRegister(unsigned opc1, unsigned opc2,
-                          unsigned crn, unsigned crm);
+
+    cp15_reg *getRegister(unsigned opc1, unsigned opc2, unsigned crn,
+                          unsigned crm);
 public:
 
     void MCR(arm_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1,
@@ -62,7 +63,8 @@ public:
                  unsigned opc1, unsigned opc2, unsigned crn, unsigned crm);
 
     cp15();
+
     ~cp15();
 };
 
-#endif /* CP15_H  */
+#endif /* !CP15_H.  */

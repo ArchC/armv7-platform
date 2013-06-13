@@ -16,4 +16,4 @@ namespace PINS
     const char BOOT_CFG[3] = {0x40, 0x00, 0x00};
 }
 
-#endif /* PINS_H.  */
+#endif /* !PINS_H.  */

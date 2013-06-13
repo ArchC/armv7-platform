@@ -4,6 +4,10 @@ extern bool DEBUG_CP15;
 
 #define dprintf(args...) if(DEBUG_CP15){fprintf(stderr,args);}
 
+#define NO_ACCESS    0b00
+#define CL_READ      0b01
+#define CL_WRITE     0b10
+
 cp15::cp15()
 {
     reset();
@@ -13,14 +17,10 @@ cp15::~cp15()
 {
 }
 
-
-#define NO_ACCESS    0b00
-#define CL_READ      0b01
-#define CL_WRITE     0b10
-inline bool readPermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
+bool readPermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
     return (reg.permissions[pl] & CL_READ)? true:false;
 }
-inline bool writePermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
+bool writePermission(cp15_reg & reg, arm_impl::PrivilegeLevel pl){
     return (reg.permissions[pl] & CL_WRITE)? true:false;
 }
 
@@ -207,7 +207,8 @@ void cp15::reset()
     //
 }
 
-cp15_reg * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm)
+cp15_reg *cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn,
+                            unsigned crm)
 {
     if(crn == 0){
         if(opc1 == 0){
@@ -319,9 +320,8 @@ cp15_reg * cp15::getRegister(unsigned opc1, unsigned opc2, unsigned crn, unsigne
 }
 
 
-void cp15::MCR(arm_arch_ref *core,
-               arm_impl::PrivilegeLevel pl, unsigned opc1, unsigned opc2,
-               unsigned crn, unsigned crm, unsigned rt_value){
+void cp15::MCR(arm_arch_ref *core, arm_impl::PrivilegeLevel pl, unsigned opc1,
+               unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value){
     dprintf("\nCP15 operation MCR: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X, RegVal=0x%X\n", opc1, opc2, crn, crm, rt_value);
 
     if(crn == 8){
@@ -347,9 +347,9 @@ void cp15::MCR(arm_arch_ref *core,
     return;
 }
 
-uint32_t cp15::MRC(arm_arch_ref *core,
-                   arm_impl::PrivilegeLevel pl, unsigned opc1,
-                   unsigned opc2, unsigned crn, unsigned crm){
+uint32_t cp15::MRC(arm_arch_ref *core, arm_impl::PrivilegeLevel pl,
+                   unsigned opc1, unsigned opc2, unsigned crn, unsigned crm)
+{
     dprintf("CP15 operation MRC: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n", opc1, opc2, crn, crm);
     cp15_reg *dest = getRegister(opc1, opc2, crn,crm);
 
@@ -369,9 +369,10 @@ uint32_t cp15::MRC(arm_arch_ref *core,
 }
 
 
-void cp15::TLB_operations(unsigned opc1, unsigned opc2, unsigned crn, unsigned crm, unsigned rt_value)
+void cp15::TLB_operations(unsigned opc1, unsigned opc2, unsigned crn,
+                          unsigned crm, unsigned rt_value)
 {
-    fprintf(stderr,"TLB Operations not implemented in this model (yet). \n opc1=0x%X, opc2=0x%X, crn=0x%X, crm=0x%X\n", opc1, opc2, crn, crm);
+    dprintf("TLB Operations not implemented in this model (yet). \n opc1=0x%X, opc2=0x%X, crn=0x%X, crm=0x%X\n", opc1, opc2, crn, crm);
 }
 
 

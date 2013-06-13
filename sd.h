@@ -1,11 +1,11 @@
-// rom.h
+// sd.h
 // -
 // This represents a generic SD card device to be connected
 // to ESDHCV in the ARM SoC by Freescale iMX35.
 //
 // Author : Gabriel Krisman Bertazi   Date: Sep 16, 2012
-#ifndef __SD_H__
-#define __SD_H__
+#ifndef SD_H
+#define SD_H
 
 #include "peripheral.h"
 #include <sys/stat.h>
@@ -31,11 +31,12 @@
 // access control. All of that must be handled before this point.
 //using namespace std;
 
-typedef struct
-  {
-    int resp_type;
-    uint32_t response[3];
-  }sd_response;
+enum response_type{ R1=1, R1b, R1bCMD12, R2, R3, R4, R5, R5b, R6, R7};
+struct sd_response
+{
+    enum response_type type;
+    unsigned char response[17];
+};
 
 class sd_card : public sc_module{
 
@@ -50,14 +51,21 @@ private:
 
     unsigned char data_line[4096]; // Data line buffer
 
+    // CSD of a generic 4Gb card.
+    static const char CSD[];
+    // CID of a generic 4Gb card.
+    static const char CID[];
+
     void send_block_to_dataline(uint32_t offset);
 
     // -- Command Handlers --
-    sd_response cmd0_handler (uint32_t arg);  // Suspend transfer
-    sd_response cmd12_handler(uint32_t arg);  // Suspend transfer
-    sd_response cmd16_handler(uint32_t arg);  // Set_BlockLen
-    sd_response cmd17_handler(uint32_t arg);  // Read Single Block
-    sd_response cmd18_handler(uint32_t arg);  // Read Multiple Block
+    struct sd_response cmd0_handler (uint32_t arg);  // Set card to Idle.
+    struct sd_response cmd8_handler (uint32_t arg);  // Send if_cond.
+    struct sd_response cmd9_handler (uint32_t arg);  // Send CSD.
+    struct sd_response cmd12_handler(uint32_t arg);  // Suspend transfer.
+    struct sd_response cmd16_handler(uint32_t arg);  // Set_BlockLen.
+    struct sd_response cmd17_handler(uint32_t arg);  // Read Single Block.
+    struct sd_response cmd18_handler(uint32_t arg);  // Read Multiple Block.
     // --
 
 public:
@@ -68,7 +76,7 @@ public:
     sd_card (sc_module_name name_, const char* dataPath);
     ~sd_card();
 
-    sd_response exec_cmd(short cmd_index, short cmd_type, uint32_t arg);
+    struct sd_response exec_cmd(short cmd_index, short cmd_type, uint32_t arg);
 
 // This function is used by external controllers to read the sd card IO buffer
 // It doesn't check any data integrity.
@@ -76,4 +84,4 @@ public:
     bool data_line_busy;           // Semaphor for data_line
 };
 
-#endif
+#endif /* !SD_H.  */

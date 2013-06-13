@@ -22,9 +22,9 @@ private:
 
     typedef enum
     {
-        irq_DMAE  = 28,
-        irq_AC12E = 27,
-        irq_DEBE  = 22,
+        irq_DMAE   = 28,
+        irq_AC12E  = 27,
+        irq_DEBE   = 22,
         irq_DCE    = 21,
         irq_DTOE   = 20,
         irq_CIE    = 19,
@@ -52,6 +52,7 @@ private:
     static const uint32_t CMDRSP0    = 0x10; // ESDHCv2 Command Response 0
     static const uint32_t CMDRSP1    = 0x14; // ESDHCv2 Command Response 1
     static const uint32_t CMDRSP2    = 0x18; // ESDHCv2 Command Response 2
+    static const uint32_t CMDRSP3    = 0x1C; // ESDHCv2 Command Response 3
     static const uint32_t DATPORT    = 0x20; // ESDHCv2 Data buffer access port
     static const uint32_t PRSSTAT    = 0x24; // ESDHCv2 Present State
     static const uint32_t PROCTL     = 0x28; // ESDHCv2 Protocol Control
@@ -154,26 +155,6 @@ private:
     uint16_t BLKCNT_BKP; //Since we must restore BLKCNT value after a MCD12 is issued
     uint16_t BLKSIZE;
 
-    //Interrupt Status Register
-    bool DMAE;
-    bool AC12E;
-    bool DEBE;
-    bool DCE;
-    bool DTOE;
-    bool CIE;
-    bool CEBE;
-    bool CCE;
-    bool CTOE;
-    bool CINT;
-    bool CRM;
-    bool CINS_int;
-    bool BRR;
-    bool BWR;
-    bool DINT;
-    bool BGE;
-    bool TC;
-    bool CC;
-
     static const int ESDHCV2_1_IRQ = 1;
 
     sd_card* port;
@@ -237,6 +218,7 @@ private:
         regs[CMDRSP0/4] = 0;
         regs[CMDRSP1/4] = 0;
         regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = 0;
         regs[DATPORT/4] = 0;
 
         //Present State = 0x0
@@ -295,25 +277,7 @@ private:
         RD_BRST_LEN = 0x8;
         RD_WML      = 0x10;
 
-        DMAE  = false;
-        AC12E = false;
-        DEBE  = false;
-        DCE   = false;
-        DTOE  = false;
-        CIE   = false;
-        CEBE  = false;
-        CCE   = false;
-        CTOE  = false;
-        CINT  = false;
-        CRM   = false;
-        CINS_int = false;
-        BRR  = false;
-        BWR  = false;
-        DINT  = false;
-        BGE   = false;
-        TC    = false;
-        CC    = false;
-
+        regs[IRQSTAT/4]  = 0x0;
         regs[IRQSTATEN/4]  = 0x117F013F;
         regs[IRQSIGEN/4]   = 0x0;
         regs[AUTOC12ERR/4] = 0x0;
@@ -343,6 +307,10 @@ void SET_DLA(bool x);
  */
  void generate_signal(irqstat irqnum);
 
+
+ /* This method decodes a sd_response and distribute the response code
+  * among CMD_RESP registers.  */
+ void decode_response(struct sd_response response);
 
 };
 #endif

@@ -7,12 +7,10 @@ extern bool DEBUG_ESDHCV2;
 #define isBitSet(reg, bit) (((reg & (1 << (bit))) != 0) ? true : false)
 #define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
 
-
 /* Macros for bit flipping.  As a general rule, several important things
- * must happen when bit from some registers flip. This set of macros
- * provides programmers with a simple interface to flip a bit and
- * propagate its effects
- */
+   must happen when bit from some registers flip. This set of macros
+   provides programmers with a simple interface to flip a bit and
+   propagate its effects.  */
 
 
 #define signal_startRead() SET_RTA(1)
@@ -71,19 +69,17 @@ inline void ESDHCV2_module::stabilize_clk()
 }
 
 inline void ESDHCV2_module::initialization_active()
-{/*
-  * This is a dumb function. It only pretends that sent 80clks for a
-  * device.  This would be a necessary step to initialize a real SD
-  * card.  Therefore, there is no need to actually do that in a
-  * simulated environment.
-  */
+{
+  /* This is a dumb function. It only pretends that sent 80clks for a
+   device.  This would be a necessary step to initialize a real SD card.
+   Therefore, there is no need to actually do that in a simulated
+   environment.  */
     INITA = false; //Signals end of 80clk cycle.
 }
 inline void ESDHCV2_module::reset_DAT_line()
-{/*
-  * Performs a DAT line reset, erasing any remains of a data transfers.
-  * Might be activated by high RSTD bit assertion.
-  */
+{
+  /* Performs a DAT line reset, erasing any remains of a data transfers.
+   Might be activated by high RSTD bit assertion.  */
     BREN = false;
     BWEN = false;
     RTA  = false;
@@ -92,15 +88,19 @@ inline void ESDHCV2_module::reset_DAT_line()
     CDIHB = false;
     CREQ = false;
     SABGREQ = false;
-    BRR = false;
-    BWR = false;
-    DINT = false;
-    BGE = false;
-    TC = false;
+
+    // Clear IRQSTAT Bits:BRR, BWR, DINT, BGE, TC
+    regs[IRQSTAT/4] = regs[IRQSTAT/4] & ~0x3E;
 
     //Clear data port
     while(ibuffer.size() > 0)
         ibuffer.pop();
+}
+
+void ESDHCV2_module::connect_card(sd_card & card)
+{
+    port = &card;
+    CINS=true;  // Flag to host a card is inserted
 }
 
 ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_):
@@ -117,13 +117,8 @@ ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_):
 ESDHCV2_module::~ESDHCV2_module() {
 }
 
-void ESDHCV2_module::connect_card(sd_card & card) {
-    port = &card;
-    CINS=true;  // Flag to host a card is inserted
-
-}
-
-unsigned ESDHCV2_module::fast_read(unsigned address) {
+unsigned ESDHCV2_module::fast_read(unsigned address)
+{
     dprintf("ESDHCv2 READ address: register: 0x%X ", address);
     uint32_t datum;
     switch(address)
@@ -219,32 +214,15 @@ unsigned ESDHCV2_module::fast_read(unsigned address) {
         return datum;
         break;
     case IRQSTAT:
-        return
-            ((DMAE  << 28) |
-             (AC12E << 27) |
-             (DEBE  << 22) |
-             (DCE   << 21) |
-             (DTOE  << 20) |
-             (CIE   << 19) |
-             (CEBE  << 18) |
-             (CCE   << 17) |
-             (CTOE  << 16) |
-             (CINT  <<  8) |
-             (CRM   <<  7) |
-             (CINS_int <<  6) |
-             (BRR  <<  5) |
-             (BWR  <<  4) |
-             (DINT  <<  3) |
-             (BGE   <<  2) |
-             (TC    <<  1) |
-             (CC    <<  0));
+        return regs[IRQSTAT/4];
         break;
     default:
         return regs[address/4];
     }
 }
 
-void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
+void ESDHCV2_module::fast_write(unsigned address, unsigned datum)
+{
     dprintf("ESDHCv2 WRITE address: 0x%X data:0x%X\n", address, datum);
     switch(address)
     {
@@ -252,9 +230,8 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         regs[DSADR/4]   = datum & ~(0b11);
         break;
     case CMDARG:
-        if(!CIHB){
+        if(!CIHB)
             regs[CMDARG/4] = datum;
-        }
         break;
 
     case XFERTYP:
@@ -271,8 +248,8 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
             RSPTYP = ((datum & (0b11<<16)) >> 16);
             CMDTYP = ((datum & (0b11<<22)) >> 22);
 
-            //Tell ESDHC to send this command to SD Prevent
-            // further commands to be sent before this one is processed
+            //  Prevent further commands to be sent before this one is
+            // processed
             CIHB = true;
         }
         break;
@@ -292,6 +269,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         EMODE[1]= isBitSet(datum, 5);
         EMODE[0]= isBitSet(datum, 4);
         D3CD    = isBitSet(datum, 3);
+        /* Data width is ignored.  */
         DTW[1]  = isBitSet(datum, 2);
         DTW[0]  = isBitSet(datum, 1);
         LCTL    = isBitSet(datum, 0);
@@ -314,33 +292,16 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
         stabilize_clk();  // Make clock Stable after a change to SDCLKEN.
         break;
 
-    case IRQSTAT:
-        DMAE  = isBitSet(datum,28);
-        AC12E = isBitSet(datum,27);
-        DEBE  = isBitSet(datum,22);
-        DCE   = isBitSet(datum, 21);
-        DTOE  = isBitSet(datum, 20);
-        CIE   = isBitSet(datum, 19);
-        CEBE  = isBitSet(datum,18);
-        CCE   = isBitSet(datum, 17);
-        CTOE  = isBitSet(datum, 16);
-        CINT  = isBitSet(datum,  8);
-        CRM   = isBitSet(datum,  7);
-        CINS_int = isBitSet(datum, 6);
-        BRR  = isBitSet(datum,  5);
-        BWR  = isBitSet(datum,  4);
-        DINT  = isBitSet(datum,  3);
-        BGE   = isBitSet(datum,  2);
-        TC    = isBitSet(datum,  1);
-        CC    = isBitSet(datum,  0);
-        break;
+    case IRQSTAT:  //Write 1 to clear register
+      regs[IRQSTAT/4] = regs[IRQSTAT/4] & ~datum;
+      break;
 
     case IRQSTATEN:
-        regs[IRQSTATEN/4] = (1<<28) | (datum & 0x17F01FE);
+        regs[IRQSTATEN/4] = (1<<28) | (datum & 0x17F01FF);
         break;
 
     case IRQSIGEN:
-        regs[IRQSTATEN/4] = (datum & 0x117F01FE);
+        regs[IRQSIGEN/4] = (datum & 0x117F01FE);
         break;
 
     case WML:
@@ -378,9 +339,10 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum) {
     dprintf("\n");
 }
 
-void ESDHCV2_module::prc_ESDHCV2() {
+void ESDHCV2_module::prc_ESDHCV2()
+{
     do{
-        dprintf("-------------------- ESDHCV2 -------------------- \n");
+      //        dprintf("-------------------- ESDHCV2 -------------------- \n");
         wait(1, SC_NS);
 
         //SD protocol
@@ -388,7 +350,7 @@ void ESDHCV2_module::prc_ESDHCV2() {
 
         // Host Protocol
         if(ibuffer.size() >= RD_WML) {   //RD_WML must be divided by sizeof struct contained
-            SET_BREN();                  // in ibuffer. gambiarra 
+            SET_BREN();                  // in ibuffer. gambiarra
        }
     }while(1);
 }
@@ -402,9 +364,7 @@ void ESDHCV2_module::interface_sd()
         //Host driver sent a new command to XFERTYP. We must execute it and
         //recover reponses to correct registers.
         sd_response resp = port->exec_cmd(CMDINX, CMDTYP, regs[CMDARG/4]);
-        regs[CMDRSP0] = resp.response[0]; //Stores response
-        regs[CMDRSP1] = resp.response[1];
-        regs[CMDRSP2] = resp.response[2];
+        decode_response(resp);
 
         if(CICEN || CCCEN)
             dprintf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
@@ -423,6 +383,7 @@ void ESDHCV2_module::interface_sd()
             }
         }
         CIHB = false; //Ok, can wait for the next command.
+        generate_signal(irq_CC); // Comand executed.
     }
 
 // FETCH DATA FROM HOST
@@ -440,7 +401,7 @@ void ESDHCV2_module::interface_sd()
                 if(BLKCNT == 0 && AC12EN == true)
                 {
                     //Stop transfer by issuing an CMD12 to device
-                    port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Isue a AC12EN to card.
+                    port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Issue a AC12EN to card.
                     BLKCNT = BLKCNT_BKP;
                     signal_endRead(); //Signals to host end of transfer.
                 }
@@ -451,7 +412,7 @@ void ESDHCV2_module::interface_sd()
 // HANDLE PUSH DATA TO HOST
     if(WTA)
     {
-        //>>>>> TODO: Implement internal FSM  WRITE mode. <<<<
+        //>>>>> TODO: Implement internal FSM WRITE mode. <<<<
     }
 }
 
@@ -461,29 +422,87 @@ void ESDHCV2_module::generate_signal(irqstat irqnum)
 
     if(regs[IRQSTATEN/4] & irq)
     {
+      printf("esdhc: Generating IRQ signal %d\n", irqnum);
         //Can assert IRQSTAT
-        if(irqnum == irq_DMAE ) DMAE   = true;
-        else if(irqnum == irq_AC12E) AC12E  = true;
-        else if(irqnum == irq_DEBE ) DEBE   = true;
-        else if(irqnum == irq_DCE  ) DCE    = true;
-        else if(irqnum == irq_DTOE ) DTOE   = true;
-        else if(irqnum == irq_CIE  ) CIE    = true;
-        else if(irqnum == irq_CEBE ) CEBE   = true;
-        else if(irqnum == irq_CCE  ) CCE    = true;
-        else if(irqnum == irq_CTOE ) CTOE   = true;
-        else if(irqnum == irq_CINT ) CINT   = true;
-        else if(irqnum == irq_CRM  ) CRM    = true;
-        else if(irqnum == irq_CINS_int)CINS_int  = true;
-        else if(irqnum == irq_BRR  ) BRR    = true;
-        else if(irqnum == irq_BWR  ) BWR    = true;
-        else if(irqnum == irq_DINT ) DINT   = true;
-        else if(irqnum == irq_BGE  ) BGE    = true;
-        else if(irqnum == irq_TC   ) TC     = true;
-        else if(irqnum == irq_CC   ) CC     = true;
+        regs[IRQSTAT/4] = regs[IRQSTAT/4] | irq;
     }
+    else
+      printf ("esdhc: IRQ signal %d, will not be generated due to IRQSTATEN flags", irqnum);
+
     if(regs[IRQSIGEN/4] & irq)
-    { //Can generate interruption
+    {
+      printf("esdhc: Generating IRQ interrupt due to irq signal %d\n", irqnum);
+        //Can generate interruption
         tzic.interrupt(ESDHCV2_1_IRQ, /*deassert=*/true);
     }
 }
 
+
+void ESDHCV2_module::decode_response(struct sd_response resp)
+{
+    switch (resp.type)
+    {
+    case R1:
+    case R1b:
+    case R3:
+    case R4:
+    case R5:
+    case R5b:
+    case R7:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = 0;
+        break;
+
+    case R6:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0) &
+                           ~0b1); //R[39:9] Eliminate first bit
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = 0;
+        break;
+
+    case R1bCMD12:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = 0;
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+        break;
+    case R2:
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+
+        regs[CMDRSP1/4] = ((resp.response[5] << 24) |
+                           (resp.response[6] << 16) |
+                           (resp.response[7] << 8)  |
+                           (resp.response[8] << 0));
+
+        regs[CMDRSP2/4] = ((resp.response[9] << 24) |
+                           (resp.response[10] << 16) |
+                           (resp.response[11] << 8)  |
+                           (resp.response[12] << 0));
+
+        regs[CMDRSP3/4] = ((resp.response[13] << 16) |
+                           (resp.response[14] << 8)  |
+                           (resp.response[15] << 0));
+
+    default:
+        printf("SD_CARD: Decode for response type %d not implemented",
+               resp.type);
+    }
+}

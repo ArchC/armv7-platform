@@ -4,7 +4,6 @@
 
 static  std::stack<uint32_t> rets;
 
-
 void dprint_beginFunc(uint32_t entry_add, uint32_t return_add)
 {
         debug_btlevel++;
