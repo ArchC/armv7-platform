@@ -26,10 +26,10 @@
 
 //In this model, we mimic the behavior of an external SD card device.
 //
-// This is the backend of storing instructions. This device is only responsible
-// for recording and reading information. It doesn't handle Virtual Memory nor
-// access control. All of that must be handled before this point.
-//using namespace std;
+// This is the backend of storing instructions. This device is only
+// responsible for recording and reading information.
+// It doesn't handle Virtual Memory nor access control. All of that must
+// be handled before this point.  using namespace std;
 
 enum response_type{ R1=1, R1b, R1bCMD12, R2, R3, R4, R5, R5b, R6, R7};
 struct sd_response
@@ -40,7 +40,10 @@ struct sd_response
 
 class sd_card : public sc_module{
 
-    typedef enum { IDLE, READ, READ_SINGLE, WRITE } state;
+    typedef enum { IDLE, READ, READ_SINGLE, WRITE} state;
+
+    /* Flag for treating command as application specific.  */
+    bool application_specific_p;
 
 private:
     state current_state;           // Handles a minimal finite state machine
@@ -66,6 +69,11 @@ private:
     struct sd_response cmd16_handler(uint32_t arg);  // Set_BlockLen.
     struct sd_response cmd17_handler(uint32_t arg);  // Read Single Block.
     struct sd_response cmd18_handler(uint32_t arg);  // Read Multiple Block.
+    struct sd_response cmd55_handler(uint32_t arg);  // Next cmd is application
+                                                     // specific.
+
+    // -- Application command handler
+    struct sd_response acmd41_handler(uint32_t arg); //Get OCR
     // --
 
 public:

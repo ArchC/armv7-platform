@@ -39,5 +39,5 @@ AC_ARCH(arm){
     ac_isa("arm_isa.ac");
     set_endian("little");
 
-};
+    };
 };

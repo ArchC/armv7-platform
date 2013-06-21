@@ -52,6 +52,8 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
     // A SystemC thread never finishes execution, but transfers control
     // back to SystemC kernel via wait() calls.
     SC_THREAD(prc_sdcard);
+
+    application_specific_p = false;
 };
 
 sd_card::~sd_card()
@@ -123,20 +125,45 @@ bool sd_card::read_dataline(std::queue<unsigned char> & buffer, uint32_t len)
 struct sd_response sd_card::exec_cmd(short cmd_index, short cmd_type,
                                      uint32_t arg)
 {
-    //Routes each command to its handler
-    switch(cmd_index)
+    if(!application_specific_p)
     {
-        case 0:  return cmd0_handler(arg);
-        case 8:  return cmd8_handler(arg);
-        case 9:  return cmd9_handler(arg);
-        case 12: return cmd12_handler(arg);
-        case 16: return cmd16_handler(arg);
-        case 17: return cmd17_handler(arg);
-        case 18: return cmd18_handler(arg);
+        //Routes each command to its handler
+        switch(cmd_index)
+        {
+        case 0:
+            return cmd0_handler(arg);
+        case 8:
+            return cmd8_handler(arg);
+        case 9:
+            return cmd9_handler(arg);
+        case 12:
+            return cmd12_handler(arg);
+        case 16:
+            return cmd16_handler(arg);
+        case 17:
+            return cmd17_handler(arg);
+        case 18:
+            return cmd18_handler(arg);
+        case 55:
+            return cmd55_handler(arg);
         default:
             printf("SD CARD: CMD%d not supported/implemented in this model\n",
                    cmd_index);
             exit(1);
+        }
+    }
+    else
+    {
+        //Routes each command to its handler
+        switch(cmd_index)
+        {
+        case 41:
+            return acmd41_handler(arg);
+        default:
+            printf("SD CARD: ACMD%d not supported/implemented in this model\n",
+                   cmd_index);
+            exit(1);
+        }
     }
 }
 
@@ -177,7 +204,6 @@ struct sd_response sd_card::cmd8_handler(uint32_t arg)
     resp.response[5] = 0x01; //Fake CRC and end bit.
     return resp;
 }
-
 
 // CMD9 ==>  SEND_CSD
 struct sd_response sd_card::cmd9_handler(uint32_t arg)
@@ -238,9 +264,40 @@ struct sd_response sd_card::cmd18_handler(uint32_t arg)
 {
     current_address = arg;
     current_state = READ;
-    dprintf("SD_CARD CMD18: arg=0x%X", arg);
+    dprintf("SD_CARD CMD18: arg=0x%X\n", arg);
     struct sd_response resp;
     return resp;
 
 }
 
+// CMD55 ==> APP_CMD
+struct sd_response sd_card::cmd55_handler(uint32_t arg)
+{
+    struct sd_response resp;
+    dprintf("SD_CARD CMD55: arg=0x%X."
+            "Next command must be application specific\n", arg);
+
+    application_specific_p = true;
+
+    resp.type = R1;
+    return resp;
+}
+// ----------------------------------------------------------------------------
+// -----------------------Application command handler--------------------------
+// ----------------------------------------------------------------------------
+
+struct sd_response sd_card::acmd41_handler(uint32_t arg)
+{
+    dprintf("SD_CARD CMD41\n", arg);
+
+    struct sd_response resp;
+    resp.type = R3;
+    resp.response[0] = 0x3F; //Begin of trasmission
+    resp.response[1] = 0xFF; // Fake OCR
+    resp.response[2] = 0xFF; //
+    resp.response[3] = 0xFF; //
+    resp.response[4] = 0xFF; // Last bit indicates we're not busy.
+    resp.response[5] = 0xFF; //End of transmission
+    return resp;
+
+}
