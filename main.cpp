@@ -19,12 +19,16 @@
           Gabriel Krisman Bertazi, 10/08/2012
 ******************************************************/
 
+// Constant definitions required by ArchC.
 const char *project_name="arm";
 const char *project_file="arm.ac";
 const char *archc_version="2.1";
 const char *archc_options="-abi ";
+const char *model_version = "2.0";
+// --
 
 #include <iostream>
+#include <argp.h>
 #include <systemc.h>
 #include "ac_stats_base.H"
 #include "arm_interrupts.h"
@@ -46,6 +50,8 @@ const char *archc_options="-abi ";
 #include "src.h"
 #include "ccm.h"
 #include "pins.h"
+
+#define iMX53_MODEL
 
 // Debug switches - global variables defined by application parameters
 bool DEBUG_BUS  = false;
@@ -75,105 +81,235 @@ static char* SDCARD = 0;
 coprocessor *CP[16];
 MMU *mmu;
 
-static void process_params(int ac, char *av[]) {
-    for (int i = 0, e = ac; i != e; ++i) {
-        const char * cur = av[i];
-        if (strcmp(cur, "-enable-gdb") == 0) {
-            ENABLE_GDB = true;
-        } else if (strcmp(cur, "-debug-core")  == 0) {
-            DEBUG_CORE = true;
-        } else if (strcmp(cur, "-debug-bus")   == 0) {
-            DEBUG_BUS = true;
-        } else if (strcmp(cur, "-debug-tzic")  == 0) {
-            DEBUG_TZIC = true;
-        } else if (strcmp(cur, "-debug-gpt")   == 0) {
-            DEBUG_GPT = true;
-        } else if (strcmp(cur, "-debug-uart")  == 0) {
-            DEBUG_UART = true;
-        } else if (strcmp(cur, "-debug-ram")   == 0) {
-            DEBUG_RAM = true;
-        } else if (strcmp(cur, "-debug-rom")   == 0) {
-            DEBUG_ROM = true;
-        } else if (strcmp(cur, "-debug-cp15")  == 0) {
-            DEBUG_CP15 = true;
-        } else if (strcmp(cur, "-debug-mmu")   == 0) {
-            DEBUG_MMU = true;
-        }else if (strcmp(cur, "-debug-esdhc")   == 0) {
-            DEBUG_ESDHCV2 = true;
-        }else if (strcmp(cur, "-debug-sd")   == 0) {
-            DEBUG_SD = true;
-        }else if (strcmp(cur, "-debug-dpllc")   == 0) {
-            DEBUG_DPLLC = true;
-        }else if (strcmp(cur, "-debug-ccm")   == 0) {
-            DEBUG_CCM = true;
-        }else if (strcmp(cur, "-debug-flow")   == 0) {
-            DEBUG_FLOW = true;
-        }else if (strncmp(cur, "-cycles=", 8) == 0) {
-            char buf[20];
-            const char *src = cur + 8;
-            strncpy(buf, src, 20);
-            sscanf(buf, "%d", &CYCLES);
-        } else if (strncmp(cur, "-batch-size=", 12) == 0) {
-            char buf[20];
-            const char *src = cur + 12;
-            strncpy(buf, src, 20);
-            sscanf(buf, "%d", &BATCH_SIZE);
-        } else if (strncmp(cur, "-gdb-port=", 10) == 0) {
-            char buf[20];
-            int gdb_port;
-            const char *src = cur + 10;
-            strncpy(buf, src, 20);
-            sscanf(buf, "%d", &GDB_PORT);
-        } else if (strncmp(cur, "--load-sys=", 11) == 0) {
-            SYSCODE = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
-            strcpy(SYSCODE, cur+11);
-        }else if (strncmp(cur, "--boot-rom=", 11) == 0) {
-            BOOTCODE = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
-            strcpy(BOOTCODE, cur+11);
-        }else if (strncmp(cur, "--sd=", 5) == 0) {
-            SDCARD = (char *) malloc(sizeof(char)*(strlen(cur+11)+1));
-            strcpy(SDCARD, cur+5);
-        }  else if (strcmp(cur, "--help") == 0) {
-            std::cout << std::endl;
-            std::cout << "ARM i.MX53 platform simulator." << std::endl;
-            std::cout << "Written by Rafael Auler, University of Campinas."
-                      << std::endl;
-            std::cout << "Version 07 Jun 2012" << std::endl;
-            std::cout << "Report bugs to rafael.auler@lsc.ic.unicamp.br" << std::endl;
-            std::cout << "Platform options:" << std::endl;
-            std::cout << "\t-enable-gdb" << std::endl;
-            std::cout << "\t-debug-core" << std::endl;
-            std::cout << "\t-debug-bus"  << std::endl;
-            std::cout << "\t-debug-tzic" << std::endl;
-            std::cout << "\t-debug-gpt"  << std::endl;
-            std::cout << "\t-debug-uart" << std::endl;
-            std::cout << "\t-debug-ram"  << std::endl;
-            std::cout << "\t-debug-rom"  << std::endl;
-            std::cout << "\t-debug-sd"  << std::endl;
-            std::cout << "\t-debug-cp15" << std::endl;
-            std::cout << "\t-debug-mmu"  << std::endl;
-            std::cout << "\t-debug-esdhc"  << std::endl;
-            std::cout << "\t-debug-dpllc"  << std::endl;
-            std::cout << "\t-debug-ccm"  << std::endl;
-            std::cout << "\t-debug-flow"  << std::endl;
-            std::cout << "\t--boot-rom=<path>\t\tLoad Bootstrap ROM code." << std::endl;
-            std::cout << "\t--sd=<path>\t\tLoad SD card image to SD1 slot." << std::endl;
-            std::cout << "\t--load-sys=<path>\t\tLoad system software." << std::endl;
-            std::cout << "\t--load=<path\t\tLoad application software." << std::endl;
-            std::cout << "\t-cycles=<num>\t\tRun for <num> platform cycles."
-                      << std::endl;
-            std::cout << "\t-batch-size=<num>\tRun <num>+1 processor cycles for each"
-                "\n\t\t\t\tplatform cycle." << std::endl << std::endl;
-        }
-    }
+//--
+const char *argp_program_bug_address = "<krisman.gabriel@gmail.com>";
+
+void model_print_version (FILE *stream, struct argp_state *state)
+{
+    fprintf (stream, "ArchC ARM iMX.53 plataform model %s.\n", model_version);
+    fprintf (stream, "Copyright (c) 2013 The ArchC team.\n");
+    fprintf (stream, "This is free software; see the source for copying "
+                     "conditions.\nThere is NO warranty; not even for "
+                     "MERCHANTABILITY or FITNESS\nFOR A PARTICULAR PURPOSE.\n");
+
+    fprintf (stream, "This simulator was generated with ArchC %s "
+                     "and configured with %s\n", archc_version, archc_options);
+
+    fprintf (stream, "Report bugs to %s\n", argp_program_bug_address);
 }
 
-#define iMX53_MODEL
+static char doc[] = " ARMv7 iMX53_loco plataform ArchC simulator";
+static char args_doc[] = "--bootrom=<boot_image> --sd=<sd_image> --debug-<device>";
+
+bool activate_debug_mode (const char *mode)
+{
+    if (strcmp (mode, "core") == 0)
+        DEBUG_CORE = true;
+    else if (strcmp (mode, "bus") == 0)
+        DEBUG_BUS = true;
+    else if (strcmp (mode, "tzic") == 0)
+        DEBUG_TZIC = true;
+    else if (strcmp (mode, "gpt")  == 0)
+        DEBUG_GPT = true;
+    else if (strcmp (mode, "uart") == 0)
+        DEBUG_UART = true;
+    else if (strcmp (mode, "ram") == 0)
+        DEBUG_RAM = true;
+    else if (strcmp (mode, "rom") == 0)
+        DEBUG_ROM = true;
+    else if (strcmp (mode, "cp15") == 0)
+        DEBUG_CP15 = true;
+    else if (strcmp (mode, "mmu") == 0)
+        DEBUG_MMU = true;
+    else if (strcmp (mode, "esdhc") == 0)
+        DEBUG_ESDHCV2 = true;
+    else if (strcmp (mode, "sd") == 0)
+        DEBUG_SD = true;
+    else if (strcmp (mode, "dpllc") == 0)
+        DEBUG_DPLLC = true;
+    else if (strcmp (mode, "ccm") == 0)
+        DEBUG_CCM = true;
+    else if (strcmp (mode, "flow") == 0)
+        DEBUG_FLOW = true;
+    else
+        return false;
+
+    return true;
+}
+
+// Class of command line arguments we understand
+enum
+{
+    CMD_CLASS_DEBUG,
+
+    CMD_CLASS_GDB,
+
+    CMD_CLASS_CTL,
+
+    CMD_CLASS_CODE,
+};
+
+// Options we understand.
+
+static argp_option arm_model_options[] =
+{
+    {"cycles", 'c', "<cycles>", 0,
+     "Run for <cycles> plataform cycles",
+     CMD_CLASS_CTL},
+
+    {"batch-cycles", 'r', "<cycles>", 0,
+     "Run n+1 processor cycles for each plataform cycle",
+     CMD_CLASS_CTL},
+
+    {"debug", 'D',
+     "[core,][bus,][gpt,][tzic,][uart,][ram,][rom,][cp15,]\n"
+     "[mmu,][sd,][esdhc,][dpllc,][ccm,][src]", 0,
+     "Activate device depuration mode",
+     CMD_CLASS_DEBUG},
+
+    {"trace-flow", 'f', 0, 0,
+     "Activate flow debug mode",
+     CMD_CLASS_DEBUG},
+
+    {"enable-gdb", 'g', 0, 0,
+     "Wait for GDB connection",
+     CMD_CLASS_GDB},
+
+    {"gdb-port", 'p', "<port>", 0,
+     "Define port to expect a GDB connection",
+     CMD_CLASS_GDB},
+
+    {"bootrom", 'b', "<image>", 0,
+     "Define bootstrapping code image",
+     CMD_CLASS_CODE},
+
+    {"sd", 's', "<image>", 0,
+     "Load image to SD card device",
+     CMD_CLASS_CODE},
+
+    {"load-sys", 'y', "<file>", 0,
+     "Load ELF image as system code",
+     CMD_CLASS_CODE},
+
+    {NULL}
+};
+
+// Command line arguments parser.
+
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+    switch (key)
+    {
+     // Activate debug modes
+    case 'D':
+      {
+	char *s = arg;
+        char *init = arg;
+
+	while (s != NULL)
+	  {
+	    if (*s == ',' || *s == '\0')
+	      {
+		char c;
+
+		// Junk at the end of the string, or comma as first char.
+		if (*s == ',' && s[1] == '\0')
+		  argp_error (state,
+			      "Extra comma at the end of the argument for "
+			      "`--debug'.");
+
+		// Copy the account name.  Check to see if the user hasn't
+                // provided an invalid account name as 'acc1,,acc2'.
+		if (*init == ',' || *init == '\0')
+		  argp_error (state,
+			      "Invalid null peripheral for debug.");
+
+		c = *s;
+		*s = '\0';
+                if(activate_debug_mode (init) == false)
+                {
+                    argp_error (state,"Invalid peripheral '%s'.", init);
+                }
+		*s = c;
+		init = s + 1;
+	      }
+	    if (*s == '\0')
+	      break;
+
+	    ++s;
+	  }
+        break;
+      }
+      break;
+
+    // Alias for activate debug flow mode.
+    case 'f':
+        activate_debug_mode ("flow");
+        break;
+
+    // Enable GDB.
+    case 'g':
+        ENABLE_GDB = true;
+        break;
+
+    // Define port to wait GDB connection.
+    case 'p':
+      {
+        int r = sscanf (arg, "%d", &GDB_PORT);
+        if (r != 1)
+            argp_error (state, "Port defined is invalid");
+      }
+      break;
+
+    // Define number of plataform simulation cycles
+    case 'c':
+      {
+        int r = sscanf (arg, "%d", &CYCLES);
+        if (r != 1)
+            argp_error (state, "Invalid number of cycles");
+      }
+    break;
+
+    // Define number of plataform simulation cycles
+    case 'r':
+      {
+        int r = sscanf (arg, "%d", &BATCH_SIZE);
+        if (r != 1)
+            argp_error (state, "Invalid number of batch cycles");
+      }
+      break;
+
+    // Inform bootstrapping code image path.
+    case 'b':
+        BOOTCODE = strdup(arg);
+        break;
+
+    // Inform SD CARD image path.
+    case 's':
+        SDCARD = strdup(arg);
+        break;
+
+    // Inform an ELF file path to be used as system code.
+    case 'y':
+        SYSCODE = strdup(arg);
+        break;
+
+    default:
+        return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = {arm_model_options, parse_opt, 0, doc};
+
+// Main function for ARM model simulator.
 
 int sc_main(int ac, char *av[])
 {
     //!  ISA simulator
-    process_params(ac, av);
+    argp_program_version_hook = model_print_version;
+    argp_parse(&argp, ac, av, 0, 0, 0);
 
     //--- Devices -----
     arm arm_proc1 ("arm");    // Core
