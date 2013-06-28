@@ -114,7 +114,8 @@ ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_):
     SC_THREAD(prc_ESDHCV2);
 }
 
-ESDHCV2_module::~ESDHCV2_module() {
+ESDHCV2_module::~ESDHCV2_module()
+{
 }
 
 unsigned ESDHCV2_module::fast_read(unsigned address)
@@ -422,16 +423,16 @@ void ESDHCV2_module::generate_signal(irqstat irqnum)
 
     if(regs[IRQSTATEN/4] & irq)
     {
-      printf("esdhc: Generating IRQ signal %d\n", irqnum);
+        dprintf("esdhc: Generating IRQ signal %d\n", irqnum);
         //Can assert IRQSTAT
         regs[IRQSTAT/4] = regs[IRQSTAT/4] | irq;
     }
     else
-      printf ("esdhc: IRQ signal %d, will not be generated due to IRQSTATEN flags", irqnum);
+        dprintf ("esdhc: IRQ signal %d, will not be generated due to IRQSTATEN flags", irqnum);
 
     if(regs[IRQSIGEN/4] & irq)
     {
-      printf("esdhc: Generating IRQ interrupt due to irq signal %d\n", irqnum);
+        dprintf("esdhc: Generating IRQ interrupt due to irq signal %d\n", irqnum);
         //Can generate interruption
         tzic.interrupt(ESDHCV2_1_IRQ, /*deassert=*/true);
     }
@@ -500,9 +501,10 @@ void ESDHCV2_module::decode_response(struct sd_response resp)
         regs[CMDRSP3/4] = ((resp.response[13] << 16) |
                            (resp.response[14] << 8)  |
                            (resp.response[15] << 0));
-
+        break;
     default:
-        printf("SD_CARD: Decode for response type %d not implemented",
+        printf("SD_CARD: Decode for response type %d not implemented\n",
                resp.type);
     }
 }
+
