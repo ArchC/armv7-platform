@@ -1,5 +1,5 @@
 /******************************************************
- This is the main file used in the project for modelling
+ This is the main file used in the project for modeling
  an ARM platform similar to Freescale iMX53.
 
  This project uses ArchC to generate code to mimic ARM
@@ -92,7 +92,7 @@ void model_print_version (FILE *stream, struct argp_state *state)
                      "conditions.\nThere is NO warranty; not even for "
                      "MERCHANTABILITY or FITNESS\nFOR A PARTICULAR PURPOSE.\n");
 
-    fprintf (stream, "This simulator was generated with ArchC %s "
+    fprintf (stream, "This simulator was generated using ArchC %s "
                      "and configured with %s\n", archc_version, archc_options);
 
     fprintf (stream, "Report bugs to %s\n", argp_program_bug_address);
