@@ -1,5 +1,4 @@
 #include "sd.h"
-#include "arm_interrupts.h"
 #include <errno.h>
 
 extern bool DEBUG_SD;
@@ -21,8 +20,15 @@ const char sd_card::CID[] = {0x02, 0x54, 0x4d, 0x53,
 const char sd_card::SCR[] = {0x02, 0x35, 0x80, 0x00,
                              0x01, 0x00, 0x00, 0x00};
 
-sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
+sd_card::sd_card (sc_module_name name_, const char* file): sc_module(name_)
 {
+    //*command_handler[0] = cmd0_handler;
+
+    if(load_image_from_file(file) != 0)
+    {
+        exit(1);
+    }
+
     // Set current state to idle.
     this->current_state = SD_IDLE;
 
@@ -33,7 +39,7 @@ sd_card::sd_card (sc_module_name name_, const char* dataPath): sc_module(name_)
     this->application_specific_p = false;
 
     // Every RCA is initialized with zeroes.
-    this->RCA = 0x0;
+    this->rca = 0x00;
 
     this->card_selected_p = false;
 
@@ -48,7 +54,8 @@ sd_card::~sd_card()
     //munmap: free data allocated by mmap
     if(munmap(data,data_size) != 0)
     {
-        printf("Unable to free SD mmapped memory (Run to the hills!)");
+        fprintf(stderr, "%s: Unable to free SD mmapped memory",
+                this->name());
     }
 }
 
@@ -61,18 +68,21 @@ int sd_card::load_image_from_file(const char *file)
     int dataFile;
     struct stat st;
 
-    // Check if image was provided.
+    // Check if a file was provided.
     if(file == NULL)
+    {
+        printf("No sd image provided");
         return -1;
-
-    fprintf(stderr, "ArchC: Loading SD card file: %s\n", file);
+    }
+    fprintf(stderr, "ArchC: %s: Loading SD card file: %s\n",
+            this->name(),file);
 
     dataFile = open(file, O_LARGEFILE);
     if(dataFile == -1)
     {
-        printf("Unable to load SD card file %s. Error: ",
-               file, strerror(errno));
-        return 1;
+        fprintf(stderr, "%s: Unable to load file %s: Error: %s",
+                this->name(), file, strerror(errno));
+        return -1;
     }
 
     stat(file, &st);
@@ -83,36 +93,30 @@ int sd_card::load_image_from_file(const char *file)
 
     if(data == MAP_FAILED)
     {
-        fprintf(stderr,"Unable to map SD card file  %s. Error: %s\n",
-                file, strerror(errno));
-        return 1;
+        fprintf(stderr,"%s: Unable to mmap file %s: Error: %s\n",
+                this->name(), file, strerror(errno));
+        return -1;
     }
 
     close(dataFile);
     return 0;
 }
 
-// This function is used to copy a block from the storage device to data
-// line bus
-void sd_card::send_block_to_dataline(uint32_t offset)
-{
-    //Copy data to buffer
-    memcpy(data_line, &(((char*)data)[offset]), blocklen);
-    data_line_busy = true;
-}
-
+// Main SC thread. This executes every SD card clock cycle and executes
+// SD current state.
 void sd_card::prc_sdcard()
 {
     do {
         wait(1, SC_NS);
+
+        if(current_state == SD_IDLE)
+            return;
+
         dprintf("-------------------- SD CARD -------------------- \n");
 
         // Main FSM dispatcher.
         switch(current_state)
         {
-        case SD_IDLE:
-            break;
-
         case SD_DATA:
             exec_state_data();
             break;
@@ -126,9 +130,8 @@ void sd_card::prc_sdcard()
     } while (1);
 }
 
-// -------------------------------------------------------------------------------
-//  Current state procedure
-// -------------------------------------------------------------------------------
+
+//  Current state DATA procedure.
 void sd_card::exec_state_data()
 {
     dprintf("%s: Block Read: Sending data from address 0x%x to bus.\n",
@@ -137,16 +140,14 @@ void sd_card::exec_state_data()
     if(data_line_busy)
         return; //Avoid overwritting unread data on dataline
 
-    send_block_to_dataline(current_address);
-    current_address += blocklen; //iterate to next block
+    //Send next block to dataline.
+    memcpy(data_line, &(((char*)data)[current_address]), blocklen);
+    current_address += blocklen;
+    data_line_busy = true;
 
     if(single_block_p == true) //If single read, stop it
         current_state = SD_IDLE;
 }
-
-// -------------------------------------------------------------------------------
-//  External access to dataline
-// -------------------------------------------------------------------------------
 
 // This function is used by external controllers to read the sd card IO buffer
 // It doesn't check any data integrity.
@@ -163,12 +164,9 @@ bool sd_card::read_dataline(std::queue<unsigned char> & buffer, uint32_t len)
     return false;
 }
 
-// ----------------------------------------------------------------------------
-//  Command Handlers
-// ----------------------------------------------------------------------------
-
-struct sd_response sd_card::exec_cmd(short cmd_index, short cmd_type,
-                                     uint32_t arg)
+//  SD Specification commands Handlers
+struct sd_response sd_card::exec_cmd(short cmd_index,
+                                     short cmd_type, uint32_t arg)
 {
     if(!application_specific_p)
     {
@@ -198,15 +196,17 @@ struct sd_response sd_card::exec_cmd(short cmd_index, short cmd_type,
         case 55:
             return cmd55_handler(arg);
         default:
-            printf("SD CARD: CMD%d not supported/implemented in this model\n",
-                   cmd_index);
+            fprintf(stderr, "%s: CMD%d not supported/implemented "
+                    "in this model\n", this->name(), cmd_index);
             exit(1);
         }
     }
     else
     {
+        // Next command is not application specific.
         application_specific_p = false;
-        //Routes each command to its handler
+
+        //Routes each application command to its handler
         switch(cmd_index)
         {
         case 41:
@@ -214,8 +214,8 @@ struct sd_response sd_card::exec_cmd(short cmd_index, short cmd_type,
         case 51:
             return acmd51_handler(arg);
         default:
-            printf("SD CARD: ACMD%d not supported/implemented in this model\n",
-                   cmd_index);
+            fprintf(stderr, "%s: ACMD%d not supported/implemented "
+                    "in this model\n", this->name(), cmd_index);
             exit(1);
         }
     }
@@ -225,11 +225,12 @@ struct sd_response sd_card::exec_cmd(short cmd_index, short cmd_type,
 struct sd_response sd_card::cmd0_handler(uint32_t arg)
 {
     struct sd_response resp;
+    dprintf("%s: CMD0: arg=NOARG\n",
+            this->name(), state_to_string(current_state));
 
-    dprintf("SD_CARD CMD0: arg=NOARG\n");
-    current_state = SD_IDLE;
+    update_state(SD_IDLE);
+
     data_line_busy = false;
-
     // No response. Just return anything.
     resp.type = R1;
     return resp;
@@ -239,13 +240,29 @@ struct sd_response sd_card::cmd0_handler(uint32_t arg)
 struct sd_response sd_card::cmd2_handler(uint32_t arg)
 {
     struct sd_response resp;
-
-    dprintf("SD_CARD CMD2: arg=NOARG\n");
+    dprintf("%s: CMD2: arg=NOARG\nCurrent State: %s\n",
+            this->name(), state_to_string(current_state));
 
     resp.type = R2;
-    resp.response[0] = 0x3F;
-    memcpy(&(resp.response[1]), CID, 16);
+    if(current_state == SD_READY)
+    {
+        update_state(SD_IDENT);
+
+        resp.response[0] = 0x3F;
+        memcpy(&(resp.response[1]), CID, 16);
+    }
+    else
+    {
+        dprintf("Invalid command for this mode.");
+        resp.response[0] = 0x03;
+        resp.response[1] = 0x0;
+        resp.response[2] = 0x0;
+        resp.response[3] = 0x0;
+        resp.response[3] = 0x0;
+        resp.response[4] = 0x1; // Fake CRC and end transmission
+    }
     return resp;
+
 }
 
 // CMD3 ==>  GENERATE_NEW_RCA
@@ -253,18 +270,34 @@ struct sd_response sd_card::cmd3_handler(uint32_t arg)
 {
     struct sd_response resp;
 
-    dprintf("SD_CARD CMD3: arg=NOARG\n");
-
-    RCA = 1;
+    dprintf("%s: CMD3: arg=NOARG\n", this->name());
 
     resp.type = R6;
-    resp.response[0] = 0x03;
-    resp.response[1] = (RCA & 0xFF00)>>8;
-    resp.response[2] = (RCA & 0x00FF);
-    resp.response[3] = 0x0; //Dummy values for card status
-    resp.response[3] = 0x0; // ^
-    resp.response[4] = 0x1; // Fake CRC and end transmission
+    if(current_state == SD_IDENT || current_state == SD_STBY)
+    {
+        update_state(SD_STBY);
 
+        // Generate a new RCA.
+        rca = 1;
+        dprintf("%s: New RCA=%d \n", this->name(), this->rca);
+
+        resp.response[0] = 0x03;
+        resp.response[1] = (rca & 0xFF00)>>8;
+        resp.response[2] = (rca & 0x00FF);
+        resp.response[3] = 0x0; //Dummy values for card status
+        resp.response[3] = 0x0; // ^
+        resp.response[4] = 0x1; // Fake CRC and end transmission
+    }
+    else
+    {
+        dprintf("Invalid command for this mode.");
+        resp.response[0] = 0x03;
+        resp.response[1] = 0x0;
+        resp.response[2] = 0x0;
+        resp.response[3] = 0x0;
+        resp.response[3] = 0x0;
+        resp.response[4] = 0x1; // Fake CRC and end transmission
+    }
     return resp;
 }
 
@@ -272,13 +305,37 @@ struct sd_response sd_card::cmd3_handler(uint32_t arg)
 struct sd_response sd_card::cmd7_handler(uint32_t arg)
 {
     struct sd_response resp;
+    dprintf("%s CMD7: arg=arg (RCA)\n", this->name());
 
-    dprintf("SD_CARD CMD7: arg=arg (RCA)\n");
-
-    if(arg == RCA && arg != 0x0)
+    if(arg == rca && arg != 0x0)
+    {
+        // This card is selected.
         card_selected_p = true;
+
+        if(current_state == SD_STBY)
+        {
+            update_state (SD_TRAN);
+        }
+        else if(current_state == SD_DIS)
+        {
+            update_state (SD_PRG);
+        }
+    }
     else
+    {
+        // Card was deselected.
         card_selected_p = false;
+
+        if(current_state == SD_STBY
+           || current_state == SD_TRAN || current_state == SD_DATA)
+        {
+            update_state (SD_STBY);
+        }
+        else if(current_state == SD_PRG)
+        {
+            update_state (SD_PRG);
+        }
+    }
 
     resp.type = R1b;
     resp.response[0] = 0xC7;
@@ -291,28 +348,31 @@ struct sd_response sd_card::cmd7_handler(uint32_t arg)
     return resp;
 }
 
-
 // CMD8 ==>  SEND_IF_COND
-struct sd_response sd_card::cmd8_handler(uint32_t arg)
+struct sd_response  sd_card::cmd8_handler(uint32_t arg)
 {
     struct sd_response resp;
     unsigned char check_pattern;
     unsigned char voltage;
 
-    dprintf("SD_CARD CMD8: arg=0x%X\n", arg);
+    dprintf("%s: CMD8: arg=0x%X\n", this->name(), arg);
 
-    // Decode argument.
-    check_pattern = arg & 0xFF;
-    voltage = (arg & 0xF00) >> 8;
-
-    // Build response string.
     resp.type = R7;
-    resp.response[0] = 0x48;// cmdindx = 8
-    resp.response[1] = 0x00; // Reserved
-    resp.response[2] = 0x00; // Reserved
-    resp.response[3] = voltage; // Voltage supplied
-    resp.response[4] = check_pattern; //Check pattern
-    resp.response[5] = 0x01; //Fake CRC and end bit.
+    if(current_state == SD_IDLE)
+    {
+        // Decode argument.
+        check_pattern = arg & 0xFF;
+        voltage = (arg & 0xF00) >> 8;
+
+        // Build response string.
+
+        resp.response[0] = 0x48;// cmdindx = 8
+        resp.response[1] = 0x00; // Reserved
+        resp.response[2] = 0x00; // Reserved
+        resp.response[3] = voltage; // Voltage supplied
+        resp.response[4] = check_pattern; //Check pattern
+        resp.response[5] = 0x01; //Fake CRC and end bit.
+    }
     return resp;
 }
 
@@ -320,99 +380,130 @@ struct sd_response sd_card::cmd8_handler(uint32_t arg)
 struct sd_response sd_card::cmd9_handler(uint32_t arg)
 {
     struct sd_response resp;
-
-    dprintf("SD_CARD CMD9: arg=NOARG\n");
-
+    dprintf("%s: CMD9: arg=NOARG\n", this->name());
     resp.type = R2;
-    resp.response[0] = 0x3F;
-    memcpy(&(resp.response[1]), CSD, 16);
+
+    if(current_state == SD_STBY)
+    {
+        resp.response[0] = 0x3F;
+        memcpy(&(resp.response[1]), CSD, 16);
+    }
+
     return resp;
 }
 
 // CMD12 ==>  STOP_MULTIBLOCK READ
 struct sd_response sd_card::cmd12_handler(uint32_t arg)
 {
-    dprintf("SD_CARD CMD12: arg=NOARG\n");
-    current_state = SD_IDLE;
-    struct sd_response aux;
-    return aux;
+    struct sd_response resp;
+    dprintf("%s: CMD12: arg=NOARG\n", this->name());
+
+    if(current_state == SD_DATA)
+    {
+        update_state (SD_TRAN);
+    }
+    else if(current_state == SD_RCV)
+    {
+        update_state (SD_PRG);
+    }
+    return resp;
+
 }
 
 // CMD16 ==>  SET_BLOCKLEN
 struct sd_response sd_card::cmd16_handler(uint32_t arg)
 {
-    dprintf("SD_CARD CMD16: arg=0x%X\n", arg);
-    if(arg > 4098) {
-        fprintf(stderr, " SDCARD: BLOCKLEN too high. "
-                "Overflow internal Buffer. aborting\n");
-        exit(1);
+    struct sd_response resp;
+
+    dprintf("%s: CMD16: arg=0x%X\n", this->name(), arg);
+
+    if(current_state == SD_TRAN)
+    {
+        if(arg > 4098) {
+            fprintf(stderr, " SDCARD: BLOCKLEN too high. "
+                    "Overflow internal Buffer. aborting\n");
+            exit(1);
+        }
+
+        blocklen = arg;
     }
 
-    blocklen = arg;
-
-    struct sd_response resp;
     resp.response[0] = 0;
     resp.response[1] = 0;
     resp.response[2] = 0;
-
-    return resp;   // No error.
+    return resp;
 }
 
 // CMD17 ==>  READ_SINGLEBLK
 struct sd_response sd_card::cmd17_handler(uint32_t arg)
 {
-    current_address = arg;
-    current_state = SD_DATA;
-    single_block_p = true;
-
-        dprintf("SD_CARD CMD17: arg=0x%X\n", arg);
     struct sd_response resp;
-    return resp;
 
+    dprintf("%s: CMD17: arg=0x%X\n", this->name(), arg);
+
+    if(current_state == SD_TRAN)
+    {
+        current_address = arg;
+        single_block_p = true;
+        // Enter transfer mode
+        update_state (SD_DATA);
+    }
+
+    return resp;
 }
 
 // CMD18 ==>  READ_MULTIPLE_BLOCK
 struct sd_response sd_card::cmd18_handler(uint32_t arg)
 {
-    dprintf("SD_CARD CMD18: arg=0x%X\n", arg);
-
-    current_address = arg;
-    current_state = SD_DATA;
-
     struct sd_response resp;
-    return resp;
+    dprintf("%s: CMD18: arg=0x%X\n", this->name(), arg);
 
+    if(current_address == SD_TRAN)
+    {
+        current_address = arg;
+        single_block_p = false;
+        update_state (SD_DATA);
+    }
+    return resp;
 }
 
 // CMD55 ==> APP_CMD
 struct sd_response sd_card::cmd55_handler(uint32_t arg)
 {
     struct sd_response resp;
-    dprintf("SD_CARD CMD55: arg=0x%X. "
-            "Next command must be application specific\n", arg);
+    dprintf("%s: CMD55: arg=0x%X. Next command must be application "
+            "specific\n", this->name(), arg);
 
-    application_specific_p = true;
+    if(current_state != SD_READY && current_state != SD_INA
+       && current_state != SD_IDENT)
+    {
+        application_specific_p = true;
+    }
 
     resp.type = R1;
     return resp;
 }
-// ----------------------------------------------------------------------------
-// -----------------------Application command handler--------------------------
-// ----------------------------------------------------------------------------
+
+// Application command handler
 
 struct sd_response sd_card::acmd41_handler(uint32_t arg)
 {
     struct sd_response resp;
 
-    dprintf("SD_CARD ACMD41: arg=%d\n", arg);
+    dprintf("%s: ACMD41: arg=0x%X\n", this->name(), arg);
 
-    resp.type = R3;
-    resp.response[0] = 0x3F; //Begin of trasmission
-    resp.response[1] = 0xFF; // Fake OCR
-    resp.response[2] = 0xFF; //
-    resp.response[3] = 0xFF; //
-    resp.response[4] = 0xFF; // Last bit indicates we're not busy.
-    resp.response[5] = 0xFF; //End of transmission
+    if(current_state == SD_IDLE)
+    {
+        update_state (SD_READY);
+
+        resp.type = R3;
+        resp.response[0] = 0x3F; //Begin of trasmission
+        resp.response[1] = 0xFF; // Fake OCR
+        resp.response[2] = 0xFF; //
+        resp.response[3] = 0xFF; //
+        resp.response[4] = 0xFF; // Last bit indicates we're not busy.
+        resp.response[5] = 0xFF; //End of transmission
+    }
     return resp;
 }
 
@@ -420,15 +511,57 @@ struct sd_response sd_card::acmd51_handler(uint32_t arg)
 {
     struct sd_response resp;
 
-    dprintf("SD_CARD ACMD51: arg=%d\n", arg);
+    dprintf("%s: ACMD51: arg=%d\n", this->name(), arg);
 
-    resp.type = R3;
-    resp.response[0] = 0x3F; //Begin of trasmission
-    resp.response[1] = 0xFF; // Fake OCR
-    resp.response[2] = 0xFF; //
-    resp.response[3] = 0xFF; //
-    resp.response[4] = 0xFF; // Last bit indicates we're not busy.
+
+   // Send SCR to command line.
+    blocklen = 8;
+    memcpy(data_line, SCR, blocklen);
+    data_line_busy = true;
+
+    resp.type = R1;
+    resp.response[0] = 0x0;
+    resp.response[1] = 0x0;
+    resp.response[2] = 0x0;
+    resp.response[3] = 0x0;
     resp.response[5] = 0xFF; //End of transmission
     return resp;
 }
 
+// FSM handlers.
+const char *sd_card::state_to_string(const enum sd_state state)
+{
+    switch(state)
+    {
+    case SD_IDLE:
+        return "IDLE";
+    case SD_READY:
+        return "READY";
+    case SD_IDENT:
+        return "IDENT";
+    case SD_STBY:
+        return "STAND-BY";
+    case SD_TRAN:
+        return "TRANSFER";
+    case SD_DATA:
+        return "DATA";
+    case SD_RCV:
+        return "RECEIVE";
+    case SD_PRG:
+        return "PROGRAM";
+    case SD_DIS:
+        return "DISCONNECT";
+    case SD_INA:
+        return "INACTIVE";
+    }
+    return 0;
+}
+
+void  sd_card::update_state(const enum sd_state new_state)
+{
+    dprintf("%s: updating state: Last State: %s Current state: %s\n",
+            this->name(), state_to_string(current_state),
+            state_to_string(new_state));
+    
+    current_state = new_state;
+}

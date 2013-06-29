@@ -271,7 +271,7 @@ private:
         HCKEN   = false;
         IPGEN   = false;
         //--
-        regs[WML/4]        = 0x08100810;
+        regs[WML/4] = 0x08100810;
         WR_BRST_LEN = 0x8;
         WR_WML      = 0x10;
         RD_BRST_LEN = 0x8;

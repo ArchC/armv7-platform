@@ -2,7 +2,9 @@
 #include "arm_interrupts.h"
 
 extern bool DEBUG_ESDHCV2;
-#define dprintf(args...) if(DEBUG_ESDHCV2){fprintf(stderr,args);}
+#define dprintf(args...) \
+       if (DEBUG_ESDHCV2) \
+           fprintf(stderr,args); \
 
 #define isBitSet(reg, bit) (((reg & (1 << (bit))) != 0) ? true : false)
 #define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
@@ -23,7 +25,9 @@ inline void ESDHCV2_module::SET_DLA(bool x)
         DLA   = true;
         CDIHB = true; //Let's block any further data commands cause
                       //bus is getting busy.
-    } else {
+    }
+    else
+    {
         if(DLA)
         {
             DLA   = false;
@@ -350,9 +354,10 @@ void ESDHCV2_module::prc_ESDHCV2()
         interface_sd();
 
         // Host Protocol
-        if(ibuffer.size() >= RD_WML) {   //RD_WML must be divided by sizeof struct contained
+        if(ibuffer.size() >= RD_WML)
+        {   //RD_WML must be divided by sizeof struct contained
             SET_BREN();                  // in ibuffer. gambiarra
-       }
+        }
     }while(1);
 }
 
@@ -379,7 +384,7 @@ void ESDHCV2_module::interface_sd()
                 signal_startRead();    //change internal FSM to READ mode.
             else //WRITE
             {
-                printf("WRITE não foi implementada");
+                printf("WRITE not implemented in this model.");
                 //>>>>> TODO:Gotta change internal FSM to WRITE mode. <<<<
             }
         }
@@ -387,33 +392,35 @@ void ESDHCV2_module::interface_sd()
         generate_signal(irq_CC); // Comand executed.
     }
 
-// FETCH DATA FROM HOST
+    // FETCH DATA FROM HOST
     if(RTA == true) // If we are on a read from SD process
     {
-        if(port->data_line_busy) // Recover data send by the card to SD dataline
+        if(port->data_line_busy) // Recover data sent by the card to SD dataline
         {
             uint32_t aux;
             port->read_dataline(ibuffer, BLKSIZE);
 
-            //If necessary reduce blkcnt and issue AUTOCMD12
-            if(BCEN == true && MSBSEL == true)
+
+            if (MSBSEL == true) // Multiple block transfer
             {
-                BLKCNT -= 1;
-                if(BLKCNT == 0 && AC12EN == true)
+                //If necessary reduce blkcnt and issue AUTOCMD12
+                if(BCEN == true)
                 {
-                    //Stop transfer by issuing an CMD12 to device
-                    port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Issue a AC12EN to card.
-                    BLKCNT = BLKCNT_BKP;
-                    signal_endRead(); //Signals to host end of transfer.
+                    BLKCNT -= 1;
+                    if(BLKCNT == 0 && AC12EN == true)
+                    {
+                        //Stop transfer by issuing an CMD12 to device
+                        port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Issue a AC12EN to card.
+                        BLKCNT = BLKCNT_BKP;
+                        signal_endRead(); //Signals to host end of transfer.
+                    }
                 }
             }
+            else // Single block transfer
+            {
+                signal_endRead();
+            }
         }
-    }
-
-// HANDLE PUSH DATA TO HOST
-    if(WTA)
-    {
-        //>>>>> TODO: Implement internal FSM WRITE mode. <<<<
     }
 }
 
