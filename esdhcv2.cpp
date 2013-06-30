@@ -9,78 +9,7 @@ extern bool DEBUG_ESDHCV2;
 #define isBitSet(reg, bit) (((reg & (1 << (bit))) != 0) ? true : false)
 #define setBit(reg, bit) (reg = regs[reg/4] | (1 << (bit)))
 
-/* Macros for bit flipping.  As a general rule, several important things
-   must happen when bit from some registers flip. This set of macros
-   provides programmers with a simple interface to flip a bit and
-   propagate its effects.  */
-
-
-#define signal_startRead() SET_RTA(1)
-#define signal_endRead()   SET_RTA(0)
-
-inline void ESDHCV2_module::SET_DLA(bool x)
-{
-    if(x)
-    {
-        DLA   = true;
-        CDIHB = true; //Let's block any further data commands cause
-                      //bus is getting busy.
-    }
-    else
-    {
-        if(DLA)
-        {
-            DLA   = false;
-            CDIHB = false;
-        }
-    }
-}
-
-inline void ESDHCV2_module::SET_RTA(bool x)
-{
-//This sets RTA bit. It causes a serie of other bits to change.
-    if(x)
-    {
-        RTA = true;
-        SET_DLA(1);
-    } else { //End of a transfer.
-        if(RTA) //We were i na  transfer
-        {
-            RTA = false;
-            SET_DLA(0);
-            generate_signal(irq_TC);
-        }
-    }
-}
-
-
-
-inline void ESDHCV2_module::SET_BREN()
-{/* Small macroas that sets BREN and remember to activate related interrupt bit */
-    BREN = true;
-    generate_signal(irq_BRR);
-}
-
-inline void ESDHCV2_module::SET_BWEN()
-{/* Small macro that sets BWEN and remember to activate related interrupt bit */
-    BWEN = true;
-    generate_signal(irq_BWR);
-}
-
-inline void ESDHCV2_module::stabilize_clk()
-{
-    SDSTB = true; //Signals that clock is stable.
-}
-
-inline void ESDHCV2_module::initialization_active()
-{
-  /* This is a dumb function. It only pretends that sent 80clks for a
-   device.  This would be a necessary step to initialize a real SD card.
-   Therefore, there is no need to actually do that in a simulated
-   environment.  */
-    INITA = false; //Signals end of 80clk cycle.
-}
-inline void ESDHCV2_module::reset_DAT_line()
+void ESDHCV2_module::reset_DAT_line()
 {
   /* Performs a DAT line reset, erasing any remains of a data transfers.
    Might be activated by high RSTD bit assertion.  */
@@ -113,13 +42,255 @@ ESDHCV2_module::ESDHCV2_module(sc_module_name name_, tzic_module &tzic_):
     do_reset();
     CIHB = false; //Ready to receive first command!
 
+    current_state = IDLE;
+
     // A SystemC thread never finishes execution, but transfers control back
     // to SystemC kernel via wait() calls
     SC_THREAD(prc_ESDHCV2);
 }
 
-ESDHCV2_module::~ESDHCV2_module()
+void ESDHCV2_module::prc_ESDHCV2()
 {
+    do{
+      //        dprintf("-------------------- ESDHCV2 -------------------- \n");
+        wait(1, SC_NS);
+
+        if(current_state == IDLE)
+            continue;
+
+        // Handle SD connection.
+        sd_protocol();
+
+        // Host Protocol
+        host_protocol();
+
+    }while(1);
+}
+
+void ESDHCV2_module::sd_protocol()
+{
+    if(current_state == HOST_READ_TRANSFER)
+    {
+        // If data ready on the bus.
+        if(port->data_line_busy == true)
+        {
+            // Read next block.
+            port->read_dataline(ibuffer, BLKSIZE);
+
+            // Multiple block transfer.
+            if (MSBSEL == true)
+            {
+                //If necessary reduce BlockCount and issue AUTOCMD12
+                if(BCEN == true)
+                {
+                    BLKCNT = BLKCNT - 1;
+
+                    if(BLKCNT == 0 && AC12EN == true)
+                    {
+                        // Issue AUTOCMD12.
+                        port->exec_cmd(12, 0b11, regs[CMDARG/4]);
+
+                        BLKCNT = BLKCNT_BKP;
+                        update_state(HOST_READ_DONE);
+                    }
+                }
+            }
+            else
+            {
+                update_state(HOST_READ_DONE);
+            }
+        }
+    }
+    else if(current_state == HOST_WRITE)
+    {
+        printf("ESDHC WRITE not implement in this model");
+        exit(1);
+    }
+}
+void ESDHCV2_module::host_protocol()
+{
+    if(current_state == HOST_READ_TRANSFER
+       || current_state == HOST_READ_DONE)
+    {
+        // Indicate there is valid data available.
+        if(ibuffer.size() >= RD_WML)
+        {
+            BREN = true;
+            generate_signal(IRQ_BRR);
+        }
+
+        // Verify operation complete.
+        if(ibuffer.size() == 0 && current_state == HOST_READ_DONE)
+        {
+            generate_signal(IRQ_TC);
+            update_state(IDLE);
+        }
+    }
+}
+
+void ESDHCV2_module::execute_xfertyp_command()
+{
+    //Host driver sent a new command to XFERTYP. We must execute it and
+    //recover reponses to correct registers.
+    sd_response resp = port->exec_cmd(CMDINX, CMDTYP, regs[CMDARG/4]);
+    decode_response(resp);// USE RESP_TYP bit!!!
+
+    if(CICEN == true || CCCEN == true)
+    {
+        dprintf("%s: CRC & Index check not implemented in this model.\n",
+                this->name());
+    }
+
+    //Command issued requires data transfer
+    if(DPSEL == true)
+    {
+        // Block further data transfer commands.
+        CDIHB = true;
+
+        if(DTDSEL == true)
+            update_state(HOST_READ_TRANSFER);
+        else
+            update_state(HOST_WRITE);
+    }
+
+    // Signal command executed.
+    generate_signal(IRQ_CC);
+
+    // Ready to execute next command.
+    CIHB = false;
+}
+
+void ESDHCV2_module::generate_signal(const enum irqstat irqnum)
+{
+    uint32_t irq = (1<<irqnum);
+
+    if(regs[IRQSTATEN/4] & irq)
+    {
+        printf("esdhc: Generating IRQ signal %d\n", irqnum);
+        //Can assert IRQSTAT
+        regs[IRQSTAT/4] = regs[IRQSTAT/4] | irq;
+    }
+    else
+        printf ("esdhc: IRQ signal %d, will not be generated "
+                 " due to IRQSTATEN flags", irqnum);
+
+    if(regs[IRQSIGEN/4] & irq)
+    {
+        dprintf("esdhc: Generating IRQ interrupt due to irq signal %d\n",
+                irqnum);
+
+        //Can generate interruption
+        tzic.interrupt(ESDHCV2_1_IRQ, /*deassert=*/true);
+    }
+}
+
+void ESDHCV2_module::update_state(const enum state new_state)
+{
+    // Signal DLA will be used.
+    DLA = true;
+
+    if(new_state == HOST_READ_TRANSFER)
+    {
+        // Signal DLA will be used.
+        DLA = true;
+
+        // Signal direction as READ.
+        RTA = true;
+
+        // Prevent from receiving further data transfer commands.
+        CDIHB = true;
+
+        current_state = HOST_READ_TRANSFER;
+    }
+    else if (new_state == HOST_READ_DONE)
+    {
+        DLA = false;
+        RTA = false;
+        CDIHB = false;
+        current_state = HOST_READ_DONE;
+    }
+    else if(new_state == HOST_WRITE)
+    {
+        printf("ESDHC WRITE not implement in this model");
+        exit(1);
+    }
+    else if(new_state == IDLE)
+    {
+        current_state = IDLE;
+    }
+    else
+    {
+        printf("%s: State %d, not implemented!", new_state);
+    }
+}
+
+void ESDHCV2_module::decode_response(struct sd_response resp)
+{
+    switch (resp.type)
+    {
+    case R1:
+    case R1b:
+    case R3:
+    case R4:
+    case R5:
+    case R5b:
+    case R7:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = 0;
+        break;
+
+    case R6:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0) &
+                           ~0b1); //R[39:9] Eliminate first bit
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = 0;
+        break;
+
+    case R1bCMD12:
+        // Response[0] is ignored
+        regs[CMDRSP0/4] = 0;
+        regs[CMDRSP1/4] = 0;
+        regs[CMDRSP2/4] = 0;
+        regs[CMDRSP3/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+        break;
+    case R2:
+        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
+                           (resp.response[2] << 16) |
+                           (resp.response[3] << 8)  |
+                           (resp.response[4] << 0));
+
+        regs[CMDRSP1/4] = ((resp.response[5] << 24) |
+                           (resp.response[6] << 16) |
+                           (resp.response[7] << 8)  |
+                           (resp.response[8] << 0));
+
+        regs[CMDRSP2/4] = ((resp.response[9] << 24) |
+                           (resp.response[10] << 16) |
+                           (resp.response[11] << 8)  |
+                           (resp.response[12] << 0));
+
+        regs[CMDRSP3/4] = ((resp.response[13] << 16) |
+                           (resp.response[14] << 8)  |
+                           (resp.response[15] << 0));
+        break;
+    default:
+        printf("SD_CARD: Decode for response type %d not implemented\n",
+               resp.type);
+    }
 }
 
 unsigned ESDHCV2_module::fast_read(unsigned address)
@@ -256,6 +427,7 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum)
             //  Prevent further commands to be sent before this one is
             // processed
             CIHB = true;
+            execute_xfertyp_command();
         }
         break;
 
@@ -292,9 +464,17 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum)
         PEREN   = isBitSet(datum, 2);
         HCKEN   = isBitSet(datum, 1);
         IPGEN   = isBitSet(datum, 0);
-        if(INITA) initialization_active(); // Send 80clk to card.
-        if(RSTA) do_reset(false); //Software reset.
-        stabilize_clk();  // Make clock Stable after a change to SDCLKEN.
+
+        // Fake a Initialization.
+        if(INITA)
+            INITA = false;
+
+        // Software reset.
+        if(RSTA)
+            do_reset(false);
+
+        //Signals that clock is stable.
+        SDSTB = true;
         break;
 
     case IRQSTAT:  //Write 1 to clear register
@@ -342,176 +522,5 @@ void ESDHCV2_module::fast_write(unsigned address, unsigned datum)
         break; //ignore write
     }
     dprintf("\n");
-}
-
-void ESDHCV2_module::prc_ESDHCV2()
-{
-    do{
-      //        dprintf("-------------------- ESDHCV2 -------------------- \n");
-        wait(1, SC_NS);
-
-        //SD protocol
-        interface_sd();
-
-        // Host Protocol
-        if(ibuffer.size() >= RD_WML)
-        {   //RD_WML must be divided by sizeof struct contained
-            SET_BREN();                  // in ibuffer. gambiarra
-        }
-    }while(1);
-}
-
-
-void ESDHCV2_module::interface_sd()
-{
-    // EXECUTE COMAND
-    if(CIHB) //Unhandled command issued
-    {
-        //Host driver sent a new command to XFERTYP. We must execute it and
-        //recover reponses to correct registers.
-        sd_response resp = port->exec_cmd(CMDINX, CMDTYP, regs[CMDARG/4]);
-        decode_response(resp);
-
-        if(CICEN || CCCEN)
-            dprintf("ESDHCv2: CRC & Index check not implemented in this model. (ignored)\n");
-
-        if(DPSEL) //Command issued requires data transfer
-        {
-            CDIHB = true; //Let's block any further data commands cause
-                          //bus is getting busy.
-
-            if(DTDSEL == true)  //READ
-                signal_startRead();    //change internal FSM to READ mode.
-            else //WRITE
-            {
-                printf("WRITE not implemented in this model.");
-                //>>>>> TODO:Gotta change internal FSM to WRITE mode. <<<<
-            }
-        }
-        CIHB = false; //Ok, can wait for the next command.
-        generate_signal(irq_CC); // Comand executed.
-    }
-
-    // FETCH DATA FROM HOST
-    if(RTA == true) // If we are on a read from SD process
-    {
-        if(port->data_line_busy) // Recover data sent by the card to SD dataline
-        {
-            uint32_t aux;
-            port->read_dataline(ibuffer, BLKSIZE);
-
-
-            if (MSBSEL == true) // Multiple block transfer
-            {
-                //If necessary reduce blkcnt and issue AUTOCMD12
-                if(BCEN == true)
-                {
-                    BLKCNT -= 1;
-                    if(BLKCNT == 0 && AC12EN == true)
-                    {
-                        //Stop transfer by issuing an CMD12 to device
-                        port->exec_cmd(12, 0b11, regs[CMDARG/4]); //Issue a AC12EN to card.
-                        BLKCNT = BLKCNT_BKP;
-                        signal_endRead(); //Signals to host end of transfer.
-                    }
-                }
-            }
-            else // Single block transfer
-            {
-                signal_endRead();
-            }
-        }
-    }
-}
-
-void ESDHCV2_module::generate_signal(irqstat irqnum)
-{
-    uint32_t irq = (1<<irqnum);
-
-    if(regs[IRQSTATEN/4] & irq)
-    {
-        dprintf("esdhc: Generating IRQ signal %d\n", irqnum);
-        //Can assert IRQSTAT
-        regs[IRQSTAT/4] = regs[IRQSTAT/4] | irq;
-    }
-    else
-        dprintf ("esdhc: IRQ signal %d, will not be generated due to IRQSTATEN flags", irqnum);
-
-    if(regs[IRQSIGEN/4] & irq)
-    {
-        dprintf("esdhc: Generating IRQ interrupt due to irq signal %d\n", irqnum);
-        //Can generate interruption
-        tzic.interrupt(ESDHCV2_1_IRQ, /*deassert=*/true);
-    }
-}
-
-
-void ESDHCV2_module::decode_response(struct sd_response resp)
-{
-    switch (resp.type)
-    {
-    case R1:
-    case R1b:
-    case R3:
-    case R4:
-    case R5:
-    case R5b:
-    case R7:
-        // Response[0] is ignored
-        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
-                           (resp.response[2] << 16) |
-                           (resp.response[3] << 8)  |
-                           (resp.response[4] << 0));
-        regs[CMDRSP1/4] = 0;
-        regs[CMDRSP2/4] = 0;
-        regs[CMDRSP3/4] = 0;
-        break;
-
-    case R6:
-        // Response[0] is ignored
-        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
-                           (resp.response[2] << 16) |
-                           (resp.response[3] << 8)  |
-                           (resp.response[4] << 0) &
-                           ~0b1); //R[39:9] Eliminate first bit
-        regs[CMDRSP1/4] = 0;
-        regs[CMDRSP2/4] = 0;
-        regs[CMDRSP3/4] = 0;
-        break;
-
-    case R1bCMD12:
-        // Response[0] is ignored
-        regs[CMDRSP0/4] = 0;
-        regs[CMDRSP1/4] = 0;
-        regs[CMDRSP2/4] = 0;
-        regs[CMDRSP3/4] = ((resp.response[1] << 24) |
-                           (resp.response[2] << 16) |
-                           (resp.response[3] << 8)  |
-                           (resp.response[4] << 0));
-        break;
-    case R2:
-        regs[CMDRSP0/4] = ((resp.response[1] << 24) |
-                           (resp.response[2] << 16) |
-                           (resp.response[3] << 8)  |
-                           (resp.response[4] << 0));
-
-        regs[CMDRSP1/4] = ((resp.response[5] << 24) |
-                           (resp.response[6] << 16) |
-                           (resp.response[7] << 8)  |
-                           (resp.response[8] << 0));
-
-        regs[CMDRSP2/4] = ((resp.response[9] << 24) |
-                           (resp.response[10] << 16) |
-                           (resp.response[11] << 8)  |
-                           (resp.response[12] << 0));
-
-        regs[CMDRSP3/4] = ((resp.response[13] << 16) |
-                           (resp.response[14] << 8)  |
-                           (resp.response[15] << 0));
-        break;
-    default:
-        printf("SD_CARD: Decode for response type %d not implemented\n",
-               resp.type);
-    }
 }
 

@@ -17,6 +17,11 @@ const char sd_card::CID[] = {0x02, 0x54, 0x4d, 0x53,
                              0xfd, 0x00, 0xb2, 0x00};
 
 // SCR of a generic 4Gb card. Extracted from imx53 boot SD card.
+// SCR is represent here in little endian format because it will be
+// reversed after dataline transmission.
+// Real value for SCR is:
+// {0x02, 0x35, 0x80, 0x00, 0x01, 0x00, 0x00, 0x00};
+
 const char sd_card::SCR[] = {0x02, 0x35, 0x80, 0x00,
                              0x01, 0x00, 0x00, 0x00};
 
@@ -562,6 +567,6 @@ void  sd_card::update_state(const enum sd_state new_state)
     dprintf("%s: updating state: Last State: %s Current state: %s\n",
             this->name(), state_to_string(current_state),
             state_to_string(new_state));
-    
+
     current_state = new_state;
 }

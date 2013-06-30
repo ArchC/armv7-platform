@@ -4,8 +4,8 @@
 //
 // Author : Gabriel Krisman, 16/11/2012
 
-#ifndef _ESDHC_v2_H_
-#define _ESDHC_v2_H_
+#ifndef ESDHCv2_H
+#define ESDHCv2_H
 
 #include <stdint.h> // define types uint32_t, etc
 #include "peripheral.h"
@@ -13,37 +13,44 @@
 #include <systemc.h>
 #include <ac_tlm_protocol.H>
 #include "sd.h"
-
 #include <queue>
-//
-//
-class ESDHCV2_module : public sc_module, public peripheral {
+
+class ESDHCV2_module : public sc_module, public peripheral
+{
 private:
 
-    typedef enum
+    enum state
     {
-        irq_DMAE   = 28,
-        irq_AC12E  = 27,
-        irq_DEBE   = 22,
-        irq_DCE    = 21,
-        irq_DTOE   = 20,
-        irq_CIE    = 19,
-        irq_CEBE   = 18,
-        irq_CCE    = 17,
-        irq_CTOE   = 16,
-        irq_CINT   = 8,
-        irq_CRM    =  7,
-        irq_CINS_int  = 6,
-        irq_BRR    = 5,
-        irq_BWR    = 4,
-        irq_DINT   = 3,
-        irq_BGE    = 2,
-        irq_TC     = 1,
-        irq_CC     = 0
-    }irqstat;
+        IDLE,
+        HOST_WRITE,
+        HOST_READ_TRANSFER,
+        HOST_READ_DONE,
+        HOST_WRITE_DONE,
+    };
 
-    // State flags
-    bool data_transfer;
+    enum irqstat
+    {
+        IRQ_DMAE   = 28,
+        IRQ_AC12E  = 27,
+        IRQ_DEBE   = 22,
+        IRQ_DCE    = 21,
+        IRQ_DTOE   = 20,
+        IRQ_CIE    = 19,
+        IRQ_CEBE   = 18,
+        IRQ_CCE    = 17,
+        IRQ_CTOE   = 16,
+        IRQ_CINT   = 8,
+        IRQ_CRM    =  7,
+        IRQ_CINS_int  = 6,
+        IRQ_BRR    = 5,
+        IRQ_BWR    = 4,
+        IRQ_DINT   = 3,
+        IRQ_BGE    = 2,
+        IRQ_TC     = 1,
+        IRQ_CC     = 0
+    };
+
+    enum state current_state;
 
     static const uint32_t DSADR      = 0x00; // ESDHCv2 DMA System Address
     static const uint32_t BLKATTR    = 0x04; // ESDHCv2 Block attribute
@@ -170,7 +177,8 @@ private:
     unsigned fast_read(unsigned address);
     void fast_write(unsigned address, unsigned datum);
 
-    void interface_sd();
+    void sd_protocol();
+    void host_protocol();
 
 public:
 
@@ -191,11 +199,26 @@ public:
 
     void connect_card(sd_card & card);
 
-    ~ESDHCV2_module();
-
-
 private:
-    void do_reset(bool hard_reset=true) {
+
+    void reset_DAT_line();
+
+/*This function handles every type of outgoing ESDHC interruption.  It
+ * is responsable for checking if that kind of interruption
+ * can be asserted and if so, sets IRQSTAT, and service_interrupt()
+ * as necessary.
+ * It is controlled by IRQSTATEN and IRQSIGEN
+ */
+    void generate_signal(enum irqstat irqnum);
+    void execute_xfertyp_command();
+    void update_state(const enum state new_state);
+
+    /* This method decodes a sd_response and distribute the response code
+     * among CMD_RESP registers.  */
+    void decode_response(struct sd_response response);
+
+    void do_reset(bool hard_reset=true)
+    {
         // Initial values
         regs[DSADR/4]   = 0x0;
         regs[BLKATTR/4] = 0x0;
@@ -289,28 +312,6 @@ private:
         regs[HOSTVER/4]    = 0x00001201;
         //--
     }
-
-void stabilize_clk();
-void initialization_active();
-void reset_DAT_line();
-void SET_BWEN();
-void SET_BREN();
-void SET_RTA(bool x);
-void SET_DLA(bool x);
-
-
-/*This function handles every type of outgoing ESDHC interruption.  It
- * is responsable for checking if that kind of interruption
- * can be asserted and if so, sets IRQSTAT, and service_interrupt()
- * as necessary.
- * It is controlled by IRQSTATEN and IRQSIGEN
- */
- void generate_signal(irqstat irqnum);
-
-
- /* This method decodes a sd_response and distribute the response code
-  * among CMD_RESP registers.  */
- void decode_response(struct sd_response response);
-
 };
-#endif
+
+#endif /* !ESDHCV2_H.  */
