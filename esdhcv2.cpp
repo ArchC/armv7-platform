@@ -187,8 +187,6 @@ void ESDHCV2_module::generate_signal(const enum irqstat irqnum)
 void ESDHCV2_module::update_state(const enum state new_state)
 {
     // Signal DLA will be used.
-    DLA = true;
-
     if(new_state == HOST_READ_TRANSFER)
     {
         // Signal DLA will be used.

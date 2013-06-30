@@ -90,9 +90,10 @@ private:
 
     // Command Handlers
     struct sd_response cmd0_handler(uint32_t arg);  // Set card to Idle.
-    struct sd_response cmd2_handler(uint32_t arg);  // Send CID
-    struct sd_response cmd3_handler(uint32_t arg);  // Publish new RCA
-    struct sd_response cmd7_handler(uint32_t arg);  // Select/deselect card
+    struct sd_response cmd2_handler(uint32_t arg);  // Send CID.
+    struct sd_response cmd3_handler(uint32_t arg);  // Publish new RCA.
+    struct sd_response cmd6_handler(uint32_t arg);  // Switch.
+    struct sd_response cmd7_handler(uint32_t arg);  // Select/deselect card.
     struct sd_response cmd8_handler(uint32_t arg);  // Send if_cond.
     struct sd_response cmd9_handler(uint32_t arg);  // Send CSD.
     struct sd_response cmd12_handler(uint32_t arg);  // Suspend transfer.
@@ -102,6 +103,7 @@ private:
     struct sd_response cmd55_handler(uint32_t arg);  // Next cmd is application
 
     // Application command handler
+    struct sd_response acmd6_handler(uint32_t arg); //Set bus width
     struct sd_response acmd41_handler(uint32_t arg); //Get OCR
     struct sd_response acmd51_handler(uint32_t arg); //Send SCR
 

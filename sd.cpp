@@ -184,6 +184,8 @@ struct sd_response sd_card::exec_cmd(short cmd_index,
             return cmd2_handler(arg);
         case 3:
             return cmd3_handler(arg);
+        case 6:
+            return cmd6_handler(arg);
         case 7:
             return cmd7_handler(arg);
         case 8:
@@ -214,6 +216,8 @@ struct sd_response sd_card::exec_cmd(short cmd_index,
         //Routes each application command to its handler
         switch(cmd_index)
         {
+        case 6:
+            return acmd6_handler(arg);
         case 41:
             return acmd41_handler(arg);
         case 51:
@@ -306,7 +310,27 @@ struct sd_response sd_card::cmd3_handler(uint32_t arg)
     return resp;
 }
 
-// CMD7 ==>  SELECT/DESELECT CARD
+// CMD6 ==> SWITCH
+struct sd_response sd_card::cmd6_handler(uint32_t arg)
+{
+    struct sd_response resp;
+    dprintf("%s CMD6: arg=0x%X (RCA)\n", this->name(), arg);
+
+    // If Switch mode 0.
+    if(!(arg & (1<<31)))
+    {
+        blocklen = 64;
+        memset(data_line, 0x0, blocklen);
+        data_line_busy = true;
+    }
+    else // Mode 1.
+    {
+        printf("%s: Mode 1 not implemented in SWITCH instruction");
+        exit(1);
+    }
+}
+
+// CMD7 ==> SELECT/DESELECT CARD
 struct sd_response sd_card::cmd7_handler(uint32_t arg)
 {
     struct sd_response resp;
@@ -533,6 +557,16 @@ struct sd_response sd_card::acmd51_handler(uint32_t arg)
     return resp;
 }
 
+struct sd_response sd_card::acmd6_handler(uint32_t arg)
+{
+    struct sd_response resp;
+
+    dprintf("%s: ACMD6: arg=%d\n", this->name(), arg);
+
+    dprintf("%s: Driver setting bus_width. Ignoring\n", this->name());
+    return resp;
+
+}
 // FSM handlers.
 const char *sd_card::state_to_string(const enum sd_state state)
 {
