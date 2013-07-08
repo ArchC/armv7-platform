@@ -509,7 +509,7 @@ void ac_behavior( Type_DPI1 ) {
         if ((shiftamount >= 0) && (shiftamount <= 31)) {
             if (shiftamount == 0) { //Rotate right with extend
                 dpi_shiftopcarry = getBit(RM2.entire, 0);
-                dpi_shiftop.entire = (((int32_t)RM2.entire) >> 1);
+                dpi_shiftop.entire = (((uint32_t)RM2.entire) >> 1);
                 if (flags.C) setBit(dpi_shiftop.entire, 31);
             } else {
                 dpi_shiftop.entire = (RotateRight(shiftamount, RM2)).entire;
@@ -1197,7 +1197,7 @@ inline void ADC(int rd, int rn, bool s,
     RN2.entire = RB_read(rn);
     if(rn == PC) RN2.entire += 4;
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n  Carry=%d\n", RN2.entire,dpi_shiftop.entire,flags.C);
-    soma.uhilo = (uint64_t)RN2.uentire + dpi_shiftop.uentire;
+    soma.uhilo = (uint64_t)(uint32_t)RN2.uentire + (uint64_t)(uint32_t)dpi_shiftop.uentire;
     if (flags.C) soma.uhilo++;
     RD2.entire = soma.reg[0];
     RB_write(rd, RD2.entire);
@@ -1232,7 +1232,7 @@ inline void ADD(int rd, int rn, bool s,
     dprintf("Operands:\n", RN2.entire,dpi_shiftop.entire);
     dprintf("A = 0x%lX\n", RN2.entire);
     dprintf("B = 0x%lX\n",dpi_shiftop.entire);
-    soma.uhilo = (uint64_t)RN2.uentire + dpi_shiftop.uentire;
+    soma.uhilo = (uint64_t)(uint32_t)RN2.uentire + (uint64_t)(uint32_t)dpi_shiftop.uentire;
     RD2.entire = soma.reg[0];
     RB_write(rd, RD2.entire);
     if ((s == 1)&&(rd == PC)) {
@@ -1451,7 +1451,7 @@ inline void CMN(int rn,
     dprintf("Instruction: CMN\n");
     RN2.entire = RB_read(rn);
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
-    soma.uhilo = (uint64_t)RN2.uentire + dpi_shiftop.uentire;
+    soma.uhilo = (uint64_t)(uint32_t)RN2.uentire + (uint64_t)(uint32_t)dpi_shiftop.uentire;
     alu_out.entire = soma.reg[0];
 
     flags.N = getBit(alu_out.entire,31);
@@ -1476,7 +1476,7 @@ inline void CMP(int rn,
     RN2.entire = RB_read(rn);
     dprintf("Operands: A = 0x%lX  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
     neg_shiftop.entire = - dpi_shiftop.entire;
-    result.hilo = (uint64_t)RN2.entire + neg_shiftop.entire;
+    result.hilo = (uint64_t)(uint32_t)RN2.entire + (uint64_t)(uint32_t)neg_shiftop.entire;
     alu_out.entire = result.reg[0];
 
     flags.N = getBit(alu_out.entire,31);
@@ -1871,7 +1871,8 @@ inline void MOV(int rd, bool s,
             return;
         }
         SPSRtoCPSR();
-    } else if (s == 1) {
+    }
+    if (s == 1){
         flags.N = getBit(dpi_shiftop.entire, 31);
         flags.Z = ((dpi_shiftop.entire == 0) ? true : false);
         flags.C = dpi_shiftopcarry;
@@ -2143,7 +2144,7 @@ inline void RSB(int rd, int rn, bool s,
     if(rn == PC) RN2.entire += 4;
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n", RN2.entire,dpi_shiftop.entire);
     neg_RN2.entire = - RN2.entire;
-    result.uhilo = (uint64_t)dpi_shiftop.uentire + neg_RN2.uentire;
+    result.uhilo = (uint64_t)(uint32_t)dpi_shiftop.uentire + (uint64_t)(uint32_t)neg_RN2.uentire;
     RD2.entire = result.reg[0];
     RB_write(rd, RD2.entire);
     if ((s == 1) && (rd == PC)) {
@@ -2181,7 +2182,7 @@ inline void RSC(int rd, int rn, bool s,
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n  Carry = %d\n", RN2.entire,dpi_shiftop.entire, flags.C);
     neg_RN2.entire = - RN2.entire;
     if (!flags.C) neg_RN2.entire--;
-    result.uhilo = (uint64_t)dpi_shiftop.uentire + neg_RN2.uentire;
+    result.uhilo = (uint64_t)(uint32_t)dpi_shiftop.uentire + (uint64_t)(uint32_t)neg_RN2.uentire;
     RD2.entire = result.reg[0];
 
     RB_write(rd, RD2.entire);
@@ -2220,7 +2221,7 @@ inline void SBC(int rd, int rn, bool s,
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n  Carry = %d\n", RN2.entire,dpi_shiftop.entire, flags.C);
     neg_shiftop.entire = - dpi_shiftop.entire; 
     if (!flags.C) neg_shiftop.entire--;
-    result.uhilo = (uint64_t)RN2.uentire + neg_shiftop.uentire;
+    result.uhilo = (uint64_t)(uint32_t)RN2.uentire + (uint64_t)(uint32_t)neg_shiftop.uentire;
     RD2.entire = result.reg[0];
     RB_write(rd, RD2.entire);
     if ((s == 1)&&(rd == PC)) {
@@ -2266,7 +2267,7 @@ inline void SMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
         return;
     }
 
-    result.hilo = (int64_t)RM2.entire * RS2.entire + acc.hilo;
+    result.hilo = (int64_t)RM2.entire * (int64_t)RS2.entire + acc.hilo;
     RB_write(rdhi,result.reg[1]);
     RB_write(rdlo,result.reg[0]);
     if(s == 1){
@@ -2299,7 +2300,7 @@ inline void SMULL(int rdhi, int rdlo, int rm, int rs, bool s,
         return;
     }
 
-    result.hilo = (int64_t)RM2.entire * RS2.entire;
+    result.hilo = (int64_t)RM2.entire * (int64_t)RS2.entire;
     RB_write(rdhi,result.reg[1]);
     RB_write(rdlo,result.reg[0]);
     if(s == 1){
@@ -2498,7 +2499,7 @@ inline void SUB(int rd, int rn, bool s,
     dprintf("B = 0x%lX\n", dpi_shiftop.entire);
 
     neg_shiftop.entire = - dpi_shiftop.entire;
-    result.uhilo = (uint64_t)RN2.uentire + neg_shiftop.uentire;
+    result.uhilo = (uint64_t)(uint32_t)RN2.uentire + (uint64_t)(uint32_t)neg_shiftop.uentire;
     RD2.entire = result.reg[0];
     RB_write(rd, RD2.entire);
     if ((s == 1)&&(rd == PC)) {
@@ -2666,7 +2667,7 @@ inline void UMLAL(int rdhi, int rdlo, int rm, int rs, bool s,
         return;
     }
 
-    result.uhilo = (uint64_t)RM2.uentire * (uint64_t)RS2.uentire
+    result.uhilo = (uint64_t)(uint32_t)RM2.uentire * (uint64_t)(uint32_t)RS2.uentire
         + (uint64_t)acc.uhilo;
     RB_write(rdhi,result.reg[1]);
     RB_write(rdlo,result.reg[0]);
@@ -2702,7 +2703,7 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
         return;
     }
 
-    result.uhilo = (uint64_t)RM2.uentire * (uint64_t)RS2.uentire;
+    result.uhilo = (uint64_t)(uint32_t)RM2.uentire * (uint64_t)(uint32_t)RS2.uentire;
     RB_write(rdhi,result.reg[1]);
     RB_write(rdlo,result.reg[0]);
     if(s == 1){
