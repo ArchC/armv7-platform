@@ -103,10 +103,12 @@ uart_module::update_flags ()
   if (rxd_pointer > 0)
     {
       rdr = true;		// receiver data ready (at least one character in fifo)
+      regs[UART_UTS / 4] &= ~(1 << 5); // Erase RxFIFO from UART_UTS
     }
   else
     {
       rdr = false;
+      regs[UART_UTS / 4] |= (1 << 5);
     }
   if (rxd_pointer > rxtl)
     {
