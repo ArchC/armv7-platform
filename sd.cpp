@@ -170,13 +170,13 @@ sd_card::exec_state_data ()
   if (data_line_busy)
     return;			// Avoid overwritting unread data on dataline
 
-  dprintf ("%s: Block Read: Sending data from address 0x%x to bus.\n",
-	   this->name (), current_address);
+  dprintf ("%s: Block Read: Sending data from block 0x%x to bus. blocklen=%d\n",
+	   this->name (), current_block, blocklen);
 
   // Send next block to dataline.
 
-  memcpy (data_line, &(((char *) data)[current_address]), blocklen);
-  current_address += blocklen;
+  memcpy (data_line, &( ((char *) data)[current_block*blocklen]), blocklen);
+  current_block += 1;
   data_line_busy = true;
 
   //If single read, stop it
@@ -543,7 +543,7 @@ sd_card::cmd17_handler (uint32_t arg)
   if (current_state == SD_TRAN)
     {
       data_line_busy = false;
-      current_address = arg;
+      current_block = arg;
       single_block_p = true;
       // Enter transfer mode
       update_state (SD_DATA);
@@ -561,7 +561,7 @@ sd_card::cmd18_handler (uint32_t arg)
 
   if (current_state == SD_TRAN)
     {
-      current_address = arg;
+      current_block = arg;
       single_block_p = false;
       update_state (SD_DATA);
     }

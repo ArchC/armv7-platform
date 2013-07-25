@@ -97,8 +97,8 @@ private:
   // Block Length defined by cmd16
   int blocklen;
 
-  // Current accessed address
-  uint32_t current_address;
+  // Current accessed block
+  uint32_t current_block;
 
   // Data line buffer.
   unsigned char data_line[4096];
