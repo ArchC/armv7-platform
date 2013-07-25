@@ -294,6 +294,7 @@ sd_card::cmd2_handler (uint32_t arg)
 
       resp.response[0] = 0x3F;
       memcpy (&(resp.response[1]), CID, 16);
+      resp.response[16] |= 0x1;  // Replace last bit with EOT bit.
     }
   else
     {

@@ -275,10 +275,8 @@ esdhc_module::decode_response (struct sd_response resp)
     case R5b:
     case R7:
       // Response[0] is ignored
-      regs[CMDRSP0 / 4] = ((resp.response[1] << 24)
-			   | (resp.response[2] << 16)
-			   | (resp.response[3] << 8)
-			   | (resp.response[4] << 0));
+      regs[CMDRSP0 / 4] = ((resp.response[1] << 24) | (resp.response[2] << 16)
+			   | (resp.response[3] << 8) | (resp.response[4] << 0));
       regs[CMDRSP1 / 4] = 0;
       regs[CMDRSP2 / 4] = 0;
       regs[CMDRSP3 / 4] = 0;
@@ -286,7 +284,9 @@ esdhc_module::decode_response (struct sd_response resp)
 
     case R6:
       // Response[0] is ignored
-      regs[CMDRSP0 / 4] = ((resp.response[1] << 24) | (resp.response[2] << 16) | (resp.response[3] << 8) | (resp.response[4] << 0) & ~0b1);	//R[39:9] Eliminate first bit
+      regs[CMDRSP0 / 4] = ((resp.response[1] << 24) | (resp.response[2] << 16)
+                           | (resp.response[3] << 8)
+                           | (resp.response[4] << 0) & ~0b1);
       regs[CMDRSP1 / 4] = 0;
       regs[CMDRSP2 / 4] = 0;
       regs[CMDRSP3 / 4] = 0;
@@ -297,30 +297,41 @@ esdhc_module::decode_response (struct sd_response resp)
       regs[CMDRSP0 / 4] = 0;
       regs[CMDRSP1 / 4] = 0;
       regs[CMDRSP2 / 4] = 0;
-      regs[CMDRSP3 / 4] = ((resp.response[1] << 24)
-			   | (resp.response[2] << 16)
-			   | (resp.response[3] << 8)
-			   | (resp.response[4] << 0));
+      regs[CMDRSP3 / 4] = ((resp.response[1] << 24) | (resp.response[2] << 16)
+			   | (resp.response[3] << 8) | (resp.response[4] << 0));
       break;
     case R2:
-      regs[CMDRSP0 / 4] = ((resp.response[1] << 24)
-			   | (resp.response[2] << 16)
-			   | (resp.response[3] << 8)
-			   | (resp.response[4] << 0));
+      regs[CMDRSP3 / 4] = ((resp.response[1] << 16) | (resp.response[2] << 8)
+                           | (resp.response[3] << 0));
 
-      regs[CMDRSP1 / 4] = ((resp.response[5] << 24)
-			   | (resp.response[6] << 16)
-			   | (resp.response[7] << 8)
-			   | (resp.response[8] << 0));
+      regs[CMDRSP2 / 4] = ((resp.response[4] << 24) | (resp.response[5] << 16)
+        		   | (resp.response[6] << 8) | (resp.response[7] << 0));
 
-      regs[CMDRSP2 / 4] = ((resp.response[9] << 24)
-			   | (resp.response[10] << 16)
-			   | (resp.response[11] << 8)
-			   | (resp.response[12] << 0));
+      regs[CMDRSP1 / 4] =
+        ((resp.response[8] << 24) | (resp.response[9] << 16)
+         | (resp.response[10] << 8) | (resp.response[11] << 0));
 
-      regs[CMDRSP3 / 4] = ((resp.response[13] << 16)
-			   | (resp.response[14] << 8)
-			   | (resp.response[15] << 0));
+      regs[CMDRSP0 / 4] = ((resp.response[12] << 24) | (resp.response[13] << 16)
+        		   | (resp.response[14] << 8) | (resp.response[15] << 0));
+
+      // regs[CMDRSP0 / 4] = ((resp.response[1] << 24)
+      //   		   | (resp.response[2] << 16)
+      //   		   | (resp.response[3] << 8)
+      //   		   | (resp.response[4] << 0));
+
+      // regs[CMDRSP1 / 4] = ((resp.response[5] << 24)
+      //   		   | (resp.response[6] << 16)
+      //   		   | (resp.response[7] << 8)
+      //   		   | (resp.response[8] << 0));
+
+      // regs[CMDRSP2 / 4] = ((resp.response[9] << 24)
+      //   		   | (resp.response[10] << 16)
+      //   		   | (resp.response[11] << 8)
+      //   		   | (resp.response[12] << 0));
+
+      // regs[CMDRSP3 / 4] = ((resp.response[13] << 16)
+      //   		   | (resp.response[14] << 8)
+      //   		   | (resp.response[15] << 0));
       break;
     default:
       printf ("SD_CARD: Decode for response type %d not implemented\n",
