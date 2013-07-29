@@ -237,6 +237,7 @@ sd_card::exec_cmd (short cmd_index, short cmd_type, uint32_t arg)
 	  return cmd55_handler (arg);
         case 43:
           struct sd_response resp;
+          resp.type = R1;
           return resp;
 	default:
 	  fprintf (stderr, "%s: CMD%d not supported/implemented "
