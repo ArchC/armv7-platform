@@ -31,7 +31,7 @@
 #include "arm_interrupts.h"
 #include "coprocessor.h"
 
-class cp15:public coprocessor
+class cp15: public coprocessor, public sc_module
 {
   typedef enum
   { CTR = 0, AUX_CTR, SEC_CONF, SEC_DBG_ENABLE, NONSEC_ACC_CTR,
@@ -57,7 +57,7 @@ class cp15:public coprocessor
   friend class MMU;
 
 private:
-    cp15_reg SCC_RB[19];
+  cp15_reg SCC_RB[19];
   cp15_reg MMU_RB[18];
 
   void reset ();
@@ -78,7 +78,7 @@ public:
 		const unsigned opc1, const unsigned opc2,
 		const unsigned crn, const unsigned crm);
 
-    cp15 ();
+  cp15 (sc_module_name name_);
 };
 
 #endif // !CP15_H.

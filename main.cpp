@@ -412,7 +412,7 @@ sc_main (int ac, char *av[])
   // Coprocessors
   memset (CP, 0, (16 * sizeof (coprocessor *)));
 
-  CP[15] = new cp15 ();
+  CP[15] = new cp15 ("cp15");
 
   // Memory Management Unit
   mmu = new MMU ("MMU", *((cp15 *) CP[15]), ip_bus);

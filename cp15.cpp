@@ -31,7 +31,7 @@ extern bool DEBUG_CP15;
 #define CL_READ      0b01
 #define CL_WRITE     0b10
 
-cp15::cp15 ()
+cp15::cp15 (sc_module_name name_): sc_module (name_)
 {
   reset ();
 }
@@ -415,9 +415,9 @@ cp15::MCR (arm_arch_ref * core,
 	   const unsigned opc2, const unsigned crn,
 	   const unsigned crm, const unsigned rt_value)
 {
-  dprintf ("\nCP15 operation MCR: "
+  dprintf ("%s: MCR: "
 	   "opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X, RegVal=0x%X\n",
-	   opc1, opc2, crn, crm, rt_value);
+	   this-> name(), opc1, opc2, crn, crm, rt_value);
 
   if (crn == 8)
     {
@@ -430,9 +430,9 @@ cp15::MCR (arm_arch_ref * core,
   if (dest == NULL)
     {
       fprintf (stderr,
-	       "WARNING: access to non-implemented cp15 register."
+	       "%s: access to non-implemented cp15 register."
 	       "Operation: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n",
-	       opc1, opc2, crn, crm);
+	       this->name(), opc1, opc2, crn, crm);
       return;
     }
 
@@ -441,7 +441,7 @@ cp15::MCR (arm_arch_ref * core,
     {
       //caller has no permission to write to this register
       //Generate Unidentified interruption
-      dprintf ("Write not allowed. Low privilege level!");
+      dprintf ("%s: Write not allowed. Low privilege level!", this->name());
       service_interrupt (*core, arm_impl::EXCEPTION_UNDEFINED_INSTR);
 
     }
@@ -455,15 +455,15 @@ cp15::MRC (arm_arch_ref * core, const arm_impl::PrivilegeLevel pl,
 	   const unsigned opc1, const unsigned opc2,
 	   const unsigned crn, const unsigned crm)
 {
-  dprintf ("CP15 operation MRC: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n",
-	   opc1, opc2, crn, crm);
+  dprintf ("%s: MRC: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n",
+	   this->name(), opc1, opc2, crn, crm);
   cp15_reg *dest = getRegister (opc1, opc2, crn, crm);
 
   if (dest == NULL)
     {
-      fprintf (stderr, "WARNING: access to non-implemented cp15 register.\n"
-	       "operation: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X",
-	       opc1, opc2, crn, crm);
+      fprintf (stderr, "%s: Access to non-implemented cp15 register."
+	       "operation: opc1=0x%X, opc2=0x%X, crn=0X%X, crm=0x%X\n",
+	       this->name(), opc1, opc2, crn, crm);
 
       return 0;
     }
@@ -473,7 +473,7 @@ cp15::MRC (arm_arch_ref * core, const arm_impl::PrivilegeLevel pl,
     {
       //caller has no permission to read this register
       //Generate Unidentified interruption
-      dprintf ("Read not allowed. Low privilege level!");
+      dprintf ("%s: Read not allowed. Low privilege level!\n", this->name());
       service_interrupt (*core, arm_impl::EXCEPTION_UNDEFINED_INSTR);
     }
   return ((*dest).value);
@@ -485,8 +485,8 @@ cp15::TLB_operations (const unsigned opc1, const unsigned opc2,
 		      const unsigned crn, const unsigned crm,
 		      const unsigned rt_value)
 {
-  dprintf ("TLB Operations not implemented in this model (yet).\n"
+  dprintf ("%s: TLB Operations not implemented in this model (yet):"
 	   "opc1=0x%X, opc2=0x%X, crn=0x%X, crm=0x%X\n",
-	   opc1, opc2, crn, crm);
+	   this->name(), opc1, opc2, crn, crm);
   return;
 }
