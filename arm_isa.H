@@ -13,8 +13,8 @@
  ******************************************************/
  
 
-#ifndef _ARMV5E_ISA_H
-#define _ARMV5E_ISA_H
+#ifndef _ARM_ISA_H
+#define _ARM_ISA_H
 
 #include "arm_parms.H"
 #include "ac_instr.H"
@@ -78,6 +78,7 @@ public:
   void _behavior_arm_Type_CLS(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int n, unsigned int w, unsigned int l, unsigned int rn, unsigned int crd, unsigned int cp_num, unsigned int imm8);
   void _behavior_arm_Type_MBKPT(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int immediate, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void _behavior_arm_Type_MSWI(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int swinumber);
+  void _behavior_arm_Type_MSMC(unsigned int cond, unsigned int op, unsigned int subop1, unsigned int func1, unsigned int func2, unsigned int imm4);
   void _behavior_arm_Type_MCLZ(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int rd, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void _behavior_arm_Type_MMSR1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void _behavior_arm_Type_MMSR2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8);
@@ -184,6 +185,7 @@ public:
   void behavior_mrs(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_msr1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
   void behavior_msr2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8);
+  void behavior_smc(unsigned int cond, unsigned int op, unsigned int subop1, unsigned int func1, unsigned int func2, unsigned int imm4);
   void behavior_dsmla(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm);
   void behavior_dsmlal(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm);
   void behavior_dsmul(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm);
@@ -195,5 +197,5 @@ public:
 
 
 
-#endif //_ARMV5E_ISA_H
+#endif //_ARM_ISA_H
 

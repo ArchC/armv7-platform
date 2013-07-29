@@ -13,8 +13,8 @@
  ******************************************************/
  
 
-#ifndef  _ARMV5E_H
-#define  _ARMV5E_H
+#ifndef  _ARM_H
+#define  _ARM_H
 
 #include "systemc.h"
 #include "ac_module.H"
@@ -62,8 +62,8 @@ public:
   arm( sc_module_name name_ ): ac_module(name_), arm_arch(), ISA(*this), inta_hnd(*this), inta("inta", inta_hnd) {
 
     SC_THREAD( behavior );
-    bhv_pc = 0;
-    has_delayed_load = false;
+    bhv_pc = 0; 
+    has_delayed_load = false; 
     start_up=1;
     id = 1;
 
@@ -111,5 +111,5 @@ public:
   virtual ~arm() {};
 
 };
-#endif  //_ARMV5E_H
+#endif  //_ARM_H
 

@@ -13,8 +13,8 @@
  ******************************************************/
  
 
-#ifndef  _ARMV5E_ARCH_REF_H
-#define  _ARMV5E_ARCH_REF_H
+#ifndef  _ARM_ARCH_REF_H
+#define  _ARM_ARCH_REF_H
 
 #include  "arm_parms.H"
 #include  "ac_arch_ref.H"
@@ -62,4 +62,4 @@ public:
 
 };
 
-#endif  //_ARMV5E_ARCH_REF_H
+#endif  //_ARM_ARCH_REF_H

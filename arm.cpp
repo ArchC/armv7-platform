@@ -11,15 +11,10 @@
  * IC-UNICAMP                                         *
  * http://www.lsc.ic.unicamp.br                       *
  ******************************************************/
-
+ 
 
 #include  "arm.H"
 #include  "arm_isa.cpp"
-extern bool  DEBUG_SD;
-extern bool DEBUG_MMU;
-extern bool DEBUG_BUS;
-extern bool DEBUG_UART;
-
 
 void arm::behavior() {
 
@@ -33,31 +28,17 @@ void arm::behavior() {
   for (;;) {
 
   bhv_pc = ac_pc;
-//  if(ac_pc >= 0x77800000 ) {DEBUG_CORE = true; }//DEBUG_BUS=true; }
-
-
-  if(ac_pc == 0x7780de2c)   // GAmbiarra para facilitar log de instruções do bootloader
-   {
-
-//       DEBUG_CORE = true;
-       
-   }
-
-
-
-//  if( bhv_pc >= APP_MEM->get_size()){
-  //    cerr << "ArchC: Address out of bounds (pc=0x" << hex << bhv_pc << ")." << endl;
-  //stop();
-  //return;
-  //}
-  //else {
-  {
-
+  // if( bhv_pc >= APP_MEM->get_size()){
+  //   cerr << "ArchC: Address out of bounds (pc=0x" << hex << bhv_pc << ")." << endl;
+  //   stop();
+  //   return;
+  // }
+  // else {
     if( start_up ){
       decode_pc = ac_pc;
       start_up=0;
     }
-    else{
+    else{ 
       decode_pc = bhv_pc;
     }
  
@@ -473,42 +454,46 @@ void arm::behavior() {
       if (!ac_annul_sig) ISA.behavior_clz(instr_vec->get(1), instr_vec->get(2), instr_vec->get(3), instr_vec->get(4), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
       break;
     case 99: // Instruction mrs
-      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_mrs(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_mrs(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
       break;
     case 100: // Instruction msr1
-      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_msr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_msr1(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(8), instr_vec->get(9), instr_vec->get(10));
       break;
     case 101: // Instruction msr2
-      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
-      if (!ac_annul_sig) ISA.behavior_msr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(31), instr_vec->get(23), instr_vec->get(32), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA._behavior_arm_Type_MMSR2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
+      if (!ac_annul_sig) ISA.behavior_msr2(instr_vec->get(1), instr_vec->get(2), instr_vec->get(32), instr_vec->get(23), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(13));
       break;
-    case 102: // Instruction dsmla
-      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_dsmla(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+    case 102: // Instruction smc
+      if (!ac_annul_sig) ISA._behavior_arm_Type_MSMC(instr_vec->get(1), instr_vec->get(17), instr_vec->get(4), instr_vec->get(30), instr_vec->get(31), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_smc(instr_vec->get(1), instr_vec->get(17), instr_vec->get(4), instr_vec->get(30), instr_vec->get(31), instr_vec->get(10));
       break;
-    case 103: // Instruction dsmlal
-      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_dsmlal(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+    case 103: // Instruction dsmla
+      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmla(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
       break;
-    case 104: // Instruction dsmul
-      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_dsmul(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+    case 104: // Instruction dsmlal
+      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmlal(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
       break;
-    case 105: // Instruction dsmlaw
-      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_dsmlaw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+    case 105: // Instruction dsmul
+      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmul(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
       break;
-    case 106: // Instruction dsmulw
-      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
-      if (!ac_annul_sig) ISA.behavior_dsmulw(instr_vec->get(1), instr_vec->get(33), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+    case 106: // Instruction dsmlaw
+      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmlaw(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      break;
+    case 107: // Instruction dsmulw
+      if (!ac_annul_sig) ISA._behavior_arm_Type_DSPSM(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
+      if (!ac_annul_sig) ISA.behavior_dsmulw(instr_vec->get(1), instr_vec->get(34), instr_vec->get(5), instr_vec->get(6), instr_vec->get(11), instr_vec->get(12), instr_vec->get(15), instr_vec->get(25), instr_vec->get(9), instr_vec->get(10));
       break;
     } // switch (ins_id)
     delete instr_vec;
     if ((!ac_wait_sig) && (!ac_annul_sig)) ac_instr_counter+=1;
     ac_annul_sig = 0;
-  }
+    //}
 //!Updating Regs for behavioral simulation.
   if(!ac_wait_sig){
     bhv_pc = ac_pc;
@@ -529,7 +514,7 @@ void arm::behavior() {
 } // for (;;)
 } // behavior()
 
-
+ 
 #include <ac_sighandlers.H>
 
 void arm::init() {

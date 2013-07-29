@@ -13,10 +13,10 @@
  ******************************************************/
  
 
-#ifndef _ARMV5E_IH_BHV_MACROS_H
-#define _ARMV5E_IH_BHV_MACROS_H
+#ifndef _ARM_IH_BHV_MACROS_H
+#define _ARM_IH_BHV_MACROS_H
 
 
 #define ac_behavior(intrp, value) arm_##intrp##_handler::handle(uint32_t value)
 
-#endif // _ARMV5E_IH_BHV_MACROS_H
+#endif // _ARM_IH_BHV_MACROS_H

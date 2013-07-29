@@ -1,5 +1,5 @@
-#ifndef _ARMV5E_BHV_MACROS_H
-#define _ARMV5E_BHV_MACROS_H
+#ifndef _ARM_BHV_MACROS_H
+#define _ARM_BHV_MACROS_H
 
 typedef ac_memport<arm_parms::ac_word, arm_parms::ac_Hword> ac_memory;
 
@@ -30,6 +30,7 @@ typedef ac_memport<arm_parms::ac_word, arm_parms::ac_Hword> ac_memory;
 #define AC_BEHAVIOR_Type_CLS() arm_parms::arm_isa::_behavior_arm_Type_CLS(unsigned int cond, unsigned int op, unsigned int p, unsigned int u, unsigned int n, unsigned int w, unsigned int l, unsigned int rn, unsigned int crd, unsigned int cp_num, unsigned int imm8)
 #define AC_BEHAVIOR_Type_MBKPT() arm_parms::arm_isa::_behavior_arm_Type_MBKPT(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int immediate, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_Type_MSWI() arm_parms::arm_isa::_behavior_arm_Type_MSWI(unsigned int cond, unsigned int op, unsigned int subop3, unsigned int swinumber)
+#define AC_BEHAVIOR_Type_MSMC() arm_parms::arm_isa::_behavior_arm_Type_MSMC(unsigned int cond, unsigned int op, unsigned int subop1, unsigned int func1, unsigned int func2, unsigned int imm4)
 #define AC_BEHAVIOR_Type_MCLZ() arm_parms::arm_isa::_behavior_arm_Type_MCLZ(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int rd, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_Type_MMSR1() arm_parms::arm_isa::_behavior_arm_Type_MMSR1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_Type_MMSR2() arm_parms::arm_isa::_behavior_arm_Type_MMSR2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8)
@@ -136,6 +137,7 @@ typedef ac_memport<arm_parms::ac_word, arm_parms::ac_Hword> ac_memory;
 #define AC_BEHAVIOR_mrs() arm_parms::arm_isa::behavior_mrs(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_msr1() arm_parms::arm_isa::behavior_msr1(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int rd, unsigned int zero3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_msr2() arm_parms::arm_isa::behavior_msr2(unsigned int cond, unsigned int op, unsigned int func11, unsigned int r, unsigned int func12, unsigned int fieldmask, unsigned int one2, unsigned int rotate, unsigned int imm8)
+#define AC_BEHAVIOR_smc() arm_parms::arm_isa::behavior_smc(unsigned int cond, unsigned int op, unsigned int subop1, unsigned int func1, unsigned int func2, unsigned int imm4)
 #define AC_BEHAVIOR_dsmla() arm_parms::arm_isa::behavior_dsmla(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_dsmlal() arm_parms::arm_isa::behavior_dsmlal(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm)
 #define AC_BEHAVIOR_dsmul() arm_parms::arm_isa::behavior_dsmul(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm)
@@ -143,5 +145,5 @@ typedef ac_memport<arm_parms::ac_word, arm_parms::ac_Hword> ac_memory;
 #define AC_BEHAVIOR_dsmulw() arm_parms::arm_isa::behavior_dsmulw(unsigned int cond, unsigned int sm, unsigned int drd, unsigned int drn, unsigned int rs, unsigned int subop2, unsigned int yy, unsigned int xx, unsigned int subop1, unsigned int rm)
 
 
-#endif //_ARMV5E_BHV_MACROS_H
+#endif //_ARM_BHV_MACROS_H
 

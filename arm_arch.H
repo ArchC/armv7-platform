@@ -13,8 +13,8 @@
  ******************************************************/
  
 
-#ifndef  ARMV5E_ARCH_H
-#define  ARMV5E_ARCH_H
+#ifndef  ARM_ARCH_H
+#define  ARM_ARCH_H
 
 #include  "arm_parms.H"
 #include  "ac_arch_dec_if.H"
@@ -79,4 +79,4 @@ public:
 
 };
 
-#endif  //_ARMV5E_ARCH_H
+#endif  //_ARM_ARCH_H

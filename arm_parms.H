@@ -13,16 +13,16 @@
  ******************************************************/
  
 
-#ifndef  _ARMV5E_PARMS_H
-#define  _ARMV5E_PARMS_H
+#ifndef  _ARM_PARMS_H
+#define  _ARM_PARMS_H
 
 namespace arm_parms {
 
 
-static const unsigned int AC_DEC_FIELD_NUMBER = 229; 	 //!< Number of Fields used by decoder.
-static const unsigned int AC_DEC_INSTR_NUMBER = 106; 	 //!< Number of Instructions declared.
-static const unsigned int AC_DEC_FORMAT_NUMBER = 24; 	 //!< Number of Formats declared.
-static const unsigned int AC_DEC_LIST_NUMBER = 414; 	 //!< Number of decodification lists used by decoder.
+static const unsigned int AC_DEC_FIELD_NUMBER = 235; 	 //!< Number of Fields used by decoder.
+static const unsigned int AC_DEC_INSTR_NUMBER = 107; 	 //!< Number of Instructions declared.
+static const unsigned int AC_DEC_FORMAT_NUMBER = 25; 	 //!< Number of Formats declared.
+static const unsigned int AC_DEC_LIST_NUMBER = 418; 	 //!< Number of decodification lists used by decoder.
 static const unsigned int AC_MAX_BUFFER = 4; 	 //!< This is the size needed by decoder buffer. It is equal to the biggest instruction size.
 static const unsigned int AC_WORDSIZE = 32; 	 //!< Architecture wordsize in bits.
 static const unsigned int AC_FETCHSIZE = 32; 	 //!< Architecture fetchsize in bits.
@@ -62,4 +62,4 @@ extern arm_parms::ac_word ArchC_ERROR___PLEASE_USE_OPTION_DELAY_WHEN_CREATING_SI
 #endif
 
 
-#endif  //_ARMV5E_PARMS_H
+#endif  //_ARM_PARMS_H

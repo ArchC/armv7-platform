@@ -54,6 +54,7 @@ AC_ISA(arm) {
   /* Instrucoes especiais */
   ac_format Type_MBKPT = "%cond:4 %op:3 %func1:4 %s:1 %immediate:12 %subop2:1 %func2:2 %subop1:1 %rm:4";
   ac_format Type_MSWI = "%cond:4 %op:3 %subop3:1 %swinumber:24";
+  ac_format Type_MSMC = "%cond:4 %op:7 %subop1:1 %func1:12 %func2:4 %imm4:4";
   ac_format Type_MCLZ = "%cond:4 %op:3 %func1:4 %s:1 %one1:4 %rd:4 %one3:4 %subop2:1 %func2:2 %subop1:1 %rm:4";
   ac_format Type_MMSR1 = "%cond:4 %op:3 %func11:2 %r:1 %func12:2 %fieldmask:4 %rd:4 %zero3:4 %subop2:1 %func2:2 %subop1:1 %rm:4";
   ac_format Type_MMSR2 = "%cond:4 %op:3 %func11:2 %r:1 %func12:2 %fieldmask:4 %one2:4 %rotate:4 %imm8:8";
@@ -97,6 +98,7 @@ AC_ISA(arm) {
   ac_instr<Type_MCLZ> clz;
   ac_instr<Type_MMSR1> mrs, msr1;
   ac_instr<Type_MMSR2> msr2;
+  ac_instr<Type_MSMC> smc;
 
   /* Instrucoes DSP */
   /* O tipo LSE de Load/Store possui instrucoes DSP (ldrd e strd) */
@@ -410,6 +412,7 @@ AC_ISA(arm) {
     //bfc is a pseudo-instruction remaps to bfi
     bfi.set_asm("bfc%[cond], %reg, #%imm, #%imm(bdist)", cond, rd , rn=0x0F, lsb,msb);
     bfi.set_decoder(op=0x3E, func1=0x01);
+
     /***********************/
     /* Branch instructions */
     /***********************/
@@ -932,8 +935,6 @@ AC_ISA(arm) {
     mrs.set_asm("mrs%[cond] %reg, %psr", cond, rd, r);    
     mrs.set_decoder(op=0x00, subop1=0x00, subop2=0x00, func11=0x02, func12=0x00, rm=0x00, fieldmask=0xF);
 
-    /* MSR will not be implemented in this model. */
-
 //    msr1.set_asm("");
     msr1.set_decoder(op=0x00, subop1=0x00, subop2=0x00, func11=0x02, func12=0x02, zero3=0x00, func2=0x00);
 
@@ -943,6 +944,9 @@ AC_ISA(arm) {
     //Now NOP has an opcode.
     nop.set_asm("nop%[cond]", cond);
     nop.set_decoder(op=0x01, func1=0x09, s=0x0, imm4=0x0, rd=0x0F, imm12=0x0);
+
+    smc.set_asm("smc%[cond] #%imm", cond, imm4);
+    smc.set_decoder(op=0x0B, subop1=0x00, func1=0x00, func2=0x07);
 
 
     /************************/

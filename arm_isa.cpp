@@ -1182,6 +1182,9 @@ void ac_behavior( Type_DSPSM ){
         OP2.entire = SignExtend((RS2.entire >> 16), 16);
 }
 
+void ac_behavior( Type_MSMC ) {
+    // no special actions necessary
+}
 
 //! Behavior Methods
 
@@ -3240,5 +3243,10 @@ void ac_behavior( mcr ) { MCR(cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
 
 //! instruction MRC
 void ac_behavior( mrc ) { MRC(cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
+
+//! instruction SMC
+void ac_behavior( smc ) {
+  fprintf(stderr, "Warning: SMC instruction in not implemented in this model.  PC=%X\n", ac_pc.read());
+}
 
 // -----------------------------------------------------------------

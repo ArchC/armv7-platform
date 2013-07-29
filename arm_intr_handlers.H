@@ -13,8 +13,8 @@
  ******************************************************/
  
 
-#ifndef _ARMV5E_INTR_HANDLERS_H
-#define _ARMV5E_INTR_HANDLERS_H
+#ifndef _ARM_INTR_HANDLERS_H
+#define _ARM_INTR_HANDLERS_H
 
 #include "ac_intr_handler.H"
 #include "arm_parms.H"
@@ -34,4 +34,4 @@ class arm_inta_handler :
 };
 
 
-#endif // _ARMV5E_INTR_HANDLERS_H
+#endif // _ARM_INTR_HANDLERS_H
