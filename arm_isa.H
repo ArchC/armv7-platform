@@ -64,6 +64,7 @@ public:
   void _behavior_arm_Type_DPI4(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
   void _behavior_arm_Type_DPI5(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
   void _behavior_arm_Type_BTM1(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
+  void _behavior_arm_Type_MED1(unsigned int cond, unsigned int op, unsigned int op1, unsigned int widthm1, unsigned int rd, unsigned int lsb, unsigned int op2, unsigned int rn);
   void _behavior_arm_Type_BBL(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void _behavior_arm_Type_BBLT(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void _behavior_arm_Type_MBXBLX(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);
@@ -137,6 +138,7 @@ public:
   void behavior_nop(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int imm4, unsigned int rd, unsigned int imm12);
   void behavior_pkh(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int rn, unsigned int rd, unsigned int shiftamount, unsigned int tb, unsigned int subop1, unsigned int rm);
   void behavior_bfi(unsigned int cond, unsigned int op, unsigned int msb, unsigned int rd, unsigned int lsb, unsigned int func1, unsigned int rn);
+  void behavior_ubfx(unsigned int cond, unsigned int op, unsigned int op1, unsigned int widthm1, unsigned int rd, unsigned int lsb, unsigned int op2, unsigned int rn);
   void behavior_blx1(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void behavior_b(unsigned int cond, unsigned int op, unsigned int h, unsigned int offset);
   void behavior_bx(unsigned int cond, unsigned int op, unsigned int func1, unsigned int s, unsigned int one1, unsigned int one2, unsigned int one3, unsigned int subop2, unsigned int func2, unsigned int subop1, unsigned int rm);

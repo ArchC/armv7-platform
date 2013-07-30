@@ -1186,6 +1186,10 @@ void ac_behavior( Type_MSMC ) {
     // no special actions necessary
 }
 
+void ac_behavior( Type_MED1 ) {
+    // no special actions necessary
+}
+
 //! Behavior Methods
 
 //------------------------------------------------------
@@ -1369,6 +1373,30 @@ inline void BFI(int rd, int rn, int lsb, int msb,
     dprintf("Operands:\nRn=0x%X, contains 0x%lX\n\nDestination: Rd=0x%X\n", rn,orig,rd);
 }
 
+//------------------------------------------------------
+
+inline void UBFX(int rd, int rn, int lsb, int width,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                 ac_reg<unsigned>& ac_pc) {
+
+  uint32_t n = RB_read(rn);
+  uint32_t msb = lsb + width - 1;
+  uint32_t mask = 0;
+  dprintf("Instruction: UBFX\n");
+
+  dprintf("Operands:\n  Rd = 0x%lX\n  Rn(r%d) = 0x%lX lsb=%d width=%d\n",
+          rd, rn, n, lsb, width);
+
+  if(rd == 15 || rn == 15) {
+      printf("Unpredictable UBFX instruction result\n");
+    }
+
+  for(int i = lsb; i <= msb; i++)
+    setBit(mask, i);
+
+  n = (n & mask) >> lsb;
+  RB_write(rd,n);
+}
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
@@ -3248,5 +3276,8 @@ void ac_behavior( mrc ) { MRC(cp_num, funcc2, funcc3, crn,crm, rd,RB,ac_pc); }
 void ac_behavior( smc ) {
   fprintf(stderr, "Warning: SMC instruction in not implemented in this model.  PC=%X\n", ac_pc.read());
 }
+
+//! instruction UBFX
+void ac_behavior( ubfx ) { UBFX(rd, rn, lsb, widthm1+1, RB, ac_pc); }
 
 // -----------------------------------------------------------------

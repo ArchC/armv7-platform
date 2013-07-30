@@ -29,7 +29,10 @@ AC_ISA(arm) {
   ac_format Type_DPI5 = "%cond:4 %op:3 %func1:4 %s:1 %rn:4 %rd:4 shiftamount:5 %tb:1 %subop1:2 %rm:4";  //NEW
 
   /* Instrucoes de manipulacao de bit */
-  ac_format Type_BTM1 = "%cond:4 %op:7  %msb:5 %rd:4 %lsb:5 %func1:3 %rn:4";	//NEW
+  ac_format Type_BTM1 = "%cond:4 %op:7 %msb:5 %rd:4 %lsb:5 %func1:3 %rn:4";	//NEW
+
+  /* Media instructions */
+  ac_format Type_MED1 = "%cond:4 %op:3 %op1:4 %widthm1:5 %rd:4 %lsb:5 %op2:3 %rn:4";
 
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1*/
   ac_format Type_BBL = "%cond:4 %op:3 %h:1 %offset:24";
@@ -71,6 +74,9 @@ AC_ISA(arm) {
 
   /* Instrucoes de manipulacao de bit */
   ac_instr<Type_BTM1> bfi;
+
+  /* Instruções de Media */
+  ac_instr<Type_MED1> ubfx;
 
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1 */
   ac_instr<Type_BBLT> blx1;
@@ -382,7 +388,6 @@ AC_ISA(arm) {
     bic3.set_asm("bic%[cond]%sf %reg, %reg, #%imm(aimm)", cond, s, rd, rn, rotate+imm8);
     bic3.set_decoder(op=0x01, func1=0x0E);
 
-
     mvn1.set_asm("mvn%[cond]%sf %reg, %reg", cond, s, rd, rm, rn=0, shiftamount=0, shift=0);
     mvn1.set_asm("mvn%[cond]%sf %reg, %reg, %shift #%imm", cond, s, rd, rm, shift, shiftamount, rn=0);
     mvn1.set_asm("mvn%[cond]%sf %reg, %reg, rrx", cond, s, rd, rm, shift=3, shiftamount=0, rn=0);
@@ -412,6 +417,9 @@ AC_ISA(arm) {
     //bfc is a pseudo-instruction remaps to bfi
     bfi.set_asm("bfc%[cond], %reg, #%imm, #%imm(bdist)", cond, rd , rn=0x0F, lsb,msb);
     bfi.set_decoder(op=0x3E, func1=0x01);
+
+    ubfx.set_asm("ubfx%[cond] %reg, %reg, #%imm, #%imm(subimm)", cond, rd, rn, lsb, widthm1);
+    ubfx.set_decoder(op=0x03, op1=0x0F, op2=0x05);
 
     /***********************/
     /* Branch instructions */
