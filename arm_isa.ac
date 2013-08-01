@@ -31,6 +31,9 @@ AC_ISA(arm) {
   /* Instrucoes de manipulacao de bit */
   ac_format Type_BTM1 = "%cond:4 %op:7 %msb:5 %rd:4 %lsb:5 %func1:3 %rn:4";	//NEW
 
+  /* Instruções de Packing, Unpacking, saturação e reversal */
+  ac_format Type_PCK1 = "%cond:4 %op1:4 %func1:4 %rn:4 %rd:4 %rotate:4 %func2:4 %rm:4";
+
   /* Media instructions */
   ac_format Type_MED1 = "%cond:4 %op:3 %op1:4 %widthm1:5 %rd:4 %lsb:5 %op2:3 %rn:4";
 
@@ -77,6 +80,9 @@ AC_ISA(arm) {
 
   /* Instruções de Media */
   ac_instr<Type_MED1> ubfx;
+
+  /* Instruções de Pack. */
+  ac_instr<Type_PCK1> uxtb, uxth;
 
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1 */
   ac_instr<Type_BBLT> blx1;
@@ -420,6 +426,11 @@ AC_ISA(arm) {
 
     ubfx.set_asm("ubfx%[cond] %reg, %reg, #%imm, #%imm(subimm)", cond, rd, rn, lsb, widthm1);
     ubfx.set_decoder(op=0x03, op1=0x0F, op2=0x05);
+
+//    uxtb.set_asm("uxtb%[cond] %reg, %reg{, ror #%imm}", cond, rd, rm,
+    uxtb.set_decoder(op1=0x06, func1=0x0E, rn=0x0F, func2=0x7);
+
+    uxth.set_decoder(op1=0x06, func1=0x0F, rn=0x0F, func2=0x7);
 
     /***********************/
     /* Branch instructions */

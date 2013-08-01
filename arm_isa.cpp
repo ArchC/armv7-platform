@@ -1133,6 +1133,12 @@ void ac_behavior( Type_LSM ){
     RB_write(rn,RN2.entire);
 }
 
+void ac_behavior( Type_PCK1 ){
+  reg_t RN2;
+  RN2.entire = RB_read(rm);
+  dpi_shiftop = RotateRight(rotate<<1, RN2);
+}
+
 void ac_behavior( Type_CDP ){
     // no special actions necessary
 }
@@ -1397,6 +1403,40 @@ inline void UBFX(int rd, int rn, int lsb, int width,
   n = (n & mask) >> lsb;
   RB_write(rd,n);
 }
+
+//------------------------------------------------------
+inline void UXTB(int rd,int rm,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                 ac_reg<unsigned>& ac_pc) {
+
+    dprintf("Instruction: UXTB\n");
+    dprintf("Operands:\n  Rm(rotated) = 0x%lX\n", dpi_shiftop.entire);
+
+    if(rd == 15 || rm == 15) {
+        printf("Unpredictable UXTB instruction result\n");
+        return;
+    }
+
+    RB_write(rd, (dpi_shiftop.entire & 0xFF));
+
+}
+//------------------------------------------------------
+inline void UXTH(int rd,int rm,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                 ac_reg<unsigned>& ac_pc) {
+
+    dprintf("Instruction: UXTH\n");
+    dprintf("Operands:\n  Rm(rotated) = 0x%lX\n", dpi_shiftop.entire);
+
+    if(rd == 15 || rm == 15) {
+        printf("Unpredictable UXTB instruction result\n");
+        return;
+    }
+
+    RB_write(rd, (dpi_shiftop.entire & 0xFFFF));
+
+}
+
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
@@ -3279,5 +3319,11 @@ void ac_behavior( smc ) {
 
 //! instruction UBFX
 void ac_behavior( ubfx ) { UBFX(rd, rn, lsb, widthm1+1, RB, ac_pc); }
+
+//! instruction UXTB
+void ac_behavior( uxtb ) { UXTB(rd, rm, RB, ac_pc); }
+
+//! instruction UXTH
+void ac_behavior( uxth ) { UXTH(rd, rm, RB, ac_pc); }
 
 // -----------------------------------------------------------------
