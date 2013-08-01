@@ -1909,7 +1909,9 @@ inline void MLA(int rd, int rn, int rm, int rs, bool s,
     dprintf("Operands:\n  A = 0x%lX\n  B = 0x%lX\n  C = 0x%lX\n", RM2.entire, RS2.entire, RN2.entire);
 
     // Special cases
-    if((rd == PC)||(rm == PC)||(rs == PC)||(rn == PC)||(rd == rm)) {
+    // Since ARMv6, the behavior of MLA when Rd==Rm is defined.
+    //    if((rd == PC)||(rm == PC)||(rs == PC)||(rn == PC)||(rd == rm)) {
+    if((rd == PC)||(rm == PC)||(rs == PC)||(rn == PC)) {
         fprintf(stderr, "Unpredictable MLA instruction result\n");
         return;
     }
@@ -2081,8 +2083,10 @@ inline void MUL(int rd, int rm, int rs, bool s,
     dprintf("Instruction: MUL\n");
     dprintf("Operands:\n  A = 0x%lX  B = 0x%lX", RM2.entire, RS2.entire);
 
-    // Special cases
-    if((rd == PC)||(rm == PC)||(rs == PC)||(rd == rm)) {
+    //  Since ARMv6, the behavior of MUL instruction when Rd==Rm is well
+    // defined.
+    //    if((rd == PC)||(rm == PC)||(rs == PC)||(rd == rm)) {
+    if((rd == PC)||(rm == PC)||(rs == PC)) {
         fprintf(stderr, "Unpredictable MUL instruction result\n");
 //    return;
     }
