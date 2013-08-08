@@ -9,9 +9,23 @@ Makefile, since it will not compile necessary modules needed by the platform.
 The first step is to automatically generate the ARM SystemC processor core
 using ArchC, make the platform and then you're ready to run:
 
-    acsim arm.ac                     (use -gdb if you want to debug)
+    acsim arm.ac -ndc                  (use -gdb if you want to debug)
     make -f Makefile.platform
 		arm.x --load=<file-path>
+
+The argument -ndc disables decoder cache. This will make your simulation
+slower but allows self-modifying code and reduces the amount of memory
+required to run the model. If you are building the full iMX53 platform
+model you must pass -ndc to acsim because the decoder cache can't handle
+a large addressing space nor self-modifying code.
+
+When building the full iMX model from scratch, the patch
+disable_size_check must be applied to the auto generated file arm.cpp
+after running the acsim tool. The patch is necessary because the ArchC
+templates make some assumptions about the size of the address space
+which are no longer true when dealing with the platform model. Failing
+to apply this patch will result in Segmentation fault when trying to run
+the model.
 
 In system level simulation, make sure to put code starting at 0x0 address,
 because this is always the entry point for the reset exception vector entry.
@@ -21,7 +35,6 @@ addresses for the segments will be used to determine where to load code in real
 memory.
 
 You may be interested in some
-
 
 :: Multiple processor instances ::
 
