@@ -411,7 +411,9 @@ void ac_behavior( begin ) {
     arm_proc_mode.thumb = false;
     arm_proc_mode.fiq = true;
     arm_proc_mode.irq = true;
-    ac_pc = 0;
+    ac_pc = 0x0;
+    //    ac_pc = 0x70008000;
+    //    RB_write (1, 3273); // imx53_loco machine type
 #endif
 }
 
@@ -1429,11 +1431,28 @@ inline void UXTH(int rd,int rm,
     dprintf("Operands:\n  Rm(rotated) = 0x%lX\n", dpi_shiftop.entire);
 
     if(rd == 15 || rm == 15) {
-        printf("Unpredictable UXTB instruction result\n");
+        printf("Unpredictable UXTH instruction result\n");
         return;
     }
 
     RB_write(rd, (dpi_shiftop.entire & 0xFFFF));
+
+}
+
+//------------------------------------------------------
+inline void SXTH(int rd,int rm,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                 ac_reg<unsigned>& ac_pc) {
+
+    dprintf("Instruction: SXTH\n");
+    dprintf("Operands:\n  Rm(rotated) = 0x%lX\n", dpi_shiftop.entire);
+
+    if(rd == 15 || rm == 15) {
+        printf("Unpredictable SXTH instruction result\n");
+        return;
+    }
+
+    RB_write(rd, SignExtend((dpi_shiftop.entire & 0xFFFF), 16));
 
 }
 
@@ -3329,5 +3348,8 @@ void ac_behavior( uxtb ) { UXTB(rd, rm, RB, ac_pc); }
 
 //! instruction UXTH
 void ac_behavior( uxth ) { UXTH(rd, rm, RB, ac_pc); }
+
+//! instruction SXTH
+void ac_behavior( sxth ) { SXTH(rd, rm, RB, ac_pc); }
 
 // -----------------------------------------------------------------
