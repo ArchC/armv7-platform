@@ -205,18 +205,19 @@ esdhc_module::generate_signal (const enum irqstat irqnum)
 
   if (regs[IRQSTATEN / 4] & irq)
     {
-      dprintf ("esdhc: Generating IRQ signal %d\n", irqnum);
+      dprintf ("%s: Generating IRQ signal %d\n", this->name(), irqnum);
+
       //Can assert IRQSTAT
       regs[IRQSTAT / 4] = regs[IRQSTAT / 4] | irq;
     }
   else
-    printf ("esdhc: IRQ signal %d, will not be generated "
-             " due to IRQSTATEN flags", irqnum);
+    dprintf ("%s: IRQ signal %d, will not be generated"
+             " due to IRQSTATEN flags", this->name(), irqnum);
 
   if (regs[IRQSIGEN / 4] & irq)
     {
-      dprintf ("esdhc: Generating IRQ interrupt due to irq signal %d\n",
-               irqnum);
+      dprintf ("%s: Generating IRQ interrupt due to irq signal %d\n",
+               this->name(), irqnum);
 
       //Can generate interruption
       tzic.interrupt (ESDHCV2_1_IRQ, /*deassert= */ true);
@@ -249,7 +250,8 @@ esdhc_module::update_state (const enum state new_state)
     }
   else if (new_state == HOST_WRITE)
     {
-      printf ("ESDHC WRITE not implement in this model");
+      fprintf (stderr, "%s: WRITE not implement in this model",
+               this->name());
       exit (1);
     }
   else if (new_state == IDLE)
@@ -258,7 +260,8 @@ esdhc_module::update_state (const enum state new_state)
     }
   else
     {
-      printf ("%s: State %d, not implemented!", new_state);
+      fprintf (stderr, "%s: State %d not implemented!",
+               this->name(), new_state);
     }
 }
 
