@@ -83,7 +83,7 @@ cp15::reset ()
   SCC_RB[MON_VEC_BASE_ADD].permissions[arm_impl::PL1] = (CL_READ | CL_WRITE);
 
   //Main ID
-  SCC_RB[MAIN_ID].value = 0x413FC082;
+  SCC_RB[MAIN_ID].value = 0x412FC081;
   SCC_RB[MAIN_ID].permissions[arm_impl::PL0] = (NO_ACCESS);
   SCC_RB[MAIN_ID].permissions[arm_impl::PL1] = (CL_READ);
 
@@ -93,7 +93,7 @@ cp15::reset ()
   SCC_RB[SILICON_ID].permissions[arm_impl::PL1] = (CL_READ);
 
   //Memory model feature
-  SCC_RB[MEM_MODEL_FEAT_0].value = 0x01100003;
+  SCC_RB[MEM_MODEL_FEAT_0].value = 0x31100003;
   SCC_RB[MEM_MODEL_FEAT_0].permissions[arm_impl::PL0] = (NO_ACCESS);
   SCC_RB[MEM_MODEL_FEAT_0].permissions[arm_impl::PL1] = (CL_READ);
 
