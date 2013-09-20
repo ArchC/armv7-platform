@@ -71,7 +71,8 @@ imx53_bus::transport (const ac_tlm_req & req)
       it++;
       if (addr >= cur->start_address && addr <= cur->end_address)
 	{
-	  if (req.type == READ)
+	  if (req.type == INSTRUCTION_READ || req.type == DATA_READ
+              || req.type == READ)
 	    {
 	      dprintf (" <--> BUS TRANSACTION: [READ] 0x%X\n", addr);
 

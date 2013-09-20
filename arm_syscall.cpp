@@ -27,7 +27,7 @@ void arm_syscall::get_buffer(int argn, unsigned char* buf, unsigned int size) {
   unsigned int addr = RB.read(argn);
 
   for (unsigned int i = 0; i<size; i++, addr++) {
-    buf[i] = MEM.read_byte(addr);
+    buf[i] = MEM.read_byte(addr, ac_inout_if::INSTRUCTION_FETCH);
   }
 }
 
