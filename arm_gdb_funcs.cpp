@@ -56,7 +56,7 @@ void arm::reg_write( int reg, ac_word value ) {
 }
 
 unsigned char arm::mem_read( unsigned int address ) {
-  return MEM.read_byte(address);
+  return MEM.read_byte(address, ac_inout_if::DATA_FETCH);
 }
 
 void arm::mem_write( unsigned int address, unsigned char byte ) {

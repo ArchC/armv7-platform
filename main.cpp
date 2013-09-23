@@ -386,6 +386,8 @@ sc_main (int ac, char *av[])
 
   // Device's connection to the bus.
   // Peripheral Memory Map.
+  ip_bus.connect_device (&ddr1, 0x70000000, 0xAFFFFFFF);
+  ip_bus.connect_device (&ddr2, 0xB0000000, 0xEFFFFFFF);
   ip_bus.connect_device (&bootmem, 0x00000000, 0x000FFFFF);
   ip_bus.connect_device (&tzic, 0x0FFFC000, 0x0FFFFFFF);
   ip_bus.connect_device (&esdhc1, 0x50004000, 0x50007FFF);
@@ -397,8 +399,6 @@ sc_main (int ac, char *av[])
   ip_bus.connect_device (&dpllc2, 0x63F84000, 0x63F87FFF);
   ip_bus.connect_device (&dpllc3, 0x63F88000, 0x63F8bFFF);
   ip_bus.connect_device (&dpllc4, 0x63F8C000, 0x63F8FFFF);
-  ip_bus.connect_device (&ddr1, 0x70000000, 0xAFFFFFFF);
-  ip_bus.connect_device (&ddr2, 0xB0000000, 0xEFFFFFFF);
   ip_bus.connect_device (&iram, 0xF8000000, 0xF801FFFF);
 
 #else // iMX53_MODEL.
@@ -447,9 +447,10 @@ sc_main (int ac, char *av[])
     duration = -1.0;
 
 #ifdef iMX53_MODEL
-//        arm_proc1.ac_start_addr = 0;
-//        arm_proc1.ac_heap_ptr = 10485700;
-//        arm_proc1.dec_cache_size = arm_proc1.ac_heap_ptr;
+  arm_proc1.ac_start_addr = 0;
+  arm_proc1.ac_heap_ptr = 10485700;
+  //  arm_proc1.dec_cache_size = arm_proc1.ac_heap_ptr;
+  arm_proc1.dec_cache_size = 0xFFFF;
 #else
   if (SYSCODE != 0)
     {
