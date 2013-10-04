@@ -51,6 +51,7 @@ AC_ISA(arm) {
   ac_format Type_LSR = "%cond:4 %op:3 %p:1 %u:1 %b:1 %w:1 %l:1 %rn:4 %rd:4 %shiftamount:5 %shift:2 %subop1:1 %rm:4";
   ac_format Type_LSE = "%cond:4 %op:3 %p:1 %u:1 %i:1 %w:1 %l:1 %rn:4 %rd:4 %addr1:4 %subop2:1 %ss:1 %hh:1 %subop1:1 %addr2:4";
   ac_format Type_LSM = "%cond:4 %op:3 %p:1 %u:1 %r:1 %w:1 %l:1 %rn:4 %rlist:16";
+  ac_format Type_MEMEX = "%cond:4 %op:7 %s:1 %rn:4 %rd:4 %subop1:4 %func1:4 %rt:4";
 
   /* Instrucoes do coprocessador */
   ac_format Type_CDP = "%cond:4 %op:3 %subop3:1 %funcc1:4 %crn:4 %crd:4 %cp_num:4 %funcc3:3 %subop1:1 %crm:4";
@@ -98,6 +99,7 @@ AC_ISA(arm) {
   ac_instr<Type_LSR> ldrt2, ldrbt2, ldr2, ldrb2, strt2, strbt2, str2, strb2;
   ac_instr<Type_LSE> ldrh, ldrsb, ldrsh, strh, ldrd, strd; // ldrd e strd sao instrucoes DSP
   ac_instr<Type_LSM> ldm, stm;
+  ac_instr<Type_MEMEX> strex, ldrex;
 
   /* Instrucoes do coprocessador */
   ac_instr<Type_CDP> cdp;
@@ -909,6 +911,11 @@ AC_ISA(arm) {
     stm.set_asm("stm%cond%mlstype %reg, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1, w=0);
     stm.set_asm("stm%cond%mlstype %reg!, {%reg...(dorlist)}^", cond, p+u, rn, rlist, r=1, w=1);
     stm.set_decoder(op=0x04, l=0x00);
+
+    // Exclusive Access instructions.
+
+    strex.set_decoder(op=0x0C, s=0x0, subop1=0xF, func1=0x9);
+    ldrex.set_decoder(op=0x0C, s=0x1, subop1=0xF, func1=0x9, rt =0xF);
 
     /*******************************/
     /* Coprocessor instructions    */

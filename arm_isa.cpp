@@ -667,6 +667,11 @@ void ac_behavior( Type_MULT2 ) {
     // no special actions necessary
 }
 
+//!MULT2 - 64-bit result multiplication
+void ac_behavior( Type_MEMEX ) {
+    // no special actions necessary
+}
+
 //!LSI - Load Store Immediate Offset/Index
 void ac_behavior( Type_LSI ) {
 
@@ -3094,6 +3099,11 @@ void ac_behavior( strbt1 ){ STRBT(rd, rn, RB, ac_pc, MEM); }
 //!Instruction ldr2 behavior method.
 void ac_behavior( ldr2 ){ LDR(rd, rn, RB, ac_pc, MEM); }
 
+void ac_behavior( ldrex ){
+  ls_address.entire = RB_read(rn);
+  LDR(rd, rn, RB, ac_pc, MEM);
+}
+
 //!Instruction ldrt2 behavior method.
 void ac_behavior( ldrt2 ){ LDRT(rd, rn, RB, ac_pc, MEM); }
 
@@ -3105,6 +3115,13 @@ void ac_behavior( ldrbt2 ){ LDRBT(rd, rn, RB, ac_pc, MEM); }
 
 //!Instruction str2 behavior method.
 void ac_behavior( str2 ){ STR(rd, rn, RB, ac_pc, MEM); }
+
+void ac_behavior( strex ){
+  ls_address.entire = RB_read(rn);
+  STR(rt, rn, RB, ac_pc, MEM);
+  RB_write(rd, 0);
+  fprintf(stderr, "arm: Using STREX dummy instruction. Might have sync issues.");
+}
 
 //!Instruction strt2 behavior method.
 void ac_behavior( strt2 ){ STRT(rd, rn, RB, ac_pc, MEM); }
