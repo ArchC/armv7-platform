@@ -3120,7 +3120,7 @@ void ac_behavior( strex ){
   ls_address.entire = RB_read(rn);
   STR(rt, rn, RB, ac_pc, MEM);
   RB_write(rd, 0);
-  fprintf(stderr, "arm: Using STREX dummy instruction. Might have sync issues.");
+  fprintf(stderr, "arm: Using STREX dummy instruction. Might have sync issues.\n");
 }
 
 //!Instruction strt2 behavior method.
