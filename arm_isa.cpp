@@ -1412,6 +1412,31 @@ inline void UBFX(int rd, int rn, int lsb, int width,
   RB_write(rd,n);
 }
 
+inline void SBFX(int rd, int rn, int lsb, int width,
+                 ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                 ac_reg<unsigned>& ac_pc) {
+
+  uint32_t n = RB_read(rn);
+  uint32_t msb = lsb + width - 1;
+  uint32_t mask = 0;
+  dprintf("Instruction: SBFX\n");
+
+  dprintf("Operands:\n  Rd = 0x%lX\n  Rn(r%d) = 0x%lX lsb=%d width=%d\n",
+          rd, rn, n, lsb, width);
+
+  if(rd == 15 || rn == 15 || msb > 31) {
+      printf("Unpredictable SBFX instruction result\n");
+    }
+
+  for(int i = lsb; i <= msb; i++)
+    setBit(mask, i);
+
+  n = (n & mask) >> lsb;
+  n = SignExtend (n, msb);
+
+  RB_write(rd,n);
+}
+
 //------------------------------------------------------
 inline void UXTB(int rd,int rm,
                  ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
@@ -1461,6 +1486,32 @@ inline void SXTH(int rd,int rm,
     RB_write(rd, SignExtend((dpi_shiftop.entire & 0xFFFF), 16));
 
 }
+
+inline void REV(int rd, int rm,
+                ac_regbank<31, arm_parms::ac_word, arm_parms::ac_Dword>& RB,
+                ac_reg<unsigned>& ac_pc) {
+
+  uint32_t rm_r = RB_read(rm);
+  uint32_t aux;
+
+  dprintf("Instruction: REV\n");
+  dprintf("Operands:\n  Rm) = 0x%lX\n", rm_r);
+
+  if(rd == 15 || rm == 15) {
+        printf("Unpredictable REV instruction result\n");
+        return;
+  }
+
+  // Revert bits
+  // AA BB CC DD becomes DD CC BB AA
+  aux = ((rm_r & 0xFF) << 24
+         | (rm_r & 0xFF<<8) << 8
+         | (rm_r & (0xFF<<16)) >> 8
+         | (rm_r & (0xFF<<24)) >> 24);
+
+  RB_write(rd, aux);
+}
+
 
 //------------------------------------------------------
 inline void BIC(int rd, int rn, bool s,
@@ -3361,6 +3412,10 @@ void ac_behavior( smc ) {
 //! instruction UBFX
 void ac_behavior( ubfx ) { UBFX(rd, rn, lsb, widthm1+1, RB, ac_pc); }
 
+//! instruction SBFX
+void ac_behavior( sbfx ) { SBFX(rd, rn, lsb, widthm1+1, RB, ac_pc); }
+
+
 //! instruction UXTB
 void ac_behavior( uxtb ) { UXTB(rd, rm, RB, ac_pc); }
 
@@ -3369,5 +3424,8 @@ void ac_behavior( uxth ) { UXTH(rd, rm, RB, ac_pc); }
 
 //! instruction SXTH
 void ac_behavior( sxth ) { SXTH(rd, rm, RB, ac_pc); }
+
+//! instruction REV
+void ac_behavior( rev ) { REV(rd, rm, RB, ac_pc); }
 
 // -----------------------------------------------------------------

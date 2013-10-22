@@ -80,10 +80,10 @@ AC_ISA(arm) {
   ac_instr<Type_BTM1> bfi;
 
   /* Instruções de Media */
-  ac_instr<Type_MED1> ubfx;
+  ac_instr<Type_MED1> ubfx, sbfx;
 
   /* Instruções de Pack. */
-  ac_instr<Type_PCK1> uxtb, uxth, sxth;
+  ac_instr<Type_PCK1> uxtb, uxth, sxth, rev;
 
   /* Instrucoes de branch - BBLT precisa de cond = 1111 - bx e blx2 sao do tipo MISC1 */
   ac_instr<Type_BBLT> blx1;
@@ -429,6 +429,8 @@ AC_ISA(arm) {
     ubfx.set_asm("ubfx%[cond] %reg, %reg, #%imm, #%imm(subimm)", cond, rd, rn, lsb, widthm1);
     ubfx.set_decoder(op=0x03, op1=0x0F, op2=0x05);
 
+    sbfx.set_decoder(op=0x03, op1=0x0D, op2=0x05);
+
 //    uxtb.set_asm("uxtb%[cond] %reg, %reg{, ror #%imm}", cond, rd, rm,
     uxtb.set_decoder(op1=0x06, func1=0x0E, rn=0x0F, func2=0x7);
 
@@ -436,6 +438,7 @@ AC_ISA(arm) {
 
     sxth.set_decoder(op1=0x06, func1=0x0B, rn=0x0F, func2=0x7);
 
+    rev.set_decoder(op1=0x06, func1=0x0B, rn=0x0F, rotate=0x0F, func2=0x03);
     /***********************/
     /* Branch instructions */
     /***********************/
