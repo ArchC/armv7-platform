@@ -2445,8 +2445,10 @@ inline void SMULL(int rdhi, int rdlo, int rm, int rs, bool s,
     dprintf("Instruction: SMULL\n");
     dprintf("Operands:\n  rm=0x%X, contains 0x%lX\n  rs=0x%X, contains 0x%lX\n  Destination(Hi): Rdhi=0x%X, Rdlo=0x%X\n", rm,RM2.entire,rs,RS2.entire,rdhi,rdlo);
 
-    // Special cases
-    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
+    //  Since ARMv6, the behavior of SMULL instruction when rdhi==rm and rdlo=rm is well
+    // defined.
+    //    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
+    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)) {
         printf("Unpredictable SMULL instruction result\n");
         return;
     }
@@ -2848,8 +2850,10 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
     dprintf("Instruction: UMULL\n");
     dprintf("Operands:\n  rm=0x%X, contains 0x%lX\n  rs=0x%X, contains 0x%lX\n  Destination(Hi): Rdhi=0x%X, Rdlo=0x%X\n", rm,RM2.entire,rs,RS2.entire,rdhi,rdlo);
 
-    // Special cases
-    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
+    //  Since ARMv6, the behavior of UMULL instruction when rdhi==rm and rdlo=rm is well
+    // defined.
+    //    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
+    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo) {
         printf("Unpredictable UMULL instruction result\n");
         return;
     }
