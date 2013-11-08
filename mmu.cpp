@@ -171,6 +171,7 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
   //Discover first level table entry address (FLA)
   for (int i = (MSB - ttbcr_n); i >= LSB; i--)
     setBit (mask, i);
+
   table_entry_index = (va & mask) >> LSB;
 
   first_level_entry_address = (ttb_address
@@ -303,15 +304,11 @@ MMU::L1::table_walk (MMU & mmu, uint32_t fla)
 uint32_t
 MMU::L2::translate (MMU & mmu, uint32_t base_address, uint32_t va)
 {
+  const uint32_t mask = 0xFF000;
   L2::table_entry page_entry;
   uint32_t phy_address;
   uint32_t table_index;
   uint32_t page_entry_address;
-  uint32_t mask = 0;
-
-  // Calculate page entry address
-  for (int i = 12; i >= 12; i--)
-    setBit (mask, i);
 
   table_index = (va & mask) >> 12;
   page_entry_address = ((base_address << 8) | table_index) << 2;
