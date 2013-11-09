@@ -287,9 +287,10 @@ esdhc_module::decode_response (struct sd_response resp)
 
     case R6:
       // Response[0] is ignored
-      regs[CMDRSP0 / 4] = ((resp.response[1] << 24) | (resp.response[2] << 16)
-                           | (resp.response[3] << 8)
-                           | (resp.response[4] << 0) & ~0b1);
+      regs[CMDRSP0 / 4] = (((resp.response[1] << 24) | (resp.response[2] << 16)
+                            | (resp.response[3] << 8)
+                            | (resp.response[4] << 0))
+                            & ~0b1);
       regs[CMDRSP1 / 4] = 0;
       regs[CMDRSP2 / 4] = 0;
       regs[CMDRSP3 / 4] = 0;

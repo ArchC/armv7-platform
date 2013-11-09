@@ -144,7 +144,7 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
   const uint32_t MSB = 31;
   const uint32_t LSB = 20;
 
-  uint32_t phy_address;
+  uint32_t phy_address = 0x0;
   uint32_t ttb_address;
   uint32_t table_entry_index;
   uint32_t first_level_entry_address;
@@ -169,7 +169,7 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
     }
 
   //Discover first level table entry address (FLA)
-  for (int i = (MSB - ttbcr_n); i >= LSB; i--)
+  for (uint32_t i = (MSB - ttbcr_n); i >= LSB; i--)
     setBit (mask, i);
 
   table_entry_index = (va & mask) >> LSB;

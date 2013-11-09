@@ -291,12 +291,12 @@ private:
     RWCTL = false;
     CREQ = false;
     SABGREQ = false;
-    DMAS[2] = false;
+    DMAS[1] = false;
     CDSS = false;
     CDTL = false;
-    EMODE[2] = false;
+    EMODE[1] = false;
     D3CD = false;
-    DTW[2] = false;
+    DTW[1] = false;
     LCTL = false;
     //--
 

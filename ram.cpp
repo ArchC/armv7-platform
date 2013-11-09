@@ -103,4 +103,5 @@ ram_module::populate (char *file, unsigned start_address)
       exit (1);
     }
   fclose (fd);
+  return 0;
 }

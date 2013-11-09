@@ -273,7 +273,7 @@ sd_card::cmd0_handler (uint32_t arg)
 {
   struct sd_response resp;
   dprintf ("%s: CMD0: arg=NOARG\n",
-	   this->name (), state_to_string (current_state));
+	   this->name ());
 
   update_state (SD_IDLE);
 
@@ -365,11 +365,13 @@ sd_card::cmd6_handler (uint32_t arg)
       memset (data_line, 0x0, blocklen);
       data_line_busy = true;
     }
-  else				// Mode 1.
+  else // Mode 1.
     {
-      printf ("%s: Mode 1 not implemented in SWITCH instruction");
+      printf ("%s: Mode 1 not implemented in SWITCH instruction",
+              this->name());
       exit (1);
     }
+  return resp;
 }
 
 // CMD7 ==> SELECT/DESELECT CARD
