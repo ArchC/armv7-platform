@@ -2853,7 +2853,7 @@ inline void UMULL(int rdhi, int rdlo, int rm, int rs, bool s,
     //  Since ARMv6, the behavior of UMULL instruction when rdhi==rm and rdlo=rm is well
     // defined.
     //    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)||(rdhi == rm)||(rdlo == rm)) {
-    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo) {
+    if((rdhi == PC)||(rdlo == PC)||(rm == PC)||(rs == PC)||(rdhi == rdlo)) {
         printf("Unpredictable UMULL instruction result\n");
         return;
     }
