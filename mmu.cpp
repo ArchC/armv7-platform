@@ -37,7 +37,7 @@ extern bool DEBUG_MMU;
 
 // Verify whether MMU translation is active.
 // Translation is active if bit 0 of SCC[ControlRegister] is high.
-bool
+inline bool
 MMU::translation_active ()
 {
   return (cop.SCC_RB[cp15::CTR].value & 0x1);
@@ -116,21 +116,29 @@ ac_tlm_rsp MMU::transport (const ac_tlm_req & req)
 {
   uint32_t phy_address;
 
-  dprintf ("|| MMU Operation: <> MMU is: ");
-
-  if (this->translation_active () == false)
+  if (translation_active () == false)
     {
-      dprintf ("OFF: ");
-      dprintf ("bypassing: Physical Address matches Virtual Address\n");
+      dprintf ("|| MMU Operation: <> MMU is: OFF: "
+               "bypassing: Physical Address matches Virtual Address\n");
 
       return talk_to_bus (req);
     }
+  dprintf ("|| MMU Operation: <> MMU is: ON:\n");
 
-  dprintf ("ON: ");
 
-  // Start first level translation.
-  phy_address = L1::translate (*this, req.addr);
+#ifdef WITH_TLB
+  tlb_t* tlb_p = (req.type == DATA_READ)? &tlb_d:&tlb_i;
 
+    if(tlb_p->fetch_item (req.addr, &phy_address) == false)
+      {
+#endif
+        // Start first level translation.
+        phy_address = L1::translate (*this, req.addr);
+
+#ifdef WITH_TLB
+        tlb_p->insert_item (req.addr, phy_address);
+      }
+#endif
   // Redispatch with translated physical address.
   return talk_to_bus (req.type, phy_address, req.data);
 }

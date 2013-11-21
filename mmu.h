@@ -32,6 +32,9 @@
 #include "arm_interrupts.h"
 #include "arm.H"
 #include "bus.h"
+#include "tlb.h"
+
+#define WITH_TLB
 
 // This code implements a minimal Memory Management Unit as specified by
 // the ARMv7 architecture and the Cortex-A8 specification. The intent of
@@ -53,7 +56,15 @@
 
 class MMU:public sc_module, public ac_tlm_transport_if
 {
- public:
+#ifdef WITH_TLB
+ private:
+  typedef tlb<9> tlb_t;
+
+  tlb_t tlb_i;
+  tlb_t tlb_d;
+#endif // WITH_TLB
+
+public:
   MMU (sc_module_name name_, cp15 & cop_, imx53_bus & bus_)
     : sc_module (name_), cop (cop_), bus_port (bus_) {};
 
