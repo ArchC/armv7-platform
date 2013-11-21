@@ -33,6 +33,8 @@
 #include <stdarg.h>
 #include <deque>
 
+#define MAX_DEVICES 15
+
 // This represents the imx53 Bus used in the ARM SoC by
 // Freescale iMX35.
 
@@ -59,15 +61,18 @@ class imx53_bus:public sc_module, public ac_tlm_transport_if
   };
 
   // Data structure to hold every device attached to bus.
-    std::deque < struct mapped_device >devices;
+  //std::deque < struct mapped_device >devices;
+  struct mapped_device devices[MAX_DEVICES];
 
-public:
+  int n_of_devices;
+ public:
 
   // signal data_abort/fetch_abort directly to the processor core.
-    sc_port < ac_tlm_transport_if > proc_port;
+  sc_port < ac_tlm_transport_if > proc_port;
 
-    imx53_bus (sc_module_name name_):sc_module (name_)
+  imx53_bus (sc_module_name name_):sc_module (name_)
   {
+    n_of_devices =0;
   };
 
   void connect_device (peripheral * device, const uint32_t start_address,

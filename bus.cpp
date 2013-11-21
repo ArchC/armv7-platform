@@ -25,9 +25,9 @@
 #include "bus.h"
 
 extern bool DEBUG_BUS;
-#define dprintf(args...)\
-    if(DEBUG_BUS) \
-        fprintf(stderr,args);
+#define dprintf(args...)                        \
+  if(DEBUG_BUS)                                 \
+    fprintf(stderr,args);
 
 //Include a new device to array.
 void
@@ -35,13 +35,10 @@ imx53_bus::connect_device (peripheral * device,
 			   const uint32_t start_address,
 			   const uint32_t end_address)
 {
-  struct imx53_bus::mapped_device new_connection;
-
-  new_connection.device = device;
-  new_connection.start_address = start_address;
-  new_connection.end_address = end_address;
-
-  devices.push_back (new_connection);
+  devices[n_of_devices].device = device;
+  devices[n_of_devices].start_address = start_address;
+  devices[n_of_devices].end_address = end_address;
+  n_of_devices++;
 }
 
 
@@ -49,26 +46,23 @@ imx53_bus::connect_device (peripheral * device,
 ac_tlm_rsp
 imx53_bus::transport (const ac_tlm_req & req)
 {
-
-  std::deque < struct mapped_device >::iterator it = devices.begin ();
-  struct imx53_bus::mapped_device * cur;
-
   ac_tlm_rsp ans;
   unsigned addr = req.addr;
   unsigned offset = (addr % 4) * 8;
+
   addr = (addr >> 2) << 2;
   ans.status = SUCCESS;
+
   if (offset)
     {
       dprintf (" ! Next bus access is misaligned. Byte offset: %d\n",
 	       offset / 8);
     }
 
-  while (it != devices.end ())
+  for(int i = 0; i < n_of_devices; i++)
     {
       // dereference operator is overloaded so we need this trick.
-      cur = &(*it);
-      it++;
+      struct imx53_bus::mapped_device *cur = &(devices[i]);
       if (addr >= cur->start_address && addr <= cur->end_address)
 	{
 	  if (req.type == INSTRUCTION_READ || req.type == DATA_READ
@@ -77,8 +71,8 @@ imx53_bus::transport (const ac_tlm_req & req)
 	      dprintf (" <--> BUS TRANSACTION: [READ] 0x%X\n", addr);
 
 	      ans.data =
-		cur->device->read_signal ((addr - cur->start_address),
-					  offset);
+		devices[i].device->read_signal ((addr - devices[i].start_address),
+                                                offset);
 	      if (offset)
 		{
 		  ans.data = ans.data >> offset;
@@ -90,8 +84,8 @@ imx53_bus::transport (const ac_tlm_req & req)
 	      dprintf (" <--> BUS TRANSACTION: [WRITE] 0x%X @0x%X \n",
 		       req.data, addr);
 
-	      cur->device->write_signal ((addr - cur->start_address),
-					 req.data, offset);
+	      devices[i].device->write_signal ((addr - devices[i].start_address),
+                                               req.data, offset);
 	      return ans;
 	    }
 	}
