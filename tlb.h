@@ -37,7 +37,7 @@ class tlb
     uint32_t pa;
   };
 
-  cache_item *vector;
+  struct cache_item *vector;
 
  public:
 
@@ -88,7 +88,7 @@ class tlb
 private:
   inline uint32_t hash(const uint32_t address)
   {
-    return ((address>>2) & ((1<<CACHE_MAGNITUDE)-1));
+    return ((address) & ((1<<CACHE_MAGNITUDE)-1));
   }
 
 };
