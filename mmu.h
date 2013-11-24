@@ -58,7 +58,7 @@ class MMU:public sc_module, public ac_tlm_transport_if
 {
 #ifdef WITH_TLB
  private:
-  typedef tlb<9> tlb_t;
+  typedef tlb<5> tlb_t;
 
   tlb_t tlb_i;
   tlb_t tlb_d;

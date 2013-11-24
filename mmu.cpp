@@ -116,6 +116,10 @@ ac_tlm_rsp MMU::transport (const ac_tlm_req & req)
 {
   uint32_t phy_address;
 
+#ifdef WITH_TLB
+  tlb_t* tlb_p;
+#endif
+
   if (translation_active () == false)
     {
       dprintf ("|| MMU Operation: <> MMU is: OFF: "
@@ -125,20 +129,23 @@ ac_tlm_rsp MMU::transport (const ac_tlm_req & req)
     }
   dprintf ("|| MMU Operation: <> MMU is: ON:\n");
 
-
 #ifdef WITH_TLB
-  tlb_t* tlb_p = (req.type == DATA_READ)? &tlb_d:&tlb_i;
 
-    if(tlb_p->fetch_item (req.addr, &phy_address) == false)
-      {
-#endif
-        // Start first level translation.
-        phy_address = L1::translate (*this, req.addr);
+  tlb_p = (req.type == DATA_READ)? &tlb_d:&tlb_i;
 
-#ifdef WITH_TLB
-        tlb_p->insert_item (req.addr, phy_address);
-      }
-#endif
+  if (tlb_p->fetch_item (req.addr>>12, &phy_address) == false)
+    {
+      // Perform L1 translation.
+      phy_address = L1::translate (*this, req.addr);
+      tlb_p->insert_item (req.addr>>12, (phy_address & ~0xFFF));
+    }
+  phy_address |= (req.addr & 0xFFF);
+
+#else // !WITH_TLB
+  // Perform L1 translation.
+  phy_address = L1::translate (*this, req.addr);
+#endif // WITH_TLB
+
   // Redispatch with translated physical address.
   return talk_to_bus (req.type, phy_address, req.data);
 }
@@ -202,14 +209,14 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
     case L1::SUPERSECTION:
       fprintf (stderr,
                "%s: This model does not support SuperSection tables.\n",
-              mmu.name());
+               mmu.name());
       exit (0);
       break;
 
     case  L1::FAULT:
       //Generate Translate Fault
       fprintf (stderr,
-              "%s: Need to generate translation fault.\n", mmu.name());
+               "%s: Need to generate translation fault.\n", mmu.name());
       exit(0);
       break;
 
