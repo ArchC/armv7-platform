@@ -65,8 +65,7 @@ imx53_bus::transport (const ac_tlm_req & req)
       struct imx53_bus::mapped_device *cur = &(devices[i]);
       if (addr >= cur->start_address && addr <= cur->end_address)
 	{
-	  if (req.type == INSTRUCTION_READ || req.type == DATA_READ
-              || req.type == READ)
+	  if (req.type == READ)
 	    {
 	      dprintf (" <--> BUS TRANSACTION: [READ] 0x%X\n", addr);
 

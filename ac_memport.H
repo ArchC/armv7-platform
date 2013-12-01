@@ -86,9 +86,8 @@ public:
   virtual ~ac_memport() {}
 
   ///Reads a word
-    inline ac_word read(uint32_t address,
-                      const ac_inout_if::access_type access_type) {
-    storage->read(&aux_word, address, sizeof(ac_word) * 8, access_type);
+  inline ac_word read(uint32_t address) {
+    storage->read(&aux_word, address, sizeof(ac_word) * 8);
     if (!this->ac_mt_endian) {
       aux_word = byte_swap(aux_word);
     }
@@ -96,9 +95,8 @@ public:
   }
 
   ///Reads a byte
-  inline uint8_t read_byte(uint32_t address,
-                           const ac_inout_if::access_type access_type) {
-    storage->read(&aux_byte, address, 8, access_type);
+  inline uint8_t read_byte(uint32_t address) {
+    storage->read(&aux_byte, address, 8);
     return aux_byte;
   }
 

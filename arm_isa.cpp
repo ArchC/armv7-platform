@@ -101,8 +101,8 @@ static reg_t OP2;
 // #ifdef SYSTEM_MODEL
 #define RB_write       bypass_write
 #define RB_read        bypass_read
-#define MEM_read(x)      MEM.read((x), ac_inout_if::DATA_FETCH)
-#define MEM_read_byte(x) MEM.read_byte((x), ac_inout_if::DATA_FETCH)
+#define MEM_read       MEM.read
+#define MEM_read_byte  MEM.read_byte
 #define MEM_write      MEM.write
 #define MEM_write_half MEM.write_half
 #define MEM_write_byte MEM.write_byte
@@ -412,7 +412,6 @@ void ac_behavior( begin ) {
     arm_proc_mode.fiq = true;
     arm_proc_mode.irq = true;
     ac_pc = 0x0;
-
     //    ac_pc = 0x70008000;
     //    RB_write (1, 3273); // imx53_loco machine type
 #endif
