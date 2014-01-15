@@ -24,4 +24,7 @@ arm_intr_handlers.H
 arm_isa.H
 arm_isa_init.cpp
 arm_parms.H
+arm_decode_unit.H
+arm_decode_unit.cpp
+Makefile.archc
 *.tmpl
