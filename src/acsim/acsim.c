@@ -45,6 +45,7 @@ int  ACStatsFlag=0;                             //!<Indicates whether statistics
 int  ACVerboseFlag=0;                           //!<Indicates whether verbose option is turned on or not
 int  ACGDBIntegrationFlag=0;                    //!<Indicates whether gdb support will be included in the simulator
 int  ACWaitFlag=1;                              //!<Indicates whether the instruction execution thread issues a wait() call or not
+int  ACargHandleParamFlag = 1;                  //!<Indicates whether ArchC must be used to parse simulator command lines.
 
 //char *ACVersion = "2.0alpha1";                        //!<Stores ArchC version number.
 char ACOptions[500];                            //!<Stores ArchC recognized command line options
@@ -89,6 +90,7 @@ struct option_map option_map[] = {
   {"--version"       , "-vrs"        ,"Display ACSIM version.", 0},
   {"--gdb-integration", "-gdb"       ,"Enable support for debbuging programs running on the simulator.", 0},
   {"--no-wait"       , "-nw"        ,"Disable wait() at execution thread.", 0},
+  {"--nohandle-param", "-np"         ,"Disable ArchC's command line parser in generated models.", "o"},
   { }
 };
 
@@ -279,6 +281,9 @@ int main(int argc, char** argv) {
             case OPWait:
               ACWaitFlag = 0;
               ACOptions_p += sprintf( ACOptions_p, "%s ", argv[0]);
+              break;
+            case OPNoHandleParam:
+              ACargHandleParamFlag = 0;
               break;
             default:
               break;
@@ -1798,9 +1803,12 @@ void CreateProcessorImpl() {
   fprintf(output, "void %s::init(int ac, char *av[]) {\n", project_name);
   fprintf(output, "%sextern char* appfilename;\n", INDENT[1]);
 
-  fprintf(output, "%sac_init_opt( ac, av);\n", INDENT[1]);
-  fprintf(output, "%sac_init_app( ac, av);\n", INDENT[1]);
-  fprintf(output, "%sAPP_MEM->load(appfilename);\n", INDENT[1]);
+  if (ACargHandleParamFlag == 1) {
+    fprintf(output, "%sac_init_opt( ac, av);\n", INDENT[1]);
+    fprintf(output, "%sac_init_app( ac, av);\n", INDENT[1]);
+    fprintf(output, "%sAPP_MEM->load(appfilename);\n", INDENT[1]);
+  }
+
   fprintf(output, "%sset_args(ac_argc, ac_argv);\n", INDENT[1]);
   fprintf(output, "#ifdef AC_VERIFY\n");
   fprintf(output, "%sset_queue(av[0]);\n", INDENT[1]);

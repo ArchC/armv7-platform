@@ -97,6 +97,7 @@ enum _ac_cmd_options {
   OPVersion,
   OPGDBIntegration,
   OPWait,
+  OPNoHandleParam,
   ACNumberOfOptions
 };
 
