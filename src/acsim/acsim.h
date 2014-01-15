@@ -131,6 +131,7 @@ void CreateStatsHeaderTmpl(void);                 //!< Creates the header file f
 void CreateStatsImplTmpl();                       //!< Create the implementation file for ArchC statistics collection class.
 void CreateArchSyscallHeader(void);               //!< Creates the header file for ArchC model syscalls.
 void CreateIntrHeader(void);                      //!< Creates the header file for interrupt handlers.
+void CreateDecodeUnitHeader(void);                //!< Creates the .h file for decode unit.
 void CreateIntrMacrosHeader(void);                //!< Creates the header file for interrupt handler macros.
 void CreateMakefile(void);                        //!< Creates a Makefile for teh ArchC nodel.
 void CreateRegsImpl(void);                        //!< Creates the .cpp template file for formatted registers.
@@ -138,6 +139,7 @@ void CreateImplTmpl(void);                        //!< Creates the .cpp template
 void CreateIntrTmpl(void);                        //!< Creates the .cpp template file for interrupt handlers.
 void CreateMainTmpl(void);                        //!< Creates the .cpp template file for the main function.
 void CreateProcessorImpl(void);                   //!< Creates the .cpp file for processor module.
+void CreateDecodeUnitImpl(void);                  //!< Creates the .cpp file for decode unit module.
 
 /** @defgroup emitfunc Emit Functions
  * @ingroup acsim
