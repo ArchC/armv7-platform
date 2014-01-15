@@ -40,7 +40,7 @@ extern bool DEBUG_MMU;
 inline bool
 MMU::translation_active ()
 {
-  return (cop.SCC_RB[cp15::CTR].value & 0x1);
+  return (cop.registers[cp15::CONTROL].value & 0x1);
 }
 
 // This method returns the Translate Table Base address. It
@@ -59,23 +59,22 @@ MMU::ttb_address (uint32_t * TTBAdd, uint32_t va)
   uint32_t ttb = 0;
 
   // Read TTBCR.N
-  ttbcr_n = cop.MMU_RB[cp15::TTB_CTR].value & 0b111;
+  ttbcr_n = cop.registers[cp15::TRANSLATION_TABLE_BASE_CONTROL].value & 0b111;
 
   //Algorithm to choose between TTBR_x. Extracted from ARM Manual  P. B3-1321
   //If N == 0 then use TTBR0.
   //if N > 0 then:
   //   if bits[31:32-N] of the input VA are all zero then use TTBR0
   //   otherwise use TTBR1
-  if (ttbcr_n == 0)
-    ttb = cop.MMU_RB[cp15::TTB_0].value;
-  else
+
+  ttb = cop.registers[cp15::TRANSLATION_TABLE_BASE_0].value;
+  if (ttbcr_n != 0)
     {
-      ttb = cop.MMU_RB[cp15::TTB_0].value;
       for (int i = 31; i >= ((MSB + 1) - ttbcr_n); i--)
         {
           if (isBitSet (va, i) == 1)
             {
-              ttb = cop.MMU_RB[cp15::TTB_1].value;
+              ttb = cop.registers[cp15::TRANSLATION_TABLE_BASE_1].value;
               used = 1;
               break;
             }
@@ -131,7 +130,7 @@ ac_tlm_rsp MMU::transport (const ac_tlm_req & req)
 
 #ifdef WITH_TLB
 
-  tlb_p = (req.type == DATA_READ)? &tlb_d:&tlb_i;
+  tlb_p = /*(req.type == DATA_READ)? &tlb_d:*/&tlb_i;
 
   if (tlb_p->fetch_item (req.addr>>12, &phy_address) == false)
     {
@@ -172,7 +171,9 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
   if (mmu.ttb_address (&ttb_address, va) == 0)
     {
       // Read TTBCR.N
-      ttbcr_n = mmu.cop.MMU_RB[cp15::TTB_CTR].value & 0b111;
+      ttbcr_n = (mmu.cop.registers[cp15::TRANSLATION_TABLE_BASE_CONTROL].value
+                 & 0b111);
+
       dprintf ("%s: TTBR0 used. Address=0x%x. N = TTBCR.N = %d\n",
                mmu.name(), ttb_address, ttbcr_n);
     }
@@ -217,7 +218,7 @@ MMU::L1::translate (MMU & mmu, uint32_t va)
       //Generate Translate Fault
       fprintf (stderr,
                "%s: Need to generate translation fault.\n", mmu.name());
-      exit(0);
+      //exit(0);
       break;
 
     case L1::RESERVED:
