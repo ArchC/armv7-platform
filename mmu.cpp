@@ -23,6 +23,11 @@
 
 #include<mmu.h>
 
+// TLB is still not complete. It might present some issues when multiprocessing.
+//So, lets keep it down for now.
+
+#undef WITH_TLB
+
 extern bool DEBUG_MMU;
 
 #define dprintf(args...)                        \
@@ -130,7 +135,7 @@ ac_tlm_rsp MMU::transport (const ac_tlm_req & req)
 
 #ifdef WITH_TLB
 
-  tlb_p = /*(req.type == DATA_READ)? &tlb_d:*/&tlb_i;
+  tlb_p = (req.type == DATA_READ)? &tlb_d:&tlb_i;
 
   if (tlb_p->fetch_item (req.addr>>12, &phy_address) == false)
     {
