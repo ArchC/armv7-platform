@@ -11,23 +11,24 @@
 
 .align 4
 .text
-.boot_device_jmp_table:
-         .word BOOTDEVICE_NOR_EIM      @ 0b0000
-         .word BOOTDEVICE_RESERVED     @ 0b0001
-         .word BOOTDEVICE_HARD_DISK    @ 0b0010
-         .word BOOTDEVICE_SROM         @ 0b0011
-         .word BOOTDEVICE_SD_ESD       @ 0b0100
-         .word BOOTDEVICE_SD_ESD       @ 0b0101
-         .word BOOTDEVICE_MMC_EMMC     @ 0b0110
-         .word BOOTDEVICE_MMC_EMMC     @ 0b0111
-         .word BOOTDEVICE_NAND         @ 0b1000
-         .word BOOTDEVICE_NAND         @ 0b1001
-         .word BOOTDEVICE_NAND         @ 0b1010
-         .word BOOTDEVICE_NAND         @ 0b1011
-         .word BOOTDEVICE_NAND         @ 0b1100
-         .word BOOTDEVICE_NAND         @ 0b1101
-         .word BOOTDEVICE_NAND         @ 0b1110
-         .word BOOTDEVICE_NAND         @ 0b1111
+
+.boot_device_table:
+         .byte BOOTDEVICE_NOR_EIM      @ 0b0000
+         .byte BOOTDEVICE_RESERVED     @ 0b0001
+         .byte BOOTDEVICE_HARD_DISK    @ 0b0010
+         .byte BOOTDEVICE_SROM         @ 0b0011
+         .byte BOOTDEVICE_SD_ESD       @ 0b0100
+         .byte BOOTDEVICE_SD_ESD       @ 0b0101
+         .byte BOOTDEVICE_MMC_EMMC     @ 0b0110
+         .byte BOOTDEVICE_MMC_EMMC     @ 0b0111
+         .byte BOOTDEVICE_NAND         @ 0b1000
+         .byte BOOTDEVICE_NAND         @ 0b1001
+         .byte BOOTDEVICE_NAND         @ 0b1010
+         .byte BOOTDEVICE_NAND         @ 0b1011
+         .byte BOOTDEVICE_NAND         @ 0b1100
+         .byte BOOTDEVICE_NAND         @ 0b1101
+         .byte BOOTDEVICE_NAND         @ 0b1110
+         .byte BOOTDEVICE_NAND         @ 0b1111
 .align 4
 
 @ --[ Module initialization ]----------------------------------------------@
@@ -69,8 +70,8 @@ src_read_boot_device:
 
         @Apply mask
         and r1, r1, #BOOTDEVICE_MASK
-        lsr r1, r1, #2
+        lsr r1, r1, #4
 
-        ldr r2, =.boot_device_jmp_table
+        ldr r2, =.boot_device_table
         ldrb r0, [r2, r1]
         mov pc, lr
