@@ -269,7 +269,7 @@ private:
     CLSL = false;
     WPSPL = false;
     CDPL = false;
-    CINS = false;
+    CINS = (port)? true:false; // Set if there is a card connected.
     BREN = false;
     BWEN = false;
     RTA = false;
