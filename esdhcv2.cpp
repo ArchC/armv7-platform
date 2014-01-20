@@ -365,7 +365,7 @@ esdhc_module::fast_read (unsigned address)
 
     case PRSSTAT:
       return
-	(((DLSL & 0b1111111) << 24)
+	(((DLSL & 0xFF) << 24)
 	 | (CLSL << 23)
 	 | (WPSPL << 19)
 	 | (CDPL << 18)
@@ -378,7 +378,10 @@ esdhc_module::fast_read (unsigned address)
 	 | (PEROFF << 6)
 	 | (HCKOFF << 5)
 	 | (IPGOFF << 4)
-	 | (SDSTB << 3) | (DLA << 2) | (CDIHB << 1) | (CIHB << 0));
+	 | (SDSTB << 3)
+         | (DLA << 2)
+         | (CDIHB << 1)
+         | (CIHB << 0));
 
     case PROCTL:
       return
