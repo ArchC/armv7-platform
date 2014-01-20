@@ -108,7 +108,16 @@ system_init:
 @ Enter infinite loop. R0 should have error code.
 
 hang:
-        b hang
+        @backup error code
+        mov r5, r0
+        @Hang...
+        ldr r0, =_STRING_HANG_
+        mov r1, #11
+        bl write
+        @Restore error code
+        mov r0, r5
+_hang:
+        b _hang
 
 @ --[ print_banner ]-------------------------------------------------------@
 @
@@ -252,4 +261,5 @@ _STRING_BOOT_REASON_POR_:
 _STRING_BOOT_DEVICE_SD_:
         .asciz "Boot Device: [SD]\n"
 
-
+_STRING_HANG_:
+        .asciz "Hanging...\n"
