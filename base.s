@@ -97,6 +97,7 @@ system_init:
         bl print_banner
         bl find_boot_reason
         bl find_boot_device
+        bl init_sd_device
 
         @Finish Boot, lets hang for now.
         mov r0, #SUCCESS
@@ -162,6 +163,24 @@ find_boot_device:
 
         ldmfd sp!, {pc}
 
+@ --[ init_sd_device  ]--------------------------------------------------@
+@
+@
+@   This function is responsible for initializing boot device.
+
+init_sd_device:
+        stmfd sp!, {lr}
+        bl configure_esdhc
+        cmp r0, #SUCCESS
+        bne hang
+
+        bl init_sd
+        cmp r0, #SUCCESS
+        bne hang
+
+        ldmfd sp!, {pc}
+
+
 @ --[ Init Load  ]---------------------------------------------------------@
 @
 @
@@ -221,7 +240,6 @@ find_boot_device:
 @@	bl write
 @@	ldmfd sp!, {pc}
 @@
-
 
 _STRING_IVTHEAD_:
         .asciz "\nImage Vector Table(IVT):\n"
