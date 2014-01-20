@@ -46,10 +46,19 @@ _sw_reset_wait_loop:
         @ Verify if a card is connected
         bl card_connected
         cmp r0, #0
-        moveq r0, #ERROR_NO_SD_CARD
-        beq _end_of_configure_esdhc
+        beq _no_sd_err
 
+        ldr r0, =_STRING_MMC_INIT_
+        mov r1, #17
+        bl write
         mov r0, #SUCCESS
+        b _end_of_configure_esdhc
+
+_no_sd_err:
+        ldr r0, =_STRING_ERROR_NO_SD_CARD_
+        mov r1, #29
+        bl write
+        mov r0, #ERROR_NO_SD_CARD
 _end_of_configure_esdhc:
         ldmfd sp!, {pc}
 
@@ -58,7 +67,7 @@ _end_of_configure_esdhc:
 @   Verify whether there is a card connected, using the CINS bit.
 @
 @ Returns
-@       R0 - 0 if no card wa found
+@       R0 - 0 if no card was found
 @          - > 0 if card was found
 card_connected:
         ldr r0, =ESDHC_BASE
@@ -66,6 +75,12 @@ card_connected:
         and r0, r0, #PRSSTAT_CINS
         mov pc, lr
 
-	.globl init_sd
+_STRING_ERROR_NO_SD_CARD_:
+        .asciz "ERROR: MMC: No SD card found\n"
+_STRING_MMC_INIT_:
+        .asciz "MMC Initialized.\n"
+
+        .align 4
+       	.globl init_sd
 init_sd:
         mov pc, lr
