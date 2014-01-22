@@ -201,7 +201,7 @@ static argp_option arm_model_options[] = {
    "Define port to expect a GDB connection",
    CMD_CLASS_GDB},
 
-  {"bootrom", 'b', "<image>", 0,
+  {"boot", 'b', "<image>", 0,
    "Define bootstrapping code image",
    CMD_CLASS_CODE},
 
