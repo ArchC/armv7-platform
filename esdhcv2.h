@@ -217,7 +217,7 @@ public:
   SC_HAS_PROCESS (esdhc_module);
   esdhc_module (sc_module_name name_, tzic_module & tzic_);
 
-  void connect_card (sd_card & card);
+  void connect_card (sd_card *card);
 
 private:
 

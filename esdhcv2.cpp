@@ -58,9 +58,9 @@ esdhc_module::reset_DAT_line ()
 // Append a new card to Data port and signals to host a new card was
 // inserted
 void
-esdhc_module::connect_card (sd_card & card)
+esdhc_module::connect_card (sd_card *card)
 {
-  port = &card;
+  port = card;
   CINS = true;
   generate_signal (IRQ_CINS_int);
 }

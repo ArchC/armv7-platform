@@ -380,9 +380,9 @@ sc_main (int ac, char *av[])
   // Clock Control Module.
   ccm_module ccm ("ccm", tzic);
 
-  // Primary boot SD card.
-  sd_card card ("microSD", SDCARD);
-  esdhc1.connect_card (card);
+  // If user included a sd card, create and connect it.
+  if (SDCARD)
+      esdhc1.connect_card (new sd_card ("microSD", SDCARD));
 
   // Device's connection to the bus.
   // Peripheral Memory Map.
