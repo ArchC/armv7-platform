@@ -11,6 +11,7 @@
      .set ESDHC_CMDRSP0    , 0x10  @@ ESDHCv2 Command Response 0
      .set ESDHC_CMDRSP1    , 0x14  @@ ESDHCv2 Command Response 1
      .set ESDHC_CMDRSP2    , 0x18  @@ ESDHCv2 Command Response 2
+     .set ESDHC_CMDRSP3    , 0x1c  @@ ESDHCv2 Command Response 3
      .set ESDHC_DATPORT    , 0x20  @@ ESDHCv2 Data buffer access port
      .set ESDHC_PRSSTAT    , 0x24  @@ ESDHCv2 Present State
      .set ESDHC_PROCTL     , 0x28  @@ ESDHCv2 Protocol Control
@@ -33,3 +34,9 @@
      .set SYSCTL_RSTA,      0x01000000
 
      .set PRSSTAT_CINS,     0x00010000
+
+     .set MMC_RSP_PRESENT,0b1
+     .set MMC_RSP_136,    0b10		@@ 136 bit response
+     .set MMC_RSP_CRC,    0b100		@@ expect valid crc
+     .set MMC_RSP_BUSY,   0b1000		@@ card may send busy
+     .set MMC_RSP_OPCODE, 0b10000		@@ response contains opcode

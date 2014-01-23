@@ -23,7 +23,7 @@ image: head elf
 	@echo "Just plug it into your ROM device simulator"
 	@echo "==========================================================="
 
-elf: base.o uart.o src.o esdhc.o
+elf: base.o uart.o src.o esdhc.o sd.o
 	$(LD) -g -Ttext=0x0 $+ -o dumboot.elf
 
 %.o: %.c

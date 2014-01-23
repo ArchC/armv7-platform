@@ -8,8 +8,6 @@
 	.data
 	.align 4
 
-.set TEMP_STACK, 0xF801F000
-
 .set UNDEFINED_iRAM,  0
 .set SWI_iRAM,        0
 .set PREFETCH_iRAM,   0
@@ -32,6 +30,7 @@
 .set BOOT_DEVICE_SD, 0x5
 
 .include "error.inc"
+.include "globals.inc"
 
 .text
 .org 0x0
@@ -98,6 +97,7 @@ system_init:
         bl find_boot_reason
         bl find_boot_device
         bl init_sd_device
+        bl load_ivt
 
         @Finish Boot, lets hang for now.
         mov r0, #SUCCESS
@@ -186,9 +186,19 @@ init_sd_device:
         bl init_sd
         cmp r0, #SUCCESS
         bne hang
-
         ldmfd sp!, {pc}
 
+@ --[ load_ivt  ]--------------------------------------------------@
+@
+@
+@   Perform initial load of ivt.
+load_ivt:
+        stmfd sp!, {lr}
+        ldr r0, =IVT_BUFFER
+        mov r1, #0
+        mov r2, #2
+        bl sd_load_block
+        ldmfd sp!, {pc}
 
 @ --[ Init Load  ]---------------------------------------------------------@
 @
@@ -260,6 +270,5 @@ _STRING_BOOT_REASON_POR_:
         .asciz "\nBoot Reason: [POR]\n"
 _STRING_BOOT_DEVICE_SD_:
         .asciz "Boot Device: [SD]\n"
-
 _STRING_HANG_:
         .asciz "Hanging...\n"

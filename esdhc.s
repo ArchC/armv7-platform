@@ -7,6 +7,7 @@
 @
 	.include "esdhc_defs.inc"
       	.include "error.inc"
+        .include "globals.inc"
 
 @ --[ Global data ]--------------------------------------------------------@
 @
@@ -62,6 +63,62 @@ _no_sd_err:
 _end_of_configure_esdhc:
         ldmfd sp!, {pc}
 
+
+@ --[ esdhc_get_response ]-----------------------------------------------@
+@
+@   Return Response for a command
+@
+@ Arguments
+@	R0 - Response type
+@
+@ Returns
+@       R0 - Return pointer to REPONSE_STRUCT
+.globl esdhc_get_response
+esdhc_get_response:
+        stmfd sp!, {r4-r9, lr}
+        ldr r4, =ESDHC_BASE
+        ldr r1, =ESDHC_RESPONSE_STRUCT
+        mov r9, r1
+
+        tst r0, #MMC_RSP_136
+        beq _get_response_simple
+
+        ldr r8, [r4, #ESDHC_CMDRSP3]
+        ldr r7, [r4, #ESDHC_CMDRSP2]
+        ldr r6, [r4, #ESDHC_CMDRSP1]
+        ldr r5, [r4, #ESDHC_CMDRSP0]
+
+        @cmd->response[0]
+        mov r2, r8, lsl #8
+        orr r2, r2, r7, lsr #24
+        str r2, [r1], #4
+
+        @cmd->response[1]
+        mov r2, r7, lsl #8
+        orr r2, r2, r6, lsr #24
+        str r2, [r1], #4
+
+        @cmd->response[2]
+        mov r2, r6, lsl #8
+        orr r2, r2, r5, lsr #24
+        str r2, [r1], #4
+
+        @cmd->response[3]
+        mov r2, r5, lsl #0x8
+        str r2, [r1], #4
+
+        b _end_of_get_response
+
+_get_response_simple:
+        @cmd->response[0]
+        ldr r2, [r4, #ESDHC_CMDRSP0]
+        str r2, [r1]
+
+_end_of_get_response:
+        mov r0, r9
+        ldmfd sp!, {r4-r9, pc}
+
+
 @ --[ card_connected ]---------------------------------------------------@
 @
 @   Verify whether there is a card connected, using the CINS bit.
@@ -80,7 +137,3 @@ _STRING_ERROR_NO_SD_CARD_:
 _STRING_MMC_INIT_:
         .asciz "MMC Initialized.\n"
 
-        .align 4
-       	.globl init_sd
-init_sd:
-        mov pc, lr
