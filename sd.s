@@ -70,9 +70,7 @@ _end_of_init_sd:
  @
  @ Set the block length by sending a CMD16 to
  @ SD card controller.
-
- .globl sd_set_blockLen
- sd_set_blockLen:
+ sd_set_block_len:
          stmfd sp!, {lr}
          mov r1, r0     @ARG
          mov r2, #0x1   @CMDTYP
@@ -235,7 +233,7 @@ sd_get_cid:
 
         mov r0, #0
         ldmfd sp!, {r4, pc}
-        
+
 @ --------------------------------------------------------------------------------
 @ Get Response
 @
@@ -252,14 +250,41 @@ sd_get_response:
         ldmfd sp!, {r5, pc}
 
 @ --------------------------------------------------------------------------------
-@ sd_load_block
+@ sd_read
 @
 @ Argument
-@   r0 - destinati on address
-@   r1 - Block
+@   r0 - destination Address
+@   r1 - SD Start block
 @   r2 - Number of blocks
-        .globl sd_load_block
-sd_load_block:
-        stmfd sp!, {lr}
-        ldmfd sp!, {pc}
+        .globl sd_read
+sd_read:
+        stmfd sp!, {r4-r8, lr}
+
+        @ Backup register.
+        mov r4, r0
+        mov r5, r1
+        mov r6, r2
+
+        @ Setup block count and block size for controller.
+        mov r0, r6
+        ldr r1, =READ_BLOCK_LEN
+        bl esdhc_set_block_attr
+
+        @ Setup block size for sd card.
+        ldr r0, =READ_BLOCK_LEN
+        bl sd_set_block_len
+
+        @Start Read
+
+        @Decide whether multiblock or singleblock
+        cmp r6, #1
+        moveq r0, #MMC_CMD_READ_SINGLE_BLOCK
+        movne r0, #MMC_CMD_READ_MULTIPLE_BLOCK
+
+        mov r1, r5
+        mov r2, #MMC_RSP_R1
+        mov r3, r4
+        bl esdhc_send_command
+
+        ldmfd sp!, {r4-r8, pc}
 

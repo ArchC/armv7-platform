@@ -145,30 +145,29 @@ card_connected:
         and r0, r0, #PRSSTAT_CINS
         mov pc, lr
 
-@ --[ esdhc_set_block_count ]-----------------------------------------------@
+@ --[ esdhc_set_block_attr ]-----------------------------------------------@
 @
 @ Set block count on BLKATTR register.
 @
 @ Arguments
 @        R0 - Block count
-esdhc_set_block_count:
-        ldr r1, =ESDHC_BASE
-        ldr r2, [r1, #ESDHC_BLKATTR]
-        ldr r3, =0xfff
-        and r2, r2, r3
-        orr r2, r2, r0, lsl #16
-        str r2, [r1, #ESDHC_BLKATTR]
+@        R1 - Block size
+        .globl esdhc_set_block_attr
+esdhc_set_block_attr:
+        ldr r3, =ESDHC_BASE
+        orr r0, r1, r0, lsl #16
+        str r0, [r3, #ESDHC_BLKATTR]
         mov pc, lr
-@ --[ esdhc_set_block_count ]-----------------------------------------------@
+
+@ --[ esdhc_get_block_count ]-----------------------------------------------@
 @
 @ Get block count on BLKATTR register.
 @
 @ Returns:
 @        R0 - Block count
-esdhc_get_block_count:
+esdhc_get_block_attr:
         ldr r1, =ESDHC_BASE
         ldr r0, [r1, #ESDHC_BLKATTR]
-        lsr r0, #16
         mov pc, lr
 
 @ --[ esdhc_send_command ]-----------------------------------------------@
@@ -186,12 +185,11 @@ esdhc_get_block_count:
 
         .globl esdhc_send_command
 esdhc_send_command:
-        stmfd sp!, {r4-r6, lr}
+        stmfd sp!, {r4-r8, lr}
         ldr r4, =ESDHC_BASE
 
         @ Clear ESDHC_IRQSTAT
-        mov r5, #0
-        neg r5, r5
+        mov r5, #-1
         str r5, [r4, #ESDHC_IRQSTAT]
 
         @Activate SDHCI_IRQ_EN_BITS
@@ -212,9 +210,28 @@ _esdhc_send_cmd_while_not_idle:
 
         @Prepare string XFERTYP
         mov r0, r0, lsl  #24            @Command Index
-        orr r0, r0, r0                  @cmd type  <<FIX
         orr r0, r0, r2, LSL #16         @ Response Type
 
+        @Prepare data.
+        cmp r3, #0
+        beq _esdhc_send_cmd_end_of_prepare_data
+
+        @ Set wml
+        ldr r5, [r4, #ESDHC_BLKATTR]
+        ldr r6, =0xfff
+        and r5, r6, r5, lsr #2
+        cmp r5, #0x80
+        movge r5, #0x80
+        str r5, [r4, #ESDHC_WML]
+
+        @prepare xfertyp
+        ldr r5, [r4, #ESDHC_BLKATTR]
+        lsr r5, #16
+        cmp r5, #1
+        ldreq r5, =XFERTYP_READ_BITS
+        ldrne r5, =XFERTYP_MULTIPLE_READ_BITS
+        orr r0, r0, r5
+_esdhc_send_cmd_end_of_prepare_data:
         @ Send argument
         str r1, [r4, #ESDHC_CMDARG]
 
@@ -243,7 +260,9 @@ _esdhc_send_cmd_while_no_complete:
 
         @ Fill response structure
         mov r0, r2                @Response type
+        mov r5, r3
         bl esdhc_fill_response
+        mov r3, r5
 
         @ Still need to handle data.
         cmp r3, #0
@@ -293,13 +312,12 @@ ____esdhc_send_cmd_end_of_for_blksize:
 _esdhc_send_cmd_end_of_FOR_blk_count:
 _esdhc_send_cmd_end_of_data_fetch:
        @ Clear ESDHC_IRQSTAT and terminates.
-        mov r5, #0
-        neg r5, r5
+        mov r5, #-1
         str r5, [r4, #ESDHC_IRQSTAT]
 
         mov r0, #0
 _esdhc_send_cmd_end:
-        ldmfd sp!, {r4-r6, pc}
+        ldmfd sp!, {r4-r8, pc}
 
 _STRING_ERROR_NO_SD_CARD_:
         .asciz "ERROR: MMC: No SD card found\n"
