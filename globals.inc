@@ -14,6 +14,7 @@
 @ Position where SD RCA is stored. 4 bytes
         .set SD_RCA, 0xF801F030
 
-@ IVT buffer. 0x200 bytes
-        .set IVT_BUFFER, 0xF801F100
+@ IVT buffer. 2K bytes (0x800 bytes)
+        .set INITIAL_LOAD_BUFFER, 0xF801F100
+        
 

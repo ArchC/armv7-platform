@@ -194,10 +194,11 @@ init_sd_device:
 @   Perform initial load of ivt.
 load_ivt:
         stmfd sp!, {lr}
-        ldr r0, =IVT_BUFFER
+        ldr r0, =INITIAL_LOAD_BUFFER
         mov r1, #0
-        mov r2, #2
+        mov r2, #4      @ 2k bytes.
         bl sd_read
+        ldr r0, =INITIAL_LOAD_BUFFER
         ldmfd sp!, {pc}
 
 @ --[ Init Load  ]---------------------------------------------------------@
