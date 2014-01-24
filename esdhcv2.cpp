@@ -86,7 +86,7 @@ esdhc_module::prc_ESDHCV2 ()
 {
   do
     {
-      dprintf ("-------------------- ESDHCV2 -------------------- \n");
+      ///      dprintf ("-------------------- ESDHCV2 -------------------- \n");
       wait (1, SC_NS);
 
       if (current_state == IDLE)
@@ -212,7 +212,7 @@ esdhc_module::generate_signal (const enum irqstat irqnum)
     }
   else
     dprintf ("%s: IRQ signal %d, will not be generated"
-             " due to IRQSTATEN flags", this->name(), irqnum);
+             " due to IRQSTATEN flags\n", this->name(), irqnum);
 
   if (regs[IRQSIGEN / 4] & irq)
     {
@@ -337,16 +337,16 @@ esdhc_module::decode_response (struct sd_response resp)
       //   		   | (resp.response[14] << 8)
       //   		   | (resp.response[15] << 0));
       break;
-    default:
-      printf ("SD_CARD: Decode for response type %d not implemented\n",
-	      resp.type);
+      //    default:
+      //      printf ("SD_CARD: Decode for response type %d not implemented\n",
+      //	      resp.type);
     }
 }
 
 unsigned
 esdhc_module::fast_read (unsigned address)
 {
-  dprintf ("ESDHCv2 READ address: register: 0x%X ", address);
+  dprintf ("ESDHCv2 READ address: register: 0x%X\n", address);
   uint32_t datum;
   switch (address)
     {
