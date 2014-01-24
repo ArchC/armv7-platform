@@ -97,7 +97,7 @@ system_init:
         bl find_boot_reason
         bl find_boot_device
         bl init_sd_device
-        bl load_ivt
+        bl initial_load
 
         @Finish Boot, lets hang for now.
         mov r0, #SUCCESS
@@ -188,17 +188,24 @@ init_sd_device:
         bne hang
         ldmfd sp!, {pc}
 
-@ --[ load_ivt  ]--------------------------------------------------@
+@ --[ initial_load  ]--------------------------------------------------@
 @
 @
 @   Perform initial load of ivt.
-load_ivt:
+initial_load:
         stmfd sp!, {lr}
         ldr r0, =INITIAL_LOAD_BUFFER
         mov r1, #0
         mov r2, #4      @ 2k bytes.
         bl sd_read
-        ldr r0, =INITIAL_LOAD_BUFFER
+
+        ldr r0, =_STRING_INITIAL_LOAD_
+        mov r1, #58
+        bl write
+
+        ldr r0, =_STRING_IVT_LOAD_
+        mov r1, #23
+        bl write
         ldmfd sp!, {pc}
 
 @ --[ Init Load  ]---------------------------------------------------------@
@@ -273,3 +280,8 @@ _STRING_BOOT_DEVICE_SD_:
         .asciz "Boot Device: [SD]\n"
 _STRING_HANG_:
         .asciz "Hanging...\n"
+_STRING_INITIAL_LOAD_:
+        .asciz "Initial load section loaded at 0xf801f100 size=0x800 (2k)\n"
+_STRING_IVT_LOAD_:
+        .asciz "IVT offset is at 0x400\n"
+
