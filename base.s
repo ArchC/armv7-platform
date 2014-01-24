@@ -98,6 +98,18 @@ system_init:
         bl find_boot_device
         bl init_sd_device
         bl initial_load
+        bl print_ivt
+
+        ldr r0, =_STRING_BYE_
+        mov r1, #57
+        bl write
+
+        @ Jump to entry code.
+        ldr r0, =INITIAL_LOAD_BUFFER
+        add r0, r0, #IVT_BASE
+        ldr r1, [r0, #IVT_ENTRY_OFFSET]
+
+        mov pc, r1
 
         @Finish Boot, lets hang for now.
         mov r0, #SUCCESS
@@ -188,6 +200,16 @@ init_sd_device:
         bne hang
         ldmfd sp!, {pc}
 
+@ --[ print_ivt  ]--------------------------------------------------@
+@
+@
+@   This function is responsible for printing IVT
+
+print_ivt:
+        stmfd sp!, {lr}
+        .warning "Should print IVT"
+        ldmfd sp!, {pc}
+
 @ --[ initial_load  ]--------------------------------------------------@
 @
 @
@@ -208,66 +230,6 @@ initial_load:
         bl write
         ldmfd sp!, {pc}
 
-@ --[ Init Load  ]---------------------------------------------------------@
-@
-@
-@   This function is responsible for performing the initial load to main memory
-@   It loads 4KB, starting by IVT offset, and returns the initial position.
-
-@   Returns: 'r0' IVT position
-@
-
-@@initial_load:
-@@        stmfd sp!, {lr}
-@@
-@@	@SD blocklen
-@@        mov r0, #0x4 @ 4 bytes on a block
-@@        bl  sd_set_blockLen
-@@
-@@        mov r1, #0x4 @ Must be same as blockLen
-@@        bl esdhc_setBlockAttr
-@@
-@@        @ldr self value
-@@        mov r0, #0
-@@        movt r0, #0xF800
-@@        mov r9,r0
-@@        mov r1, #IVT_BASE
-@@        add r1, r1, #IVT_SELF_OFFSET @add
-@@        mov r2, #1                   @ N of blocks
-@@        mov r3, #4                   @WML lvl
-@@        bl sd_readblock
-@@        mov r9,r0
-@@@Self loaded
-@@@change block settings
-@@	@SD blocklen
-@@        mov r0, #400
-@@        bl  sd_set_blockLen
-@@
-@@        mov r1, #400
-@@        bl esdhc_setBlockAttr
-@@
-@@        ldr r0, [r9]            @Position pointed by SELF offset
-@@        mov r1, #IVT_BASE       @
-@@@        ldr r2, =0x172b0        @2KB in blocks  << Overflow no block cnt
-@@@        ldr r2, =0x072b0        @2KB in blocks  << Overflow no block cnt
-@@@        ldr r2, =0x052b0        @2KB in blocks
-@@        mov r2, #400
-@@
-@@        mov r3, #0x4
-@@        bl sd_readblock
-@@
-@@        ldr r0, [r9]       @Return IVT
-@@        ldmfd sp!, {pc}
-@@
-@@
-@@print_ivt_header:
-@@	stmfd sp!, {lr}
-@@	ldr r0, =_STRING_IVTHEAD_
-@@	mov r1, #71
-@@	bl write
-@@	ldmfd sp!, {pc}
-@@
-
 _STRING_IVTHEAD_:
         .asciz "\nImage Vector Table(IVT):\n"
         .asciz "Tag:     0xD1\n"
@@ -284,4 +246,7 @@ _STRING_INITIAL_LOAD_:
         .asciz "Initial load section loaded at 0xf801f100 size=0x800 (2k)\n"
 _STRING_IVT_LOAD_:
         .asciz "IVT offset is at 0x400\n"
+
+_STRING_BYE_:
+        .asciz "\nTransfering control to loaded code at 0x778005e00...\n\n"
 

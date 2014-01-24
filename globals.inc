@@ -15,6 +15,6 @@
         .set SD_RCA, 0xF801F030
 
 @ IVT buffer. 2K bytes (0x800 bytes)
-        .set INITIAL_LOAD_BUFFER, 0xF801F100
-        
+        @.set INITIAL_LOAD_BUFFER, 0xF801F100
+        .set INITIAL_LOAD_BUFFER,  0x77800000
 
