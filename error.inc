@@ -6,3 +6,6 @@
         .set ERROR_SD_INIT_FAIL,                0x00000004
         .set ERROR_SD_SEND_IF_COND_FAIL,        0x00000005
 
+        .set ERROR_SD_CMD_ERROR,                0x00000006
+        .set ERROR_SD_CMD_TIMEOUT,              0x00000007
+
