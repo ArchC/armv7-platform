@@ -287,9 +287,10 @@ ____esdhc_send_cmd_wait_brr:
         beq ____esdhc_send_cmd_wait_brr
 
         mov r7, #0
-        ldr r8, [r4, #ESDHC_BLKATTR]
-        ldr r0 , =0xFFF
-        and r8, r8, r0
+@        ldr r8, [r4, #ESDHC_BLKATTR]
+@        ldr r0 , =0xFFF
+@        and r8, r8, r0
+        ldr r8, =512
         lsr r8, #2
 ____esdhc_send_cmd_for_blksize:
         cmp r7, r8

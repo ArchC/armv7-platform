@@ -197,7 +197,7 @@ load_ivt:
         ldr r0, =IVT_BUFFER
         mov r1, #0
         mov r2, #2
-        bl sd_load_block
+        bl sd_read
         ldmfd sp!, {pc}
 
 @ --[ Init Load  ]---------------------------------------------------------@
