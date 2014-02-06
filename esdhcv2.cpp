@@ -559,7 +559,7 @@ esdhc_module::fast_write (unsigned address, unsigned datum)
     case BLKATTR:
       BLKCNT = datum >> 16;
       BLKCNT_BKP = BLKCNT;
-      BLKSIZE = datum & 0x1FF;
+      BLKSIZE = datum & 0x1FFF;
       break;
 
     default:
