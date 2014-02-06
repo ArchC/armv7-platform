@@ -9,3 +9,7 @@
         .set ERROR_SD_CMD_ERROR,                0x00000006
         .set ERROR_SD_CMD_TIMEOUT,              0x00000007
 
+        .set ERROR_NO_IVT,                      0x00000008
+        .set ERROR_NO_BOOTDATA,                 0x00000009
+
+

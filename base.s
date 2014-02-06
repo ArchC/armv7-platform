@@ -97,19 +97,19 @@ system_init:
         bl find_boot_reason
         bl find_boot_device
         bl init_sd_device
-        bl initial_load
+        bl load_ivt
+
+        @ R0 has entry point address.
+        mov r4, r0
+
         bl print_ivt
 
         ldr r0, =_STRING_BYE_
         mov r1, #57
         bl write
 
-        @ Jump to entry code.
-        ldr r0, =INITIAL_LOAD_BUFFER
-        add r0, r0, #IVT_BASE
-        ldr r1, [r0, #IVT_ENTRY_OFFSET]
-
-        mov pc, r1
+        @ jump to entry address.
+        mov pc, r4
 
         @Finish Boot, lets hang for now.
         mov r0, #SUCCESS
@@ -210,24 +210,53 @@ print_ivt:
         .warning "Should print IVT"
         ldmfd sp!, {pc}
 
-@ --[ initial_load  ]--------------------------------------------------@
+@ --[ load_ivt  ]--------------------------------------------------@
 @
 @
 @   Perform initial load of ivt.
-initial_load:
+load_ivt:
         stmfd sp!, {lr}
+        @Load IVT to IRAM.
         ldr r0, =INITIAL_LOAD_BUFFER
         mov r1, #0
         mov r2, #4      @ 2k bytes.
         bl sd_read
 
-        ldr r0, =_STRING_INITIAL_LOAD_
-        mov r1, #58
-        bl write
+        ldr r0, =IVT_POSITION
 
-        ldr r0, =_STRING_IVT_LOAD_
-        mov r1, #23
-        bl write
+        #Verify tag.
+        ldrb r1, [r0, #IVT_HEADER_OFFSET]
+        cmp r1, #0xd1
+        movne r0, #ERROR_NO_IVT
+        blne hang
+
+        ldr r1, [r0, #IVT_SELF_OFFSET]
+        sub r1, r1, #0x400
+
+        ldr r2, [r0, #IVT_BOOTDATA_OFFSET]
+        sub r2, r1  @Make BOOTDATA relative
+        ldr r0, =INITIAL_LOAD_BUFFER
+        add r2, r0, r2      @Pointer to bootdata
+
+        @Sanity check. verify if self and bootdata point to correct addresses
+        ldr r3, [r2]
+        cmp r3, r1
+        movne r0, #ERROR_NO_BOOTDATA
+        blne hang
+
+        @ Load image destination.
+        mov r0, r3
+        mov r1, #0x0
+        @ Load image size
+        ldr r2, [r2, #4]
+        lsr r2, r2, #9  @divide per 512 (blocksize).
+
+        @ Make initial load
+        bl sd_read
+
+        @return entry point.
+        ldr r0, =IVT_POSITION
+        ldr r0, [r0, #IVT_ENTRY_OFFSET]
         ldmfd sp!, {pc}
 
 _STRING_IVTHEAD_:
@@ -246,7 +275,6 @@ _STRING_INITIAL_LOAD_:
         .asciz "Initial load section loaded at 0xf801f100 size=0x800 (2k)\n"
 _STRING_IVT_LOAD_:
         .asciz "IVT offset is at 0x400\n"
-
 _STRING_BYE_:
         .asciz "\nTransfering control to loaded code at 0x778005e00...\n\n"
 

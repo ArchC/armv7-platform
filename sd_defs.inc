@@ -55,6 +55,6 @@
 
         .set OCR_BUSY,		0x80000000
 
-        .set READ_BLOCK_LEN,     0x512
+        .set READ_BLOCK_LEN,     512
         .set BLKSIZE,            512
 

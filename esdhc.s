@@ -67,7 +67,7 @@ _no_sd_err:
 _end_of_configure_esdhc:
         ldmfd sp!, {pc}
 
-@ --[ esdhc_get_response ]-----------------------------------------@
+@ --[ esdhc_get_response ]---------------------------------------------------@
 @
 @   Return pointer to response structure.
 @
