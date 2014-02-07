@@ -28,7 +28,6 @@
 #include <stdint.h> // define types uint32_t, etc
 #include "coprocessor.h"
 #include "mmu.h"
-#include <assert.h>
 
 using namespace arm_parms;
 
@@ -337,9 +336,6 @@ void writeCPSR(unsigned value) {
     arm_proc_mode.fiq = getBit(CPSR.entire,6)? true : false;
     arm_proc_mode.irq = getBit(CPSR.entire,7)? true : false;
     arm_proc_mode.mode = value & arm_impl::processor_mode::MODE_MASK;
-
-    assert(arm_proc_mode.fiq && arm_proc_mode.irq
-           && "Interruptions must be disabled");
 }
 
 // This function implements the transfer of the SPSR of the current processor
@@ -384,8 +380,6 @@ void writeSPSR(unsigned value) {
         ref->SPSR_und = value;
         break;
     }
-    assert(arm_proc_mode.fiq && arm_proc_mode.irq
-           && "Interruptions must be disabled");
 }
 
 unsigned readSPSR() {
