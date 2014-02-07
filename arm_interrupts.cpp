@@ -1,27 +1,24 @@
 #include "arm_interrupts.h"
 #include "arm_arch_ref.H"
 #include <cassert>
+#include <cp15.h>
 
 // Exception vector addresses
 static const unsigned int RESET_ADDR             = 0x00000000;
-static const unsigned int RESET_ADDR_HI          = 0xffff0000;
 static const unsigned int UNDEFINED_ADDR         = 0x00000004;
-static const unsigned int UNDEFINED_ADDR_HI      = 0xffff0004;
 static const unsigned int SWI_ADDR               = 0x00000008;
-static const unsigned int SWI_ADDR_HI            = 0xffff0008;
 static const unsigned int PREFETCH_ABORT_ADDR    = 0x0000000c;
-static const unsigned int PREFETCH_ABORT_ADDR_HI = 0xffff000c;
 static const unsigned int DATA_ABORT_ADDR        = 0x00000010;
-static const unsigned int DATA_ABORT_ADDR_HI     = 0xffff0010;
 static const unsigned int IRQ_ADDR               = 0x00000018;
-static const unsigned int IRQ_ADDR_HI            = 0xffff0018;
 static const unsigned int FIQ_ADDR               = 0x0000001c;
-static const unsigned int FIQ_ADDR_HI            = 0xffff001c;
+
+extern coprocessor *CP[16];
 
 unsigned readCPSR();
 void writeCPSR(unsigned);
 
 void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
+  uint32_t interrupt_vector_base;
   unsigned cpsr = readCPSR();
 
   // FIQ disabled?
@@ -32,6 +29,14 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
   if ((cpsr & (1 << 7)) && excep_type == arm_impl::EXCEPTION_IRQ)
     return;
 
+#ifdef HIGH_VECTOR
+  interrupt_vector_base = 0xffff0000;
+#else
+  interrupt_vector_base =
+    (reinterpret_cast<cp15*>(CP[15]))->
+    getRegisterValue(cp15::SECURE_OR_NONSECURE_VECTOR_BASE_ADDRESS) & ~(0x1f);
+#endif
+
   switch(excep_type) {
   case arm_impl::EXCEPTION_RESET:
     ref.R14_svc = 0;
@@ -40,9 +45,9 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
     cpsr = cpsr | arm_impl::processor_mode::SUPERVISOR_MODE;
     cpsr = cpsr | (1 << 6); // disable FIQ
 #ifdef HIGH_VECTOR
-    ref.ac_pc = RESET_ADDR_HI;
+    ref.ac_pc = 0xffff0000 + RESET_ADDR;
 #else
-    ref.ac_pc = RESET_ADDR;
+    ref.ac_pc = interrupt_vector_base + RESET_ADDR;
 #endif
     break;
   case arm_impl::EXCEPTION_UNDEFINED_INSTR:
@@ -54,33 +59,21 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
     ref.SPSR_und = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::UNDEFINED_MODE;
-#ifdef HIGH_VECTOR
-    ref.ac_pc = UNDEFINED_ADDR_HI;
-#else
-    ref.ac_pc = UNDEFINED_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base +UNDEFINED_ADDR;
     break;
   case arm_impl::EXCEPTION_SWI:
     ref.R14_svc = ref.ac_pc;  // remember ac_pc is pc+4 at each end of cycle
     ref.SPSR_svc = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::SUPERVISOR_MODE;
-#ifdef HIGH_VECTOR
-    ref.ac_pc = SWI_ADDR_HI;
-#else
-    ref.ac_pc = SWI_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base + SWI_ADDR;
     break;
   case arm_impl::EXCEPTION_PREFETCH_ABORT:
     ref.R14_abt = ref.ac_pc;  // remember ac_pc is pc+4 at each end of cycle
     ref.SPSR_abt = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::ABORT_MODE;
-#ifdef HIGH_VECTOR
-    ref.ac_pc = PREFETCH_ABORT_ADDR_HI;
-#else
-    ref.ac_pc = PREFETCH_ABORT_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base + PREFETCH_ABORT_ADDR;
     break;
   case arm_impl::EXCEPTION_DATA_ABORT:
     ref.R14_abt = ref.ac_pc + 4;  // remember ac_pc is pc+4 at each end of
@@ -88,11 +81,7 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
     ref.SPSR_abt = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::ABORT_MODE;
-#ifdef HIGH_VECTOR
-    ref.ac_pc = DATA_ABORT_ADDR_HI;
-#else
-    ref.ac_pc = DATA_ABORT_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base + DATA_ABORT_ADDR;
     break;
   case arm_impl::EXCEPTION_IRQ:
     ref.R14_irq = ref.ac_pc + 4;  // remember ac_pc is pc+4 at each end of cycle
@@ -102,11 +91,7 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
     ref.SPSR_irq = cpsr;
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::IRQ_MODE;
-#ifdef HIGH_VECTOR
-    ref.ac_pc = IRQ_ADDR_HI;
-#else
-    ref.ac_pc = IRQ_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base + IRQ_ADDR;
     break;
   case arm_impl::EXCEPTION_FIQ:
     ref.R14_fiq = ref.ac_pc + 4;  // remember ac_pc is pc+4 at each end of cycle
@@ -117,11 +102,7 @@ void service_interrupt(arm_arch_ref& ref, unsigned excep_type) {
     cpsr = cpsr & ~arm_impl::processor_mode::MODE_MASK;
     cpsr = cpsr | arm_impl::processor_mode::FIQ_MODE;
     cpsr = cpsr | (1 << 6); // disable FIQ
-#ifdef HIGH_VECTOR
-    ref.ac_pc = FIQ_ADDR_HI;
-#else
-    ref.ac_pc = FIQ_ADDR;
-#endif
+    ref.ac_pc = interrupt_vector_base + DATA_ABORT_ADDR;
     break;
   default:
     assert(0 && "Unknown interrupt type!");

@@ -33,6 +33,7 @@
 
 class cp15: public coprocessor, public sc_module
 {
+ public:
   static const int MAIN_ID                      = 0x0000;
   static const int CACHE_TYPE                   = 0x0001;
   static const int TCM_TYPE                     = 0x0002;
@@ -149,7 +150,7 @@ class cp15: public coprocessor, public sc_module
   static const int CONTEXT_ID = 0xd001;
 
   // Struct that stores a coprocessor 15 register.
-
+ private:
   struct cp15_register
   {
     // Value stored in the register.
@@ -173,7 +174,6 @@ class cp15: public coprocessor, public sc_module
 
   friend class MMU;
 
-private:
   struct cp15_register registers[0xFFFF];
 
   void reset ();
@@ -193,6 +193,9 @@ public:
 		const unsigned crn, const unsigned crm);
 
   cp15 (sc_module_name name_);
+
+  uint32_t getRegisterValue (const unsigned hash)
+  {return registers[hash].value;};
 };
 
 #endif // !CP15_H.
