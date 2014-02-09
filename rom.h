@@ -81,12 +81,18 @@ public:
 	      const char *dataPath):sc_module (name_), tzic (tzic_)
   {
 
+    if (!dataPath)
+      {
+        printf ("ArchC: You must provide a boot code.\n");
+        exit (1);
+      }
+
     printf ("ArchC: Reading flat binary file: %s\n", dataPath);
 
     int dataFile = open (dataPath, O_RDONLY);
     if (dataFile == -1)
       {
-	printf ("Unable to load boot file %s", dataPath);
+	printf ("Unable to load boot file %s\n", dataPath);
 	exit (1);
       }
     struct stat st;
