@@ -123,7 +123,7 @@ model_print_version (FILE * stream, struct argp_state *state)
 
 static char doc[] = "ARMv7 iMX53_loco plataform ArchC simulator";
 static char args_doc[] =
-  "--bootrom=<boot_image> --sd=<sd_image> --debug-<device>";
+  "--rom=<boot_image> --sd=<sd_image> --debug-<device>";
 
 bool
 activate_debug_mode (const char *mode)
@@ -179,7 +179,7 @@ static argp_option arm_model_options[] = {
    "Run for <cycles> plataform cycles",
    CMD_CLASS_CTL},
 
-  {"batch-cycles", 'r', "<cycles>", 0,
+  {"batch-cycles", 'b', "<cycles>", 0,
    "Run n+1 processor cycles for each plataform cycle",
    CMD_CLASS_CTL},
 
@@ -201,8 +201,8 @@ static argp_option arm_model_options[] = {
    "Define port to expect a GDB connection",
    CMD_CLASS_GDB},
 
-  {"boot", 'b', "<image>", 0,
-   "Define bootstrapping code image",
+  {"rom", 'r', "<image>", 0,
+   "Define bootstrapping ROM code image",
    CMD_CLASS_CODE},
 
   {"sd", 's', "<image>", 0,
@@ -292,7 +292,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
       // Define number of plataform simulation cycles
-    case 'r':
+    case 'b':
       {
 	int r = sscanf (arg, "%d", &BATCH_SIZE);
 	if (r != 1)
@@ -301,7 +301,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
       // Inform bootstrapping code image path.
-    case 'b':
+    case 'r':
       BOOTCODE = strdup (arg);
       break;
 
@@ -352,9 +352,6 @@ sc_main (int ac, char *av[])
 
   // DDR_1 RAM Memory.
   ram_module ddr1 ("ram_ddr_1", tzic, 0x3FFFFFFF);
-  ddr1.populate
-    ("/home/gabriel/unicamp/ic/arm/system_code/my_image/u-boot.bin",
-     0x7800000);
 
   // DDR_1 RAM Memory.
   ram_module ddr2 ("ram_ddr_2", tzic, 0x3FFFFFFF);
