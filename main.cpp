@@ -108,12 +108,12 @@ const char *argp_program_bug_address = "<krisman.gabriel@gmail.com>";
 void
 model_print_version (FILE * stream, struct argp_state *state)
 {
-  fprintf (stream, "ArchC ARM iMX.53 plataform model %s.\n", model_version);
+  fprintf (stream, "ArchC ARM iMX.53 plataform model %s.\n\n", model_version);
   fprintf (stream, "Copyright (c) 2013 The ArchC team.\n");
 
   fprintf (stream, "This is free software; see the source for copying "
 	   "conditions.\nThere is NO warranty; not even for MERCHANTABILITY"
-	   "or FITNESS\nFOR A PARTICULAR PURPOSE.\n");
+	   "or FITNESS\nFOR A PARTICULAR PURPOSE.\n\n");
 
   fprintf (stream, "This simulator was generated using ArchC %s "
 	   "and configured with %s\n", archc_version, archc_options);
