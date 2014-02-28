@@ -315,6 +315,11 @@ parse_opt (int key, char *arg, struct argp_state *state)
       SYSCODE = strdup (arg);
       break;
 
+    case ARGP_KEY_END:
+      if (BOOTCODE == NULL)
+        argp_usage (state);
+      break;
+
     default:
       return ARGP_ERR_UNKNOWN;
     }
