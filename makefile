@@ -1,9 +1,7 @@
-CROSS_PREFIX=/home/gabriel/unicamp/ic/cross/arm-eabi-4.4.3/bin/arm-eabi-
-
-AS=$(CROSS_PREFIX)as
-LD=$(CROSS_PREFIX)ld
-OBJDUMP=$(CROSS_PREFIX)objdump
-OBJCOPY=$(CROSS_PREFIX)objcopy
+AS=$(CROSS_COMPILE)as
+LD=$(CROSS_COMPILE)ld
+OBJDUMP=$(CROSS_COMPILE)objdump
+OBJCOPY=$(CROSS_COMPILE)objcopy
 
 CFLAGS= -g -O0
 
