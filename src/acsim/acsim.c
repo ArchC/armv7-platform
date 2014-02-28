@@ -3094,18 +3094,18 @@ void EmitFetchInit( FILE *output, int base_indent){
   if (!ACDecCacheFlag){
     fprintf( output, "%sif( ac_pc >= APP_MEM->get_size()){\n", INDENT[base_indent]);
   }
-  else
-    fprintf( output, "%sif( ac_pc >= dec_cache_size){\n", INDENT[base_indent]);
+  /* else */
+  /*   fprintf( output, "%sif( ac_pc >= dec_cache_size){\n", INDENT[base_indent]); */
 
-  fprintf( output, "%scerr << \"ArchC: Address out of bounds (pc=0x\" << hex << ac_pc << \").\" << endl;\n", INDENT[base_indent+1]);
+  /* fprintf( output, "%scerr << \"ArchC: Address out of bounds (pc=0x\" << hex << ac_pc << \").\" << endl;\n", INDENT[base_indent+1]); */
 	//  fprintf( output, "%scout = cerr;\n", INDENT[base_indent+1]);
 
 /*   fprintf( output, "%sac_stop();\n", INDENT[base_indent+1]); */
-  fprintf( output, "%sstop();\n", INDENT[base_indent+1]);
-  fprintf( output, "%sreturn;\n", INDENT[base_indent+1]);
-  fprintf( output, "%s}\n", INDENT[base_indent]);
+  /* fprintf( output, "%sstop();\n", INDENT[base_indent+1]); */
+  /* fprintf( output, "%sreturn;\n", INDENT[base_indent+1]); */
+  /* fprintf( output, "%s}\n", INDENT[base_indent]); */
 
-  fprintf( output, "%selse {\n", INDENT[base_indent]);
+  /* fprintf( output, "%selse {\n", INDENT[base_indent]); */
   fprintf( output, "%s%s_decode_unit::instr_dec *instr_dec;\n", INDENT[base_indent+1], project_name);
   fprintf( output, "%sdecode_pc = ac_pc;\n", INDENT[base_indent+1]);
   fprintf( output, "%sif( start_up ){\n", INDENT[base_indent+1]);
@@ -3139,7 +3139,7 @@ void EmitProcessorBhv( FILE *output){
   
   if (ACVerboseFlag)
     fprintf( output, "%sbhv_done.write(1);\n", INDENT[2]);
-  fprintf( output, "%s}\n", INDENT[1]);
+  /* fprintf( output, "%s}\n", INDENT[1]); */
 
 //   fprintf(output, "%swait();\n\n", INDENT[1]);
 //
