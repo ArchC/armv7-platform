@@ -1,4 +1,4 @@
-This is the ARMv5e ArchC 2.1 functional model (system-level).
+This is the ARMv7 ArchC 2.1 functional model (system-level).
 
 In order to test system-level, simple test platform is implemented in main.cpp.
 This platform also has a custom Makefile in Makefile.platform. Do not
@@ -6,43 +6,64 @@ make -f Makefile.archc distclean, since it will delete main.cpp and custom
 header files. Also, avoid using the automatically generated Makefile.archc
 Makefile, since it will not compile necessary modules needed by the platform.
 
-The first step is to automatically generate the ARM SystemC processor core
-using ArchC, make the platform and then you're ready to run:
+:: Install ::
 
-    acsim arm.ac -ndc                  (use -gdb if you want to debug)
-    make -f Makefile.platform
-		arm.x --load=<file-path>
+The first step is to automatically generate the ARM SystemC processor
+core using ArchC. If you are using the canonical ArchC release, you must
+use the parameter -ndc to disable decoded cache. This will make your
+simulation slower but allows self-modifying code and reduces the amount
+of memory required to run the model.  *NOT RECOMMENDED*
+You may also run into many sorts of trouble while using the canonical
+ArchC.
 
-The argument -ndc disables decoder cache. This will make your simulation
-slower but allows self-modifying code and reduces the amount of memory
-required to run the model. If you are building the full iMX53 platform
-model you must pass -ndc to acsim because the decoder cache can't handle
-a large addressing space nor self-modifying code.
+The recommended way to generate and use the ARM processor Core is *to
+use our modified version of ArchC* that implements support to self
+modifying code and many other features useful to this plataform
+model. This version can be obtained here: ---
 
-When building the full iMX model from scratch, the patch
-disable_size_check must be applied to the auto generated file arm.cpp
-after running the acsim tool. The patch is necessary because the ArchC
-templates make some assumptions about the size of the address space
-which are no longer true when dealing with the platform model. Failing
-to apply this patch will result in Segmentation fault when trying to run
-the model.
+To generate the processor core using this modified version, you can do:
 
-In system level simulation, make sure to put code starting at 0x0 address,
-because this is always the entry point for the reset exception vector entry.
-<file-path> usually indicates an ELF containing the code. Please note that, in
-system level, the entry point for this ELF will be ignored, although the load
-addresses for the segments will be used to determine where to load code in real
-memory.
+   $   acsim arm.ac -np                  (use -gdb if you want to debug)
+   $   make -f Makefile.platform
 
-You may be interested in some
+:: Running the simulator ::
+
+The system level model requires you to put some code at address 0x0,
+where lies a read-only memory, that is the first code executed by the
+model. You can add a raw binary there using the --rom option. like this
+
+   $    arm-sim --rom=<path_to_boot_code>
+
+We provide a experimental code that performs a bootstrap of the system
+and boots from a SD card connected to the model. The bootstrap code can
+be used as follows:
+
+   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image>
+
+On the above example, we passed an sdcard image for the simulator, using
+the --sd option.
+
+The simulator allows you to connect a GDB compiled for an arm target and
+use it for debugging purposes. To connect it, you must tell the
+simulator to wait for a GDB connection, as follows:
+
+   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> --gdb
+
+You can also use the log feature on the simulator to print useful
+information about executed instructions, state of peripherals, etc. To
+use it, you may set the -D option, selecting the devices you want to
+log. If you are interested on observing the bus traffic, and the
+instructions executed, for instance, you can type:
+
+   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> -D core,bus
 
 :: Multiple processor instances ::
 
 The current model does not support more than one core instantiated in the same
-SystemC simulation. The reason is that arm_isa.cpp implements some state 
+SystemC simulation. The reason is that arm_isa.cpp implements some state
 variables as global variables to speed up simulation, and instantiated multiple
-cores will cause unwanted sharing of processor state between processor 
-instances. 
+cores will cause unwanted sharing of processor state between processor
+instances.
 
 :: Binary automatic generation ::
 
