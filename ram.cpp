@@ -23,6 +23,8 @@
 
 #include "ram.h"
 #include "arm_interrupts.h"
+#include "defines.H"
+
 #include <string>
 extern bool DEBUG_RAM;
 #define dprintf(args...) if(DEBUG_RAM){fprintf(stderr,args);}

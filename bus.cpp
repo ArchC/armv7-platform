@@ -23,6 +23,7 @@
 // ----------------------------------------------------------------------
 
 #include "bus.h"
+#include "defines.H"
 
 extern bool DEBUG_BUS;
 #define dprintf(args...)                        \
