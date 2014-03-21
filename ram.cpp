@@ -46,7 +46,7 @@ ram_module::~ram_module ()
 unsigned
 ram_module::fast_read (unsigned address)
 {
-  unsigned int data = *(memory + (address / 4));
+  unsigned int data = *((unsigned *)(((char*)memory) + (address)));
 
   dprintf ("READ from %s local address: 0x%X Content: 0x%X\n",
 	   this->name (), address, data);
@@ -59,6 +59,9 @@ ram_module::fast_write (unsigned address, unsigned datum, unsigned offset)
   dprintf ("WRITE to %s local address: 0x%X (offset: 0x%X) Content: 0x%X\n",
 	   this->name (), address, offset, datum);
 
+#ifdef UNALIGNED_ACCESS_SUPPORT
+  *((unsigned *) (((char*)memory) + address)) = datum;
+#else
   unsigned old_data = 0;
 
   if (offset)
@@ -73,6 +76,8 @@ ram_module::fast_write (unsigned address, unsigned datum, unsigned offset)
     {
       *(memory + address / 4) = datum;
     }
+#endif
+
 }
 
 int
