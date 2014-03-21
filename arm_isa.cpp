@@ -1735,12 +1735,13 @@ inline void LDR(int rd, int rn,
 
     dprintf("Instruction: LDR\n");
     addr10 = (uint32_t) ls_address.entire & 0x00000003;
-    ls_address.entire &= 0xFFFFFFFC;
 
     // Special cases
     // TODO: Verify coprocessor cases (alignment)
-    dprintf("Reading memory position 0x%08X\n", ls_address.entire);
-
+#ifdef UNALIGNED_ACCESS_SUPPORT
+    value = MEM_read(ls_address.entire);
+#else
+    ls_address.entire &= 0xFFFFFFFC;
     switch(addr10) {
     case 0:
         value = MEM_read(ls_address.entire);
@@ -1757,6 +1758,9 @@ inline void LDR(int rd, int rn,
         tmp.entire = MEM_read(ls_address.entire);
         value = (RotateRight(24,tmp)).entire;
     }
+#endif // UNALIGNED_ACCESS_SUPPORT
+
+    dprintf("Reading memory position 0x%08X\n", ls_address.entire);
 
     if(rd == PC) {
         RB_write(PC,(value & 0xFFFFFFFE));
@@ -1931,12 +1935,14 @@ inline void LDRT(int rd, int rn,
     dprintf("Instruction: LDRT\n");
 
     addr10 = (int)ls_address.entire & 0x00000003;
-    ls_address.entire &= 0xFFFFFFFC;
-    dprintf("Reading memory position 0x%08X\n", ls_address.entire);
 
     // Special cases
     // Verify coprocessor alignment
 
+#ifdef UNALIGNED_ACCESS_SUPPORT
+    value = MEM_read(ls_address.entire);
+#else
+    ls_address.entire &= 0xFFFFFFFC;
     switch(addr10) {
     case 0:
         value = MEM_read(ls_address.entire);
@@ -1957,7 +1963,9 @@ inline void LDRT(int rd, int rn,
         value = RotateRight(24, tmp).entire;
         RB_write(rd, value);
     }
+#endif // UNALIGNED_ACCESS_SUPPORT
 
+    dprintf("Reading memory position 0x%08X\n", ls_address.entire);
     dprintf(" *  R%d <= 0x%08X\n", rd, value);
 
     ac_pc = RB_read(PC);

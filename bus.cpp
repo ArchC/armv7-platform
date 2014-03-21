@@ -50,7 +50,10 @@ imx53_bus::transport (const ac_tlm_req & req)
   unsigned addr = req.addr;
   unsigned offset = (addr % 4) * 8;
 
+#ifndef UNALIGNED_ACCESS_SUPPORT
   addr = (addr >> 2) << 2;
+#endif
+
   ans.status = SUCCESS;
 
   if (offset)
@@ -72,11 +75,12 @@ imx53_bus::transport (const ac_tlm_req & req)
 	      ans.data =
 		devices[i].device->read_signal ((addr - devices[i].start_address),
                                                 offset);
-	      if (offset)
-		{
-		  ans.data = ans.data >> offset;
-		}
-	      return ans;
+
+#ifndef UNALIGNED_ACCESS_SUPPORT
+              if (offset)
+                ans.data = ans.data >> offset;
+#endif
+              return ans;
 	    }
 	  else if (req.type == WRITE)
 	    {
