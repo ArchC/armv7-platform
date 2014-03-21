@@ -1856,6 +1856,8 @@ inline void LDRH(int rd, int rn,
 
     dprintf("Instruction: LDRH\n");
     dprintf("Reading memory position 0x%08X\n", ls_address.entire);
+
+#ifndef UNALIGNED_ACCESS_SUPPORT
     // Special cases
     // verify coprocessor alignment
     // verify halfword alignment
@@ -1863,6 +1865,8 @@ inline void LDRH(int rd, int rn,
         printf("Unpredictable LDRH instruction result (Address is not Halfword Aligned)\n");
         return;
     }
+#endif
+
     value = MEM_read(ls_address.entire);
     value &= 0xFFFF; /* Zero extends halfword value
                         BUG: Model must be little endian in order to the code work  */
@@ -1904,12 +1908,15 @@ inline void LDRSH(int rd, int rn,
 
     dprintf("Instruction: LDRSH\n");
     dprintf("Reading memory position 0x%08X\n", ls_address.entire);
+
+#ifdef UNALIGNED_ACCESS_SUPPORT
     // Special cases
     // verificar alinhamento do halfword
     if(isBitSet(ls_address.entire, 0)) {
         printf("Unpredictable LDRSH instruction result (Address is not halfword aligned)\n");
         return;
     }
+#endif
     // Verify coprocessor alignment
 
     data = MEM_read(ls_address.entire);
@@ -2603,6 +2610,7 @@ inline void STRH(int rd, int rn,
 
     dprintf("Instruction: STRH\n");
 
+#ifdef UNALIGNED_ACCESS_SUPPORT
     // Special cases
     // verify coprocessor alignment
     // verify halfword alignment
@@ -2610,6 +2618,7 @@ inline void STRH(int rd, int rn,
         printf("Unpredictable STRH instruction result (Address is not halfword aligned)\n");
         return;
     }
+#endif
 
     data = (int16_t) (RB_read(rd) & 0x0000FFFF);
     MEM_write_half(ls_address.entire, data);
