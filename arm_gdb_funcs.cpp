@@ -56,7 +56,16 @@ void arm::reg_write( int reg, ac_word value ) {
 }
 
 unsigned char arm::mem_read( unsigned int address ) {
-  return MEM.read_byte(address);
+  unsigned offset = (address % 4) * 8;
+  unsigned res;
+
+  address = (address >> 2) << 2;
+
+  res =  MEM.read(address);
+  if (offset)
+    res = res >> offset;
+  return (unsigned char) res & 0xff;
+
 }
 
 void arm::mem_write( unsigned int address, unsigned char byte ) {
