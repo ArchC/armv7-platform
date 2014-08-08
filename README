@@ -1,3 +1,4 @@
+# -*- mode: org -*-
 #+TITLE: ARMv7 Platform Simulator Readme and Installation guide.
 #+AUTHOR: Gabriel Krisman Bertazi
 #+DATE: 2014-08-08
@@ -95,6 +96,38 @@ instructions executed, for instance, you can type:
   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> -D core,bus
 #+END_CODE
 
+* Tools
+
+This distribution includes a few tools required to execute build SD card
+images for simulation.
+
+** mksd.sh
+
+mksd.sh is a script for building SD card images to attach to the modeled
+SD card device, compatible with ICboot.  
+
+The first parameter passed to mksd.sh, mandatory, is the operating
+system's ELF image. The second is optional, and is the user code to be
+loaded by the operating system.
+
+The interface between the two programs must be dealt by the OS.
+
+This allows a clear distinction for education purposes between user and
+system code.
+
+mksd.sh may be installed on /usr/libexec/, or /usr/local/libexec/ or
+/usr/lib/armsim/, depending on your GNU distribution.
+
+#+BEGIN_SHELL
+  $ mksd.sh --so <so_program> --user <user_program>
+#END_SHELL
+
+
+** ivtgen
+
+ivtgen is a tool to generate the IVT record for the SD card.  mksd.sh
+uses it internally.  It is not supposed to be called directly by user.
+
 * Multiple processor instances
 
 The current model does not support more than one core instantiated in the same
@@ -121,3 +154,4 @@ For more information visit [[http://www.archc.org]]
 * Bug Reports
 
 You may report bugs by sending an e-mail to <gabriel@krisman.be>
+
