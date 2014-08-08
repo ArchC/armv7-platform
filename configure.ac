@@ -32,6 +32,6 @@ AC_CHECK_PROG([acsim],[acsim],[yes],[no])
 AM_CONDITIONAL([FOUND_ACSIM], [test "x$acsim" = xyes])
 AM_COND_IF([FOUND_ACSIM],,[AC_MSG_ERROR([required program 'acsim' not found.])])
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile tools/Makefile])
 AC_OUTPUT
 

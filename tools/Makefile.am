@@ -15,6 +15,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-SUBDIRS = src tools
+VPATH = $(srcdir) $(builddir)
 
+dist_libexec_SCRIPTS = mksd.sh
+
+libexec_PROGRAMS = ivtgen
+
+ivtgen_SOURCES = ivtgen.c
 
