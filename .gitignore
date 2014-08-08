@@ -28,3 +28,13 @@ arm_decode_unit.H
 arm_decode_unit.cpp
 Makefile.archc
 *.tmpl
+
+* autotools files
+*.in
+*.m4
+autom4te.cache/*
+build/*
+build-aux/*
+configure
+install/*
+
