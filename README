@@ -1,12 +1,41 @@
+#+TITLE: ARMv7 Platform Simulator Readme and Installation guide.
+#+AUTHOR: Gabriel Krisman Bertazi
+#+DATE: 2014-08-08
+
+* Introduction
+
 This is the ARMv7 ArchC 2.1 functional model (system-level).
 
-In order to test system-level, simple test platform is implemented in main.cpp.
-This platform also has a custom Makefile in Makefile.platform. Do not
-make -f Makefile.archc distclean, since it will delete main.cpp and custom
-header files. Also, avoid using the automatically generated Makefile.archc
-Makefile, since it will not compile necessary modules needed by the platform.
+* Installing
 
-:: Install ::
+To install the ARMv7 model using GNU Autotools just type:
+
+#+BEGIN_CODE
+  $ ./configure
+
+  $ make
+
+  $ make install
+#+END_CODE
+
+If your ArchC/SystemC/TLM is not installed in a default location, you
+must provide the path to these libraries (-L) and include files (-I)
+when running the configure script. Like this:
+
+#+BEGIN_SHELL
+  $ ./configure
+     CPPFLAGS="-I${SYSTEMC-PATH}/include -I${TLM-PATH} -I${ARCHC}/include/archc"
+     LDFLAGS="-L${SYSTEMC-PATH}/lib-${ARCH}/ -L${ARCHC-PATH}/lib"
+#+END_SHELL
+
+If you want to install the simulator outside the system path, use
+the --prefix tag in the configure script. Like this:
+
+#+BEGIN_SHELL
+  $ ./configure --prefix=<path>
+#+END_SHELL
+
+** Installing (without autotools)                                :DEPRECATED:
 
 The first step is to automatically generate the ARM SystemC processor
 core using ArchC. If you are using the canonical ArchC release, you must
@@ -26,19 +55,24 @@ To generate the processor core using this modified version, you can do:
    $   acsim arm.ac -np                  (use -gdb if you want to debug)
    $   make -f Makefile.platform
 
-:: Running the simulator ::
+* Running the simulator
 
 The system level model requires you to put some code at address 0x0,
-where lies a read-only memory, that is the first code executed by the
-model. You can add a raw binary there using the --rom option. like this
+where lies a read-only memory. That is the first code executed by the
+simulator. You can add a raw binary there using the --rom option. like
+this:
 
-   $    arm-sim --rom=<path_to_boot_code>
+#+BEGIN_CODE
+  $    arm-sim --rom=<path_to_boot_code>
+#+END_CODE
 
 We provide a experimental code that performs a bootstrap of the system
 and boots from a SD card connected to the model. The bootstrap code can
 be used as follows:
 
-   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image>
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image>
+#+END_CODE
 
 On the above example, we passed an sdcard image for the simulator, using
 the --sd option.
@@ -47,7 +81,9 @@ The simulator allows you to connect a GDB compiled for an arm target and
 use it for debugging purposes. To connect it, you must tell the
 simulator to wait for a GDB connection, as follows:
 
-   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> --gdb
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> --gdb
+#+END_CODE
 
 You can also use the log feature on the simulator to print useful
 information about executed instructions, state of peripherals, etc. To
@@ -55,9 +91,11 @@ use it, you may set the -D option, selecting the devices you want to
 log. If you are interested on observing the bus traffic, and the
 instructions executed, for instance, you can type:
 
-   $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> -D core,bus
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> -D core,bus
+#+END_CODE
 
-:: Multiple processor instances ::
+* Multiple processor instances
 
 The current model does not support more than one core instantiated in the same
 SystemC simulation. The reason is that arm_isa.cpp implements some state
@@ -65,9 +103,10 @@ variables as global variables to speed up simulation, and instantiated multiple
 cores will cause unwanted sharing of processor state between processor
 instances.
 
-:: Binary automatic generation ::
-
-    acbingen.sh -i<abs-install-path> -a<arch-name> arm.ac
+* Binary automatic generation
+#+BEGIN_CODE
+  $ acbingen.sh -i<abs-install-path> -a<arch-name> arm.ac
+#+END_CODE
 
 This will generate the tools source files using the architecture
 name <arch-name> (if omitted, arm is used), copy them to the
@@ -77,19 +116,8 @@ Use "acbingen.sh -h" to get information about the command-line
 options available.
 
 
-For more information visit http://www.archc.org
+For more information visit [[http://www.archc.org]]
 
+* Bug Reports
 
-CHANGELOG:
-==========
-
-Version 0.8.0:
-
-- System level model implemented
-- Support for automatic compiler generation
-- Model passed selected Mediabench and Mibench applications
-- ArchC 2.1 compliant
-- Support for automatic generation of binary tools
-- Support for dynamic linker and loader when reading ELF files
-- Support for GDB
-- Support for compiled simulator and interpreted simulator
+You may report bugs by sending an e-mail to <gabriel@krisman.be>
