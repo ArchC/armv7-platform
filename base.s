@@ -1,4 +1,23 @@
-@ --[ Dumboot Bootstrap v1.0 ]----------------------------------------------------@
+@ ICBoot - Bootstrapping Code for ARMv7-sim 
+@
+@ Copyright (C) 2014 Gabriel Krisman Bertazi <gabriel@krisman.be>
+@
+@ This program is free software: you can redistribute it and/or modify
+@ it under the terms of the GNU General Public License as published by
+@ the Free Software Foundation, either version 3 of the License, or
+@ (at your option) any later version.
+@
+@ This program is distributed in the hope that it will be useful,
+@ but WITHOUT ANY WARRANTY; without even the implied warranty of
+@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+@ GNU General Public License for more details.
+@
+@ You should have received a copy of the GNU General Public License
+@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+@ --[ ICBoot - Bootstrapping Code for ARMv7-sim Bootstrap v1.0 ]------------------@
 @
 @   This is the main reset handler. It loads bootloader, DCD and jumps
 @   to bootloader.
@@ -62,7 +81,7 @@ ldr pc, =SW_MONITOR_iRAM    @ SW MONITOR
 .org 0x5B
         .globl _METADATA
  _METADATA:
-       .ascii "Dumboot Bootstrap v1.0 - "
+       .ascii "ICBoot Bootstrap v1.0 -  "
        .ascii "ARM ArchC model at LSC-UNICAMP\n"
        .ascii "Author: Gabriel Krisman Bertazi"
        .asciz "30/01/2013"
@@ -133,7 +152,7 @@ _hang:
 
 @ --[ print_banner ]-------------------------------------------------------@
 @
-@ Print Dumboot Banner to UART0. It should be already configured.
+@ Print Banner to UART0. It should be already configured.
 
 print_banner:
 	stmfd sp!, {lr}
