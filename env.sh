@@ -3,7 +3,7 @@
 # ===================================================
 # Edit these path's
 
-export SYSTEMC_INSTALL_PATH="/home/max/ArchC/tools/systemc/2.3.0/install/"
+export SYSTEMC_INSTALL_PATH="/home/max/ArchC/tools/systemc/2.3.1/"
 export CROSS_COMPILER_PATH="/home/max/x-tools/arm-newlib-eabi/"
 
 #====================================================
