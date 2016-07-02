@@ -1,0 +1,33 @@
+#+TITLE: ICBoot Install Guide
+#+AUTHOR: Gabriel Krisman Bertazi
+
+* Introduction
+
+This is the startup code we wrote to bootstrapp the boot process.  This
+is loaded to the physical address 0x0, mapped on a ROM device, from
+where execution begins.
+
+If it is loaded trough the --rom flag, it becomes the first code
+executed by the armv7-sim.  ICBoot loads a system code stored in a SD
+card image and jumps to it, afterwards.
+
+* Installing ICBoot
+
+To compile ICBoot, one must setup a cross-compiling environment for
+arm-eabi. There is no need to setup GCC, since Dumboot is fully written
+in ARM Assembly. The binutils tools will do just fine.
+
+With the cross-compiler set, just type:
+
+#+BEGIN_CODE
+  $ make CROSS_COMPILE=<prefix_to_cross_compiler>
+#+END_CODE
+
+This will generate to binary files, an ELF and a raw image (.bin
+file). The latter must be used, since the populate method does not read
+ELF files.  To connect it to the armv7-sim, just type:
+
+#+BEGIN_CODE
+  $ armv7-sim --rom=icboot.bin
+#+END_CODE
+
