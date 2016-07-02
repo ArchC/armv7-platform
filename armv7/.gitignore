@@ -1,0 +1,40 @@
+## Binaries.
+
+*.o
+arm-sim
+*.img
+*.bin
+
+## Temporary files.
+
+*.log*
+\#*
+*~
+
+## Archc automatically generated files.
+
+arm.H
+arm.cpp
+arm.cpp.orig
+arm_arch.H
+arm_arch_ref.H
+arm_bhv_macros.H
+arm_ih_bhv_macros.H
+arm_intr_handlers.H
+arm_isa.H
+arm_isa_init.cpp
+arm_parms.H
+arm_decode_unit.H
+arm_decode_unit.cpp
+Makefile.archc
+*.tmpl
+
+* autotools files
+*.in
+*.m4
+autom4te.cache/*
+build/*
+build-aux/*
+configure
+install/*
+

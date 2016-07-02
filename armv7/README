@@ -1,0 +1,157 @@
+# -*- mode: org -*-
+#+TITLE: ARMv7 Platform Simulator Readme and Installation guide.
+#+AUTHOR: Gabriel Krisman Bertazi
+#+DATE: 2014-08-08
+
+* Introduction
+
+This is the ARMv7 ArchC 2.1 functional model (system-level).
+
+* Installing
+
+To install the ARMv7 model using GNU Autotools just type:
+
+#+BEGIN_CODE
+  $ ./configure
+
+  $ make
+
+  $ make install
+#+END_CODE
+
+If your ArchC/SystemC/TLM is not installed in a default location, you
+must provide the path to these libraries (-L) and include files (-I)
+when running the configure script. Like this:
+
+#+BEGIN_SHELL
+  $ ./configure
+     CPPFLAGS="-I${SYSTEMC-PATH}/include -I${TLM-PATH} -I${ARCHC}/include/archc"
+     LDFLAGS="-L${SYSTEMC-PATH}/lib-${ARCH}/ -L${ARCHC-PATH}/lib"
+#+END_SHELL
+
+If you want to install the simulator outside the system path, use
+the --prefix tag in the configure script. Like this:
+
+#+BEGIN_SHELL
+  $ ./configure --prefix=<path>
+#+END_SHELL
+
+** Installing (without autotools)                                :DEPRECATED:
+
+The first step is to automatically generate the ARM SystemC processor
+core using ArchC. If you are using the canonical ArchC release, you must
+use the parameter -ndc to disable decoded cache. This will make your
+simulation slower but allows self-modifying code and reduces the amount
+of memory required to run the model.  *NOT RECOMMENDED*
+You may also run into many sorts of trouble while using the canonical
+ArchC.
+
+The recommended way to generate and use the ARM processor Core is *to
+use our modified version of ArchC* that implements support to self
+modifying code and many other features useful to this plataform
+model. This version can be obtained here: ---
+
+To generate the processor core using this modified version, you can do:
+
+   $   acsim arm.ac -np                  (use -gdb if you want to debug)
+   $   make -f Makefile.platform
+
+* Running the simulator
+
+The system level model requires you to put some code at address 0x0,
+where lies a read-only memory. That is the first code executed by the
+simulator. You can add a raw binary there using the --rom option. like
+this:
+
+#+BEGIN_CODE
+  $    arm-sim --rom=<path_to_boot_code>
+#+END_CODE
+
+We provide a experimental code that performs a bootstrap of the system
+and boots from a SD card connected to the model. The bootstrap code can
+be used as follows:
+
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image>
+#+END_CODE
+
+On the above example, we passed an sdcard image for the simulator, using
+the --sd option.
+
+The simulator allows you to connect a GDB compiled for an arm target and
+use it for debugging purposes. To connect it, you must tell the
+simulator to wait for a GDB connection, as follows:
+
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> --gdb
+#+END_CODE
+
+You can also use the log feature on the simulator to print useful
+information about executed instructions, state of peripherals, etc. To
+use it, you may set the -D option, selecting the devices you want to
+log. If you are interested on observing the bus traffic, and the
+instructions executed, for instance, you can type:
+
+#+BEGIN_CODE
+  $  arm-sim --rom=dumboot.bin --sd=<sdcard_image> -D core,bus
+#+END_CODE
+
+* Tools
+
+This distribution includes a few tools required to execute build SD card
+images for simulation.
+
+** mksd.sh
+
+mksd.sh is a script for building SD card images to attach to the modeled
+SD card device, compatible with ICboot.  
+
+The first parameter passed to mksd.sh, mandatory, is the operating
+system's ELF image. The second is optional, and is the user code to be
+loaded by the operating system.
+
+The interface between the two programs must be dealt by the OS.
+
+This allows a clear distinction for education purposes between user and
+system code.
+
+mksd.sh may be installed on /usr/libexec/, or /usr/local/libexec/ or
+/usr/lib/armsim/, depending on your GNU distribution.
+
+#+BEGIN_SHELL
+  $ mksd.sh --so <so_program> --user <user_program>
+#END_SHELL
+
+
+** ivtgen
+
+ivtgen is a tool to generate the IVT record for the SD card.  mksd.sh
+uses it internally.  It is not supposed to be called directly by user.
+
+* Multiple processor instances
+
+The current model does not support more than one core instantiated in the same
+SystemC simulation. The reason is that arm_isa.cpp implements some state
+variables as global variables to speed up simulation, and instantiated multiple
+cores will cause unwanted sharing of processor state between processor
+instances.
+
+* Binary automatic generation
+#+BEGIN_CODE
+  $ acbingen.sh -i<abs-install-path> -a<arch-name> arm.ac
+#+END_CODE
+
+This will generate the tools source files using the architecture
+name <arch-name> (if omitted, arm is used), copy them to the
+binutils source tree, build and install them into the directory
+<abs-install-path> (which -must- be an absolute path).
+Use "acbingen.sh -h" to get information about the command-line
+options available.
+
+
+For more information visit [[http://www.archc.org]]
+
+* Bug Reports
+
+You may report bugs by sending an e-mail to <gabriel@krisman.be>
+
