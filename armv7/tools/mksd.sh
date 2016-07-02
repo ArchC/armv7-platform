@@ -20,7 +20,7 @@ $(basename $0) -- Create an SD card bootable image
 
 Arguments:
 
-        --so <PATH>: Operating System ELF binary Path
+        --os <PATH>: Operating System ELF binary Path
         --user <PATH>: User code ELF binary path.
         --help: Display this message.
 
@@ -72,7 +72,7 @@ test -n "$1" || usage
 
 while test -n "$1" ; do
     case "$1" in
-        "--so")
+        "--os")
             test -n "$2" || error "You must provide an operating system."
             SO_PATH=$2
             shift 2

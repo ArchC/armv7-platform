@@ -46,7 +46,6 @@ armsim_SOURCES = 	arm.ac \
 LDADD =  -lm -larchc -lsystemc
 
 .ac.cpp:
-	cp $(srcdir)/arm_isa.ac .
-	acsim $< -gdb -np
+	acsim arm.ac -gdb -np
 #	$(CC) -c arm.cpp $(CPPFLAGS) -I. -I$(srcdir)
 
