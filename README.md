@@ -33,7 +33,7 @@ The Figure below shows an schematics of the implemented modules.
 
 ![Alt tag](http://krisman.be/img/armv7_model_architectural_overview.png)
 
-## Installation
+## Environment
 
 First of all, open the ``env.sh`` file and edit the variables:
 
@@ -51,6 +51,26 @@ source env.sh
 
 Every time that you change the `env.sh` file, you must run the command above. 
 
+## Quick Start
+
+This project has a global Makefile to guide the compilation process without manual intervention.
+Besides compiling, the `run` role loads the images and runs the simulation. 
+So, it's a good way to start:
+
+```bash
+make
+make run
+```
+
+If you want to understand all the steps, see the [Krisman page](http://krisman.be/armv7.html). The sections below 
+were written using this page as a guide, adding some kind information.
+
+## Detailed Installation 
+
+This repository has all the subprojects needed: archc, armv7, dumboot and dummyos. But here we show you how to 
+download these subprojects from the Krisman repository. So, **you can skip the git clone process if you use
+the subprojects contained herein.**
+ 
 #### ArchC
 
 ```bash 
