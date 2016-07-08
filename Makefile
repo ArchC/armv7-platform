@@ -42,6 +42,7 @@ run:
 	armsim --rom=dumboot.img --sd=card.img
 
 clean: clean-archc clean-armv7 clean-dumboot clean-dummyos clean-imgs
+	rm acinstall arminstall -r
 
 clean-archc:
 	cd archc && make clean && make distclean 
